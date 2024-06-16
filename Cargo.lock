@@ -238,7 +238,6 @@ dependencies = [
  "humantime",
  "log",
  "nanorand",
- "once_cell",
  "pretty_assertions",
  "rayon",
  "reqwest",

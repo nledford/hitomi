@@ -4,7 +4,6 @@ use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode};
 
 use chidori::cli;
-use chidori::state::{AppState, APP_STATE};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -18,12 +17,6 @@ async fn main() -> Result<()> {
     // config::delete_config_file().await;
 
     let cli = cli::Cli::parse();
-
-    {
-        let mut lock = APP_STATE.lock().await;
-        *lock = AppState::initialize().await?;
-    }
-
     cli::run_cli_command(cli).await?;
 
     Ok(())

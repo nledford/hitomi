@@ -1,13 +1,8 @@
-use std::time::Duration;
-
 use anyhow::Result;
 use clap::Args;
 use log::info;
-use tokio::time::sleep;
 
-use crate::profiles::profile::Profile;
-use crate::profiles::ProfileAction;
-use crate::state::APP_STATE;
+use crate::state::AppState;
 
 #[derive(Args, Debug)]
 pub struct RunCmds {
@@ -26,27 +21,10 @@ fn print_title(looping: bool) {
     }
 }
 
-pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
+pub async fn execute_run_cmd(cmd: RunCmds, app_state: &mut AppState) -> Result<()> {
     print_title(cmd.run_loop);
 
-    let mut profiles;
-    {
-        let lock = APP_STATE.lock().await;
-        profiles = lock.get_profiles().to_vec();
-    }
-
-    for profile in profiles.iter_mut() {
-        // profile.build_playlist(ProfileAction::Update).await?;
-        Profile::build_playlist(profile, ProfileAction::Update).await?
-    }
-
-    if cmd.run_loop {
-        loop {
-            sleep(Duration::from_secs(1)).await;
-
-            info!("Application isn't running anything yet. Kill the loop!")
-        }
-    }
+    app_state.update_profiles(cmd.run_loop).await?;
 
     Ok(())
 }

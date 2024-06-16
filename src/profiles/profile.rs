@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
-use chrono::{Local, TimeDelta, Timelike};
+use chrono::{DateTime, Local, TimeDelta, Timelike};
 use default_struct_builder::DefaultBuilder;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
@@ -17,9 +17,10 @@ use strum::VariantNames;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
+use crate::plex::Plex;
 use crate::profiles::{ProfileAction, ProfileSource, SectionType};
 use crate::profiles::profile_section::{ProfileSection, Sections};
-use crate::state::APP_STATE;
+use crate::state::AppState;
 
 // PROFILE ####################################################################
 
@@ -86,10 +87,10 @@ impl Profile {
         format!("{}.json", self.title)
     }
 
-    fn profile_path(&self) -> PathBuf {
+    fn profile_path(&self, profiles_directory: &str) -> PathBuf {
         future::block_on(async {
             PathBuf::new()
-                .join(APP_STATE.lock().await.get_profiles_directory())
+                .join(profiles_directory)
                 .join(self.file_name())
         })
     }
@@ -126,22 +127,23 @@ impl Profile {
         }
     }
 
-    fn get_next_refresh_time(&self) -> String {
-        let now = Local::now();
-        let current_minute = now.minute();
-
-        let refresh_minutes = build_refresh_minutes(self.refresh_interval);
-        let next_minute = refresh_minutes
+    async fn get_next_refresh_minute(&self, now: DateTime<Local>) -> u32 {
+        *build_refresh_minutes(self.refresh_interval)
             .iter()
-            .find(|x| *x > &current_minute)
-            .unwrap_or(&0);
+            .find(|x| *x > &now.minute())
+            .unwrap_or(&0)
+    }
+
+
+    async fn get_next_refresh_time(&self, now: DateTime<Local>) -> String {
+        let next_minute = self.get_next_refresh_minute(now).await;
 
         let next_refresh_time = now
             .with_minute(0)
             .unwrap()
             .with_second(0)
             .unwrap()
-            .add(TimeDelta::minutes(*next_minute as i64));
+            .add(TimeDelta::minutes(next_minute as i64));
 
         format!(
             "LAST UPDATE: {}\nNEXT UPDATE: {}",
@@ -189,11 +191,8 @@ fn build_refresh_minutes(refresh_interval: u32) -> Vec<u32> {
 
 /// Plex functions
 impl Profile {
-    pub async fn build_playlist(profile: &mut Profile, action: ProfileAction) -> Result<()> {
+    pub async fn build_playlist(profile: &mut Profile, action: ProfileAction, plex: &Plex) -> Result<()> {
         info!("Building `{}` playlist...", profile.title);
-
-        let state = APP_STATE.lock().await;
-        let plex = state.get_plex();
 
         let source = profile.get_profile_source();
         let source_id = profile.get_profile_source_id();
@@ -245,7 +244,7 @@ impl Profile {
                 plex.add_items_to_playlist(&profile.playlist_id, &items)
                     .await?;
 
-                let summary = format!("{}\n{}", profile.get_next_refresh_time(), profile.summary);
+                let summary = format!("{}\n{}", profile.get_next_refresh_time(Local::now()).await, profile.summary);
                 plex.update_summary(&profile.playlist_id, &summary).await?;
             }
             // Other actions are not relevant to this function and are ignored
@@ -301,18 +300,12 @@ fn show_results(tracks: &[Track], action: ProfileAction) {
 }
 
 impl Profile {
-    pub async fn save_to_file(&self) -> Result<()> {
-        let profiles_directory;
-        {
-            let lock = APP_STATE.lock().await;
-            profiles_directory = lock.get_profiles_directory().to_string();
-        }
-
+    pub async fn save_to_file(&self, profiles_directory: &str) -> Result<()> {
         tokio::fs::create_dir_all(profiles_directory).await?;
 
         let json = serde_json::to_string_pretty(&self)?;
 
-        let mut file = tokio::fs::File::create(&self.profile_path()).await?;
+        let mut file = tokio::fs::File::create(&self.profile_path(profiles_directory)).await?;
         file.write_all(json.as_bytes()).await?;
 
         Ok(())
@@ -349,15 +342,15 @@ impl Profile {
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
 
-pub async fn create_profile_wizard() -> Result<Profile> {
-    let profile_name = set_profile_name().await?;
+pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
+    let profile_name = set_profile_name(app_state).await?;
 
     let summary = set_summary()?;
     let refresh_interval = select_refresh_interval()?;
     let time_limit = set_time_limit()?;
 
     let profile_source = select_profile_source()?;
-    let profile_source_id = select_profile_source_id(profile_source).await?;
+    let profile_source_id = select_profile_source_id(profile_source, app_state).await?;
 
     let sections = select_profile_sections()?;
 
@@ -372,13 +365,12 @@ pub async fn create_profile_wizard() -> Result<Profile> {
     Ok(profile)
 }
 
-async fn set_profile_name() -> Result<String> {
+async fn set_profile_name(app_state: &AppState) -> Result<String> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
 
-    let lock = APP_STATE.lock().await;
-    if lock.get_profile(&profile_name).is_some() {
+    if app_state.get_profile(&profile_name).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"
@@ -391,7 +383,7 @@ async fn set_profile_name() -> Result<String> {
         }
     }
 
-    if lock.get_playlist_by_title(&profile_name).is_some() {
+    if app_state.get_playlist_by_title(&profile_name).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!("Playlist `{profile_name}` already exists in plex. Do you want to overwrite this playlist?"))
             .default(false)
@@ -445,9 +437,8 @@ fn select_profile_source() -> Result<ProfileSource> {
     Ok(ProfileSource::from_repr(selection).unwrap())
 }
 
-async fn select_profile_source_id(profile_source: ProfileSource) -> Result<Option<String>> {
-    let state = APP_STATE.lock().await;
-    let plex = state.get_plex();
+async fn select_profile_source_id(profile_source: ProfileSource, app_state: &AppState) -> Result<Option<String>> {
+    let plex = app_state.get_plex();
 
     let id = match profile_source {
         ProfileSource::Library => None,

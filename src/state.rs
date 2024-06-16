@@ -1,26 +1,28 @@
-use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
+use chrono::{DateTime, Local, Timelike};
 use default_struct_builder::DefaultBuilder;
-use once_cell::sync::Lazy;
-use tokio::sync::Mutex;
+use tokio::time::sleep;
 
 use crate::config::Config;
 use crate::plex::models::Playlist;
 use crate::plex::Plex;
 use crate::profiles::profile::Profile;
+use crate::profiles::ProfileAction;
 
 /// Global application state
-pub static APP_STATE: Lazy<Arc<Mutex<AppState>>> =
-    Lazy::new(|| Arc::new(Mutex::new(AppState::default())));
+// pub static APP_STATE: Lazy<Arc<Mutex<AppState>>> =
+//     Lazy::new(|| Arc::new(Mutex::new(AppState::default())));
 
 /// Represents the application state
 #[derive(Debug, Default, DefaultBuilder)]
 pub struct AppState {
     config: Config,
+    current_time: DateTime<Local>,
     plex: Plex,
-    profiles: Vec<Profile>,
     playlists: Vec<Playlist>,
+    profiles: Vec<Profile>,
 }
 
 impl AppState {
@@ -36,6 +38,7 @@ impl AppState {
         Ok(
             Self::default()
                 .config(config)
+                .current_time(Local::now())
                 .plex(plex)
                 .profiles(profiles)
                 .playlists(playlists)
@@ -47,6 +50,21 @@ impl AppState {
 impl AppState {
     pub fn get_config(&self) -> &Config {
         &self.config
+    }
+}
+
+// Current Time
+impl AppState {
+    pub fn update_time(&mut self) {
+        self.current_time = Local::now()
+    }
+
+    pub fn get_current_minute(&self) -> u32 {
+        self.current_time.minute()
+    }
+
+    pub fn get_current_second(&self) -> u32 {
+        self.current_time.second()
     }
 }
 
@@ -105,5 +123,19 @@ impl AppState {
                 println!("  - {}", title)
             }
         }
+    }
+
+    pub async fn update_profiles(&mut self, run_loop: bool) -> Result<()> {
+        for profile in self.profiles.iter_mut() {
+            Profile::build_playlist(profile, ProfileAction::Update, &self.plex).await?
+        }
+
+        if run_loop {
+            loop {
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
+
+        Ok(())
     }
 }
