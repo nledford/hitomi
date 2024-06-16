@@ -1,3 +1,5 @@
+//! Profile wizards
+
 use anyhow::{anyhow, Result};
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
@@ -12,6 +14,7 @@ use crate::state::AppState;
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
 
+/// The main entrypoint of the wizard
 pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
     let profile_name = set_profile_name(app_state).await?;
 
