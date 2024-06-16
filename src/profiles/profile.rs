@@ -6,8 +6,8 @@ use std::time::Duration;
 use anyhow::{anyhow, Result};
 use chrono::{Local, TimeDelta, Timelike};
 use default_struct_builder::DefaultBuilder;
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
+use dialoguer::theme::ColorfulTheme;
 use futures_lite::future;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
@@ -17,8 +17,8 @@ use strum::VariantNames;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
-use crate::profiles::profile_section::{ProfileSection, Sections};
 use crate::profiles::{ProfileAction, ProfileSource, SectionType};
+use crate::profiles::profile_section::{ProfileSection, Sections};
 use crate::state::APP_STATE;
 
 // PROFILE ####################################################################
@@ -149,6 +149,29 @@ impl Profile {
             next_refresh_time.format("%R")
         )
     }
+
+    fn get_unplayed_track(&self, index: usize) -> Option<Track> {
+        self.sections.get_unplayed_tracks().get(index).cloned()
+    }
+
+    fn get_least_played_track(&self, index: usize) -> Option<Track> {
+        self.sections.get_least_played_tracks().get(index).cloned()
+    }
+
+    fn get_oldest_track(&self, index: usize) -> Option<Track> {
+        self.sections.get_oldest_tracks().get(index).cloned()
+    }
+
+    fn get_largest_section_length(&self) -> usize {
+        *[
+            self.sections.get_unplayed_tracks().len(),
+            self.sections.get_least_played_tracks().len(),
+            self.sections.get_oldest_tracks().len(),
+        ]
+            .iter()
+            .max()
+            .unwrap_or(&0)
+    }
 }
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
@@ -229,6 +252,8 @@ impl Profile {
             _ => {}
         };
 
+        show_results(&combined, action);
+
         Ok(())
     }
 
@@ -236,31 +261,43 @@ impl Profile {
         info!("Combing {} sections...", self.sections.num_enabled());
         let mut combined = vec![];
 
-        let unplayed = self.sections.get_unplayed_tracks();
-        let least = self.sections.get_least_played_tracks();
-        let oldest = self.sections.get_oldest_tracks();
-
-        let limit = *[unplayed.len(), least.len(), oldest.len()]
-            .iter()
-            .max()
-            .unwrap_or(&0);
-
-        for i in 0..limit {
-            if let Some(track) = unplayed.get(i) {
+        for i in 0..self.get_largest_section_length() {
+            if let Some(track) = self.get_unplayed_track(i) {
                 combined.push(track.clone())
             }
 
-            if let Some(track) = least.get(i) {
+            if let Some(track) = self.get_least_played_track(i) {
                 combined.push(track.clone())
             }
 
-            if let Some(track) = oldest.get(i) {
+            if let Some(track) = self.get_oldest_track(i) {
                 combined.push(track.clone())
             }
         }
 
         Ok(combined)
     }
+}
+
+fn show_results(tracks: &[Track], action: ProfileAction) {
+    let size = tracks.len();
+
+    let duration: i64 = tracks.par_iter().map(|t| t.duration()).sum();
+    let duration = Duration::from_millis(duration as u64);
+    let duration = humantime::format_duration(duration).to_string();
+
+    let action = if action == ProfileAction::Create {
+        "created"
+    } else {
+        "updated"
+    };
+
+    log::info!(
+        "Successfully {} playlist!\n\tFinal size: {}\n\tFinal duration: {}",
+        action,
+        size,
+        duration
+    );
 }
 
 impl Profile {
@@ -306,26 +343,6 @@ impl Profile {
     }
 }
 
-pub fn show_results(tracks: &[Track], action: ProfileAction) {
-    let size = tracks.len();
-
-    let duration: i64 = tracks.par_iter().map(|t| t.duration()).sum();
-    let duration = Duration::from_millis(duration as u64);
-    let duration = humantime::format_duration(duration).to_string();
-
-    let action = if action == ProfileAction::Create {
-        "created"
-    } else {
-        "updated"
-    };
-
-    log::info!(
-        "Successfully {} playlist!\n\tFinal size: {}\n\tFinal duration: {}",
-        action,
-        size,
-        duration
-    );
-}
 
 // WIZARD #####################################################################
 
@@ -589,7 +606,7 @@ fn get_default_sorting(section_type: SectionType) -> String {
         SectionType::LeastPlayed => ["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
         SectionType::Oldest => ["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
     }
-    .join(",")
+        .join(",")
 }
 
 // TESTS ######################################################################
