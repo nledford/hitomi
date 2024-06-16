@@ -17,6 +17,11 @@ use crate::profiles::profile::Profile;
 
 pub mod models;
 
+/// Plex API wrapper
+///
+/// Dead code is allowed for this specific struct due to [`DefaultBuilder`](default_struct_builder::DefaultBuilder)
+/// using both the `plex_token` and `plex_url` fields.
+#[allow(dead_code)]
 #[derive(Debug, Default, DefaultBuilder)]
 pub struct Plex {
     client: HttpClient,
