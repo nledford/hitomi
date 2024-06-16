@@ -606,9 +606,9 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
 
 fn get_default_sorting(section_type: SectionType) -> String {
     match section_type {
-        SectionType::Unplayed => ["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
-        SectionType::LeastPlayed => ["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
-        SectionType::Oldest => ["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
+        SectionType::Unplayed => vec!["userRating:desc", "viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
+        SectionType::LeastPlayed => vec!["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
+        SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
     }
         .join(",")
 }
