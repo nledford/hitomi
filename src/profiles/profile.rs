@@ -16,9 +16,9 @@ use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
-use crate::plex::Plex;
 use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::profile_section::Sections;
+use crate::state::AppState;
 
 // PROFILE ####################################################################
 
@@ -198,15 +198,12 @@ fn build_refresh_minutes(refresh_interval: u32) -> Vec<u32> {
 
 /// Plex functions
 impl Profile {
-    pub async fn build_playlist(profile: &mut Profile, action: ProfileAction, plex: &Plex) -> Result<()> {
+    pub async fn build_playlist(profile: &mut Profile, app_state: &AppState, action: ProfileAction) -> Result<()> {
         info!("Building `{}` playlist...", profile.title);
 
-        let source = profile.get_profile_source();
-        let source_id = profile.get_profile_source_id();
-        let time_limit = profile.get_section_time_limit();
         profile
             .sections
-            .fetch_tracks(plex, source, &source_id.as_deref(), time_limit)
+            .fetch_tracks(&profile.clone(), app_state)
             .await?;
 
         let combined = profile.combine_sections()?;
@@ -227,6 +224,7 @@ impl Profile {
             .map(|track| track.id())
             .collect::<Vec<&str>>();
 
+        let plex = app_state.get_plex();
         match action {
             ProfileAction::Create => {
                 let save = Confirm::with_theme(&ColorfulTheme::default())

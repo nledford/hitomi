@@ -11,7 +11,7 @@ use serde::Deserialize;
 use simplelog::debug;
 
 /// A custom [`Client`](reqwest::Client), with a base url and headers set during creation.
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct HttpClient {
     /// The plex server URL
     base_url: String,

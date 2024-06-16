@@ -16,7 +16,7 @@ pub async fn run_profile_command(profile: CliProfile, app_state: &AppState) -> R
     match profile.profile_cmds {
         ProfileAction::Create => {
             let mut profile = wizards::create_profile_wizard(app_state).await?;
-            Profile::build_playlist(&mut profile, ProfileAction::Create, app_state.get_plex()).await?;
+            Profile::build_playlist(&mut profile, app_state, ProfileAction::Create).await?;
             profile.save_to_file(app_state.get_profiles_directory()).await?;
 
             info!("Profile created successfully!")

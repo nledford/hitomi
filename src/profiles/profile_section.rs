@@ -8,8 +8,9 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::plex::models::Track;
-use crate::plex::Plex;
 use crate::profiles::{ProfileSource, SectionType};
+use crate::profiles::profile::Profile;
+use crate::state::AppState;
 
 #[derive(Clone, Debug, Default, DefaultBuilder, Deserialize, PartialEq, Serialize)]
 pub struct Sections {
@@ -32,33 +33,25 @@ impl Sections {
 
     pub async fn fetch_tracks(
         &mut self,
-        plex: &Plex,
-        profile_source: ProfileSource,
-        profile_source_id: &Option<&str>,
-        time_limit: f64,
+        profile: &Profile,
+        app_state: &AppState,
     ) -> Result<()> {
         fetch_section_tracks(
             &mut self.unplayed_tracks,
-            plex,
-            profile_source,
-            profile_source_id,
-            time_limit,
+            profile,
+            app_state,
         )
             .await?;
         fetch_section_tracks(
             &mut self.least_played_tracks,
-            plex,
-            profile_source,
-            profile_source_id,
-            time_limit,
+            profile,
+            app_state,
         )
             .await?;
         fetch_section_tracks(
             &mut self.oldest_tracks,
-            plex,
-            profile_source,
-            profile_source_id,
-            time_limit,
+            profile,
+            app_state,
         )
             .await?;
 
@@ -96,14 +89,17 @@ impl Sections {
 
 async fn fetch_section_tracks(
     section: &mut ProfileSection,
-    plex: &Plex,
-    profile_source: ProfileSource,
-    profile_source_id: &Option<&str>,
-    time_limit: f64,
+    profile: &Profile,
+    app_state: &AppState,
 ) -> Result<()> {
     if !section.enabled {
         return Ok(());
     }
+
+    let plex = app_state.get_plex();
+    let profile_source = profile.get_profile_source();
+    let profile_source_id = profile.get_profile_source_id();
+    let time_limit = profile.get_section_time_limit();
 
     let mut filters = HashMap::new();
     filters.insert(
@@ -122,7 +118,7 @@ async fn fetch_section_tracks(
         ProfileSource::Library => {}
         ProfileSource::Collection => {
             let artists = plex
-                .fetch_artists_from_collection(profile_source_id.unwrap())
+                .fetch_artists_from_collection(&profile_source_id.unwrap())
                 .await?;
             let artists = urlencoding::encode(&artists.join(",")).to_string();
 
@@ -140,7 +136,7 @@ async fn fetch_section_tracks(
         .fetch_music(filters, section.get_sorting(), Some(1111))
         .await?;
 
-    section.run_manual_filters(time_limit);
+    section.run_manual_filters(time_limit, None);
 
     Ok(())
 }
@@ -217,12 +213,16 @@ impl ProfileSection {
         self.tracks.len()
     }
 
-    pub fn run_manual_filters(&mut self, time_limit: f64) {
+    pub fn run_manual_filters(&mut self, time_limit: f64, list_to_dedup: Option<&mut Vec<Track>>) {
         self.deduplicate_by_track_guid();
         self.run_deduplicate_by_title_and_artist();
         self.limit_tracks_by_artist();
         self.sort_tracks();
         self.reduce_to_time_limit(time_limit);
+
+        if let Some(lst) = list_to_dedup {
+            self.dedup_tracks_by_list(lst)
+        }
 
         if self.randomize_tracks {
             let mut rng = WyRand::new();

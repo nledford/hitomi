@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, FromRepr, VariantNames};
 
 pub mod profile;
-pub mod profile_section;
+mod profile_section;
 pub mod wizards;
 
 #[derive(

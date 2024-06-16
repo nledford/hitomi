@@ -16,7 +16,7 @@ use crate::profiles::ProfileAction;
 //     Lazy::new(|| Arc::new(Mutex::new(AppState::default())));
 
 /// Represents the application state
-#[derive(Debug, Default, DefaultBuilder)]
+#[derive(Clone, Debug, Default, DefaultBuilder)]
 pub struct AppState {
     config: Config,
     current_time: DateTime<Local>,
@@ -146,13 +146,14 @@ impl AppState {
 
     async fn update_profiles(&mut self, run_loop: bool) -> Result<()> {
         let now = Local::now();
+        let app_state = self.clone();
 
         for profile in self.profiles.iter_mut() {
             let current_minute = profile.get_current_refresh_minute(now);
             let minute_matches = now.minute() == current_minute;
 
             if !self.ran_once || minute_matches {
-                Profile::build_playlist(profile, ProfileAction::Update, &self.plex).await?;
+                Profile::build_playlist(profile, &app_state, ProfileAction::Update).await?;
 
                 if run_loop {
                     profile.print_next_refresh();

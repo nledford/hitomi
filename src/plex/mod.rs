@@ -22,7 +22,7 @@ pub mod models;
 /// Dead code is allowed for this specific struct due to [`DefaultBuilder`](default_struct_builder::DefaultBuilder)
 /// using both the `plex_token` and `plex_url` fields.
 #[allow(dead_code)]
-#[derive(Debug, Default, DefaultBuilder)]
+#[derive(Clone, Debug, Default, DefaultBuilder)]
 pub struct Plex {
     client: HttpClient,
     plex_token: String,

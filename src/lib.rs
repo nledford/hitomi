@@ -1,5 +1,5 @@
 // TODO remove this declaration when certain debug functions are no longer needed
-#![allow(dead_code)]
+// #![allow(dead_code)]
 
 pub mod cli;
 pub mod config;
