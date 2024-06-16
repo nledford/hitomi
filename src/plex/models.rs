@@ -185,14 +185,14 @@ pub struct Collection {
     pub title: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename = "MediaContainer")]
 pub struct SectionContainer {
     #[serde(alias = "Directory")]
     pub directory: Vec<Section>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 pub struct Section {
     pub title: String,
     #[serde(alias = "type")]

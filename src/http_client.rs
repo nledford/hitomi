@@ -41,7 +41,7 @@ impl HttpClient {
 
     pub async fn get<T>(&self, path: &str, params: Params, max_results: Option<i32>) -> Result<T>
     where
-        T: for<'de> Deserialize<'de>,
+        T: for<'de> Deserialize<'de> + Default,
     {
         let url = self.build_final_url(path, params);
 
@@ -52,9 +52,20 @@ impl HttpClient {
         } else {
             req
         };
-        let response = req.send().await?;
-        let json = response.json::<T>().await?;
-        Ok(json)
+
+        match req.send().await {
+            Ok(resp) => {
+                let contents = resp.text().await?;
+                if contents.is_empty() {
+                    return Ok(T::default());
+                }
+
+                serde_json::from_str(&contents).with_context(|| {
+                    format!("Unable to deserialise response. Body was: \"{}\"", contents)
+                })
+            }
+            Err(err) => Err(anyhow!("An error occurred while attempting to GET: {err}")),
+        }
     }
 
     pub async fn delete(&self, path: &str, params: Params) -> Result<()> {

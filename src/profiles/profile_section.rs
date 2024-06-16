@@ -20,21 +20,14 @@ pub struct Sections {
 
 impl Sections {
     pub fn num_enabled(&self) -> i32 {
-        let mut count = 0;
-
-        if self.oldest_tracks.enabled {
-            count += 1
-        }
-
-        if self.least_played_tracks.enabled {
-            count += 1
-        }
-
-        if self.oldest_tracks.enabled {
-            count += 1
-        }
-
-        count
+        [
+            self.unplayed_tracks.enabled,
+            self.least_played_tracks.enabled,
+            self.oldest_tracks.enabled
+        ]
+            .into_iter()
+            .filter(|x| *x == true)
+            .count() as i32
     }
 
     pub async fn fetch_tracks(
@@ -51,7 +44,7 @@ impl Sections {
             profile_source_id,
             time_limit,
         )
-        .await?;
+            .await?;
         fetch_section_tracks(
             &mut self.least_played_tracks,
             plex,
@@ -59,7 +52,7 @@ impl Sections {
             profile_source_id,
             time_limit,
         )
-        .await?;
+            .await?;
         fetch_section_tracks(
             &mut self.oldest_tracks,
             plex,
@@ -67,33 +60,29 @@ impl Sections {
             profile_source_id,
             time_limit,
         )
-        .await?;
+            .await?;
 
         Ok(())
     }
 
-    pub fn get_unplayed_tracks(&self) -> Vec<Track> {
-        self.unplayed_tracks.tracks.clone()
+    pub fn get_unplayed_tracks(&self) -> &[Track] {
+        &self.unplayed_tracks.tracks
     }
 
     fn num_unplayed_tracks(&self) -> usize {
         self.unplayed_tracks.num_tracks()
     }
 
-    pub fn get_least_played_tracks(&self) -> Vec<Track> {
-        self.least_played_tracks.tracks.clone()
+    pub fn get_least_played_tracks(&self) -> &[Track] {
+        &self.least_played_tracks.tracks
     }
 
     fn num_least_played_tracks(&self) -> usize {
         self.least_played_tracks.num_tracks()
     }
 
-    pub fn get_oldest_tracks(&self) -> Vec<Track> {
-        self.oldest_tracks.tracks.clone()
-    }
-
-    pub fn oldest_tracks_mut(&mut self) -> &mut ProfileSection {
-        &mut self.oldest_tracks
+    pub fn get_oldest_tracks(&self) -> &[Track] {
+        &self.oldest_tracks.tracks
     }
 
     fn num_oldest_tracks(&self) -> usize {

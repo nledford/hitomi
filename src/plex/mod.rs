@@ -248,10 +248,7 @@ impl Plex {
         let resp: PlexResponse<Vec<Collection>> = self
             .client
             .get(
-                &format!(
-                    "library/sections/{}/collection/{collection_id}",
-                    self.primary_section_id
-                ),
+                &format!("library/collections/{collection_id}/children"),
                 None,
                 None,
             )
@@ -289,7 +286,7 @@ impl Plex {
     }
 
     async fn get_machine_identifier(&mut self) -> Result<()> {
-        #[derive(Deserialize)]
+        #[derive(Default, Deserialize)]
         struct Identity {
             #[serde(alias = "machineIdentifier")]
             machine_identifier: String,

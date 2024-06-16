@@ -79,10 +79,6 @@ impl Profile {
         &self.sections
     }
 
-    pub fn get_sections_mut(&mut self) -> &mut Sections {
-        &mut self.sections
-    }
-
     fn file_name(&self) -> String {
         format!("{}.json", self.title)
     }
