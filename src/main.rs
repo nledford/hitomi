@@ -3,8 +3,8 @@ use clap::Parser;
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode};
 
-use plex_playlists::cli;
-use plex_playlists::state::{AppState, APP_STATE};
+use chidori::cli;
+use chidori::state::{AppState, APP_STATE};
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -1,13 +1,13 @@
+use std::{env, fs};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::{env, fs};
 
 use anyhow::Result;
 use clap::Args;
 use default_struct_builder::DefaultBuilder;
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
+use dialoguer::theme::ColorfulTheme;
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
@@ -192,28 +192,29 @@ pub async fn build_config_wizard() -> Result<Config> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use log::debug;
 
     use super::*;
 
     static PROFILES_DIRECTORY: &str = "/data";
-    static TEST_CONFIG_PATH: OnceCell<PathBuf> = OnceCell::from(|| {
-        future::block_on(async {
-            let path = Path::new("./data/test");
-            tokio::fs::create_dir_all(path).await.unwrap();
-            path.join("test-config.json")
-        })
-    });
+
+    async fn build_test_config_path() -> PathBuf {
+        let path = Path::new("./data/test");
+        tokio::fs::create_dir_all(path).await.unwrap();
+        path.join("test-config.json")
+    }
 
     #[tokio::test]
     async fn test_saving_config() {
         let config = Config::default().profiles_directory(PROFILES_DIRECTORY.to_owned());
         config
-            .save_config(Some(TEST_CONFIG_PATH.to_str().unwrap()))
+            .save_config(Some(build_test_config_path().await.to_str().unwrap()))
             .await
             .unwrap();
 
-        let config = Config::load_config(Some(TEST_CONFIG_PATH.to_str().unwrap()))
+        let config = Config::load_config(Some(build_test_config_path().await.to_str().unwrap()))
             .await
             .unwrap();
         assert_eq!(config.profiles_directory, PROFILES_DIRECTORY);
@@ -221,15 +222,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_loading_config() {
+        let test_config_path = build_test_config_path().await;
+
         debug!("Deleting existing config file...");
-        if TEST_CONFIG_PATH.exists() {
-            tokio::fs::remove_file(TEST_CONFIG_PATH.as_path())
+        if test_config_path.exists() {
+            tokio::fs::remove_file(test_config_path.as_path())
                 .await
                 .unwrap();
         }
 
         debug!("Loading config file from disk...");
-        let _ = Config::load_config(Some(TEST_CONFIG_PATH.to_str().unwrap()))
+        let _ = Config::load_config(Some(test_config_path.to_str().unwrap()))
             .await
             .unwrap();
     }
