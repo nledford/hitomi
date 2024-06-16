@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use log::LevelFilter;
-use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, ConfigBuilder};
+use simplelog::{ColorChoice, CombinedLogger, ConfigBuilder, TerminalMode, TermLogger};
 
 use chidori::cli;
 
@@ -11,6 +11,7 @@ async fn main() -> Result<()> {
         LevelFilter::Trace,
         ConfigBuilder::default()
             .set_time_offset_to_local()
+            .unwrap()
             .build(),
         TerminalMode::Mixed,
         ColorChoice::Auto,

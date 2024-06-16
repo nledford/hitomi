@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use chrono::TimeDelta;
 use default_struct_builder::DefaultBuilder;
-use nanorand::{ChaCha8, Rng};
+use nanorand::{Rng, WyRand};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -126,10 +126,6 @@ async fn fetch_section_tracks(
                 .await?;
             let artists = urlencoding::encode(&artists.join(",")).to_string();
 
-            // filters.insert(
-            //     "track.userRating>>".to_string(),
-            //     section.minimum_track_rating.to_string(),
-            // );
             filters.insert("artist.id".to_string(), artists);
         }
         ProfileSource::Playlist => {
@@ -229,7 +225,7 @@ impl ProfileSection {
         self.reduce_to_time_limit(time_limit);
 
         if self.randomize_tracks {
-            let mut rng = ChaCha8::new();
+            let mut rng = WyRand::new();
             rng.shuffle(&mut self.tracks);
         }
     }
