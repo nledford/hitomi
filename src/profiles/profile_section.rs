@@ -27,7 +27,7 @@ impl Sections {
             self.oldest_tracks.enabled
         ]
             .into_iter()
-            .filter(|x| *x == true)
+            .filter(|x| *x)
             .count() as i32
     }
 
