@@ -12,7 +12,7 @@ use futures_lite::future;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use simplelog::info;
+use simplelog::{debug, error, info};
 use strum::VariantNames;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -328,18 +328,31 @@ impl Profile {
         Ok(profile)
     }
 
-    pub async fn load_profiles(dir: &str) -> anyhow::Result<Vec<Profile>> {
+    pub async fn load_profiles(dir: &str) -> Result<Vec<Profile>> {
+        debug!("Loading profiles from disk...");
         let dir = Path::new(dir);
 
-        let mut result = vec![];
-
-        if dir.exists() && dir.is_dir() {
-            let mut reader = tokio::fs::read_dir(&dir).await?;
-            while let Some(entry) = reader.next_entry().await? {
-                let profile = Profile::load_from_disk(entry.path().to_str().unwrap()).await?;
-                result.push(profile)
-            }
+        if !dir.exists() {
+            panic!("Profiles directory `{dir}` could not be found.")
         }
+
+        if !dir.is_dir() {
+            panic!("Profiles directory `{dir}` is not a directory.")
+        }
+
+        if dir.read_dir()?.next().is_none() {
+            error!("Profiles directory `{dir}` is empty.");
+            return Ok(vec![]);
+        }
+
+        let mut result = vec![];
+        let mut reader = tokio::fs::read_dir(&dir).await?;
+        while let Some(entry) = reader.next_entry().await? {
+            let profile = Profile::load_from_disk(entry.path().to_str().unwrap()).await?;
+            result.push(profile)
+        }
+
+        info!("{} profile(s) loaded from disk", &result.len());
 
         Ok(result)
     }
