@@ -1,24 +1,38 @@
-// SOURCE: https://github.com/seanmonstar/reqwest/issues/988#issuecomment-1475364352
+//! A custom [`Client`](reqwest::Client) used by the application for making requests
+//! to the user's Plex server
+//!
+//! The original source for this code is from: https://github.com/seanmonstar/reqwest/issues/988#issuecomment-1475364352
 
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
-use log::debug;
 use reqwest::header;
 use serde::Deserialize;
+use simplelog::debug;
 
+/// A custom [`Client`](reqwest::Client), with a base url and headers set during creation.
 #[derive(Default, Debug)]
 pub struct HttpClient {
+    /// The plex server URL
     base_url: String,
+    /// Default headers to use with the custom client
     headers: header::HeaderMap,
+    /// The user's plex token
     plex_token: String,
-    pub client: reqwest::Client,
+    /// The resulting custom client
+    client: reqwest::Client,
 }
 
-pub type Params = Option<HashMap<String, String>>;
+/// Shorthand for headers parameter type
+type Params = Option<HashMap<String, String>>;
 
 impl HttpClient {
+    /// Creates a new custom ['Client'](reqwest::Client)
+    ///
+    /// Custom headers and a base url are set during creation
     pub fn new(base_url: &str, plex_token: &str) -> Result<Self> {
+        debug!("Creating HTTP client...");
+
         let mut headers = header::HeaderMap::new();
         headers.append(
             header::ACCEPT,
@@ -39,6 +53,7 @@ impl HttpClient {
         })
     }
 
+    /// Perform a `GET` request with the custom ['Client'](reqwest::Client)
     pub async fn get<T>(&self, path: &str, params: Params, max_results: Option<i32>) -> Result<T>
     where
         T: for<'de> Deserialize<'de> + Default,
@@ -68,12 +83,14 @@ impl HttpClient {
         }
     }
 
+    /// Perform a `DELETE` request with the custom ['Client'](reqwest::Client)
     pub async fn delete(&self, path: &str, params: Params) -> Result<()> {
         let url = self.build_final_url(path, params);
         self.client.delete(url).send().await?;
         Ok(())
     }
 
+    /// Perform a `POST` request with the custom ['Client'](reqwest::Client)
     pub async fn post<T>(&self, path: &str, params: Params) -> Result<T>
     where
         T: for<'de> Deserialize<'de> + Default,
@@ -101,6 +118,7 @@ impl HttpClient {
         }
     }
 
+    /// Perform a `PUT` request with the custom ['Client'](reqwest::Client)
     pub async fn put<T>(&self, path: &str, params: Params) -> Result<T>
     where
         T: for<'de> Deserialize<'de> + Default,
@@ -127,6 +145,9 @@ impl HttpClient {
         }
     }
 
+    /// Constructs the final URL passed to the respective request
+    ///
+    /// Merges the base url, the path, and any parameters together
     fn build_final_url(&self, path: &str, params: Params) -> String {
         let url = format!(
             "{}/{}?X-Plex-Token={}",
@@ -148,19 +169,4 @@ impl HttpClient {
 
         url
     }
-
-    /*pub async fn post<T>(&self, path: &str, body: &T) -> Result<Response, Error>
-    where
-        T: Serialize,
-    {
-        let url = format!("{}{}", self.base_url, path);
-        let resp = self.client
-            .post(&url)
-            .headers(self.headers.clone())
-            .json(body)
-            .send()
-            .await?;
-
-        Ok(resp)
-    }*/
 }
