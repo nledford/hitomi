@@ -1,3 +1,5 @@
+//! Configuration for `chidori`
+
 use std::{env, fs};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -26,6 +28,7 @@ fn build_config_path() -> String {
     config_path.into_os_string().into_string().unwrap()
 }
 
+/// Represents the configuration file
 #[derive(Args, Clone, Debug, DefaultBuilder, Deserialize, Serialize, PartialEq)]
 pub struct Config {
     #[arg(long)]
@@ -74,6 +77,8 @@ impl Config {
     }
 
     pub async fn save_config(&self, config_path: Option<&str>) -> Result<()> {
+        debug!("Saving config to disk...");
+
         let default_config_path = build_config_path();
         let config_path = if let Some(config_path) = config_path {
             Path::new(config_path)
@@ -117,6 +122,7 @@ pub async fn delete_config_file() {
     tokio::fs::remove_file(build_config_path()).await.unwrap()
 }
 
+/// Wizard used by user to create an initial configuration file
 pub async fn build_config_wizard() -> Result<Config> {
     info!("Config file not found. Checking for environment variables...");
 
@@ -169,8 +175,6 @@ pub async fn build_config_wizard() -> Result<Config> {
         .default(0)
         .items(&titles)
         .interact()?;
-    debug!("SELECTION: {selection}");
-    debug!("SHOULD BE: {:?}", &sections[selection]);
     let primary_section_id = sections[selection]
         .id()
         .parse::<i32>()
