@@ -111,11 +111,12 @@ impl AppState {
     }
 
     pub fn list_profiles(&self) {
-        let titles = self
+        let mut titles = self
             .profiles
             .iter()
             .map(|p| p.get_title())
             .collect::<Vec<&str>>();
+        titles.sort_unstable();
 
         if titles.is_empty() {
             println!("No profiles found.")
