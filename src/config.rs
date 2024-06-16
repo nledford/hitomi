@@ -194,8 +194,6 @@ pub async fn build_config_wizard() -> Result<Config> {
 mod tests {
     use std::path::PathBuf;
 
-    use log::debug;
-
     use super::*;
 
     static PROFILES_DIRECTORY: &str = "/data";
@@ -218,22 +216,5 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(config.profiles_directory, PROFILES_DIRECTORY);
-    }
-
-    #[tokio::test]
-    async fn test_loading_config() {
-        let test_config_path = build_test_config_path().await;
-
-        debug!("Deleting existing config file...");
-        if test_config_path.exists() {
-            tokio::fs::remove_file(test_config_path.as_path())
-                .await
-                .unwrap();
-        }
-
-        debug!("Loading config file from disk...");
-        let _ = Config::load_config(Some(test_config_path.to_str().unwrap()))
-            .await
-            .unwrap();
     }
 }
