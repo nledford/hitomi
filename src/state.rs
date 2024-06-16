@@ -20,6 +20,7 @@ pub struct AppState {
     config: Config,
     plex: Plex,
     profiles: Vec<Profile>,
+    playlists: Vec<Playlist>,
 }
 
 impl AppState {
@@ -30,29 +31,47 @@ impl AppState {
         let profiles = Profile::load_profiles(dir).await?;
 
         let plex = Plex::initialize(&config).await?;
+        let playlists = plex.get_playlists();
 
-        Ok(Self::default().config(config).profiles(profiles).plex(plex))
+        Ok(
+            Self::default()
+                .config(config)
+                .plex(plex)
+                .profiles(profiles)
+                .playlists(playlists)
+        )
     }
+}
 
+// Config
+impl AppState {
     pub fn get_config(&self) -> &Config {
         &self.config
     }
+}
 
-    pub fn get_playlists(&self) -> Vec<Playlist> {
-        self.plex.get_playlists()
+// Playlists
+impl AppState {
+    pub fn get_playlists(&self) -> &[Playlist] {
+        &self.playlists
     }
 
-    pub fn get_playlist(&self, title: &str) -> Option<Playlist> {
-        let playlists = self.get_playlists();
-        playlists.iter().find(|p| p.title == title).cloned()
+    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
+        self.playlists.iter().find(|p| p.title == title)
     }
+}
 
+// Plex
+impl AppState {
     pub fn get_plex(&self) -> &Plex {
         &self.plex
     }
+}
 
-    pub fn get_profiles(&self) -> Vec<Profile> {
-        self.profiles.clone()
+// Profiles
+impl AppState {
+    pub fn get_profiles(&self) -> &[Profile] {
+        &self.profiles
     }
 
     pub fn get_profile(&self, title: &str) -> Option<&Profile> {

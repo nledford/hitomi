@@ -32,7 +32,7 @@ pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     let mut profiles;
     {
         let lock = APP_STATE.lock().await;
-        profiles = lock.get_profiles();
+        profiles = lock.get_profiles().to_vec();
     }
 
     for profile in profiles.iter_mut() {

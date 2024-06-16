@@ -374,7 +374,7 @@ async fn set_profile_name() -> Result<String> {
         }
     }
 
-    if lock.get_playlist(&profile_name).is_some() {
+    if lock.get_playlist_by_title(&profile_name).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!("Playlist `{profile_name}` already exists in plex. Do you want to overwrite this playlist?"))
             .default(false)
