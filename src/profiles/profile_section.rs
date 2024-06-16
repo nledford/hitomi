@@ -133,7 +133,7 @@ async fn fetch_section_tracks(
         ProfileSource::Library => {}
         ProfileSource::Collection => {
             let artists = plex
-                .fetch_artists_from_collection(&profile_source_id.unwrap())
+                .fetch_artists_from_collection(profile_source_id.unwrap())
                 .await?;
             let artists = urlencoding::encode(&artists.join(",")).to_string();
 

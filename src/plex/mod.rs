@@ -187,7 +187,7 @@ impl Plex {
             urlencoding::encode(summary).to_string(),
         )]);
 
-        let _ = self
+        self
             .client
             .put(&format!("playlists/{}", playlist_id), Some(params))
             .await?;
@@ -215,7 +215,7 @@ impl Plex {
 
         let playlist: PlexResponse<Vec<NewPlaylist>> =
             self.client.post("playlists", Some(params)).await?;
-        let playlist = playlist.media_container.metadata.get(0).unwrap();
+        let playlist = playlist.media_container.metadata.first().unwrap();
 
         Ok(playlist.rating_key.to_string())
     }

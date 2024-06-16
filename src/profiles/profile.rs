@@ -242,11 +242,11 @@ impl Profile {
 
                 if save {
                     info!("Creating playlist in plex...");
-                    let playlist_id = plex.create_playlist(&profile).await?;
+                    let playlist_id = plex.create_playlist(profile).await?;
                     profile.set_playlist_id(&playlist_id);
 
                     info!("Adding tracks to newly created playlist...");
-                    plex.add_items_to_playlist(&playlist_id, &items).await?;
+                    plex.add_items_to_playlist(&playlist_id, items).await?;
                 }
             }
             ProfileAction::Update => {
@@ -254,7 +254,7 @@ impl Profile {
                 plex.clear_playlist(&profile.playlist_id).await?;
 
                 info!("Updating destination playlist...");
-                plex.add_items_to_playlist(&profile.playlist_id, &items)
+                plex.add_items_to_playlist(&profile.playlist_id, items)
                     .await?;
 
                 let summary = format!("{}\n{}", profile.get_next_refresh_str(Local::now()), profile.summary);
