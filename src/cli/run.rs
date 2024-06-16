@@ -24,7 +24,7 @@ fn print_title(looping: bool) {
 pub async fn execute_run_cmd(cmd: RunCmds, app_state: &mut AppState) -> Result<()> {
     print_title(cmd.run_loop);
 
-    app_state.update_profiles(cmd.run_loop).await?;
+    app_state.update_state(cmd.run_loop).await?;
 
     Ok(())
 }

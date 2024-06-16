@@ -115,8 +115,8 @@ impl Plex {
         Ok(())
     }
 
-    pub fn get_playlists(&self) -> Vec<Playlist> {
-        self.playlists.clone()
+    pub fn get_playlists(&self) -> &[Playlist] {
+        &self.playlists
     }
 
     pub fn get_playlist(&self, playlist_id: &str) -> &Playlist {
@@ -176,7 +176,6 @@ impl Plex {
             self.add_items_to_playlist(playlist_id, chunk).await?;
         }
 
-        // TODO add last updated/next update to summary
         self.update_summary(playlist_id, summary).await?;
 
         Ok(())
@@ -203,17 +202,13 @@ impl Plex {
                 format!(
                     "{}/library/metadata",
                     self.uri_root(),
-                    // items.iter()
-                    //     .map(|x| x.id())
-                    //     .collect::<Vec<&str>>()
-                    //     .join(",")
                 ),
             ),
             (
                 "title".to_string(),
                 urlencoding::encode(profile.get_title()).to_string(),
             ),
-            // ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),
+            ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),
             ("smart".to_string(), "0".to_string()),
             ("type".to_string(), "audio".to_string()),
         ]);

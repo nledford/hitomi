@@ -23,6 +23,7 @@ pub struct AppState {
     plex: Plex,
     playlists: Vec<Playlist>,
     profiles: Vec<Profile>,
+    ran_once: bool,
 }
 
 impl AppState {
@@ -33,7 +34,7 @@ impl AppState {
         let profiles = Profile::load_profiles(dir).await?;
 
         let plex = Plex::initialize(&config).await?;
-        let playlists = plex.get_playlists();
+        let playlists = plex.get_playlists().to_vec();
 
         Ok(
             Self::default()
@@ -42,6 +43,7 @@ impl AppState {
                 .plex(plex)
                 .profiles(profiles)
                 .playlists(playlists)
+                .ran_once(false)
         )
     }
 }
@@ -125,16 +127,38 @@ impl AppState {
         }
     }
 
-    pub async fn update_profiles(&mut self, run_loop: bool) -> Result<()> {
-        for profile in self.profiles.iter_mut() {
-            Profile::build_playlist(profile, ProfileAction::Update, &self.plex).await?
-        }
+    pub async fn update_state(&mut self, run_loop: bool) -> Result<()> {
+        self.update_profiles(run_loop).await?;
 
         if run_loop {
             loop {
                 sleep(Duration::from_secs(1)).await;
+
+                if Local::now().second() == 0 {
+                    self.update_profiles(run_loop).await?;
+                }
             }
         }
+
+        Ok(())
+    }
+
+    async fn update_profiles(&mut self, run_loop: bool) -> Result<()> {
+        let now = Local::now();
+
+        for profile in self.profiles.iter_mut() {
+            let current_minute = profile.get_current_refresh_minute(now);
+            let minute_matches = now.minute() == current_minute;
+
+            if !self.ran_once || minute_matches {
+                Profile::build_playlist(profile, ProfileAction::Update, &self.plex).await?;
+
+                if run_loop {
+                    profile.print_next_refresh();
+                }
+            }
+        }
+        self.ran_once = true;
 
         Ok(())
     }
