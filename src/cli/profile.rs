@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Args;
 use simplelog::info;
 
-use crate::profiles::{profile, ProfileAction};
+use crate::profiles::{ProfileAction, wizards};
 use crate::profiles::profile::Profile;
 use crate::state::AppState;
 
@@ -15,7 +15,7 @@ pub struct CliProfile {
 pub async fn run_profile_command(profile: CliProfile, app_state: &AppState) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
-            let mut profile = profile::create_profile_wizard(app_state).await?;
+            let mut profile = wizards::create_profile_wizard(app_state).await?;
             Profile::build_playlist(&mut profile, ProfileAction::Create, app_state.get_plex()).await?;
             profile.save_to_file(app_state.get_profiles_directory()).await?;
 

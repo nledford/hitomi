@@ -4,6 +4,7 @@ use strum::{Display, EnumString, FromRepr, VariantNames};
 
 pub mod profile;
 pub mod profile_section;
+pub mod wizards;
 
 #[derive(
     Clone,
