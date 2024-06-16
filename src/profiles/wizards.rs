@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
 use simplelog::info;
@@ -12,7 +12,7 @@ use crate::state::AppState;
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
 
-pub async fn create_profile_wizard(app_state: &AppState) -> anyhow::Result<Profile> {
+pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
     let profile_name = set_profile_name(app_state).await?;
 
     let summary = set_summary()?;
@@ -35,7 +35,7 @@ pub async fn create_profile_wizard(app_state: &AppState) -> anyhow::Result<Profi
     Ok(profile)
 }
 
-async fn set_profile_name(app_state: &AppState) -> anyhow::Result<String> {
+async fn set_profile_name(app_state: &AppState) -> Result<String> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
@@ -67,7 +67,7 @@ async fn set_profile_name(app_state: &AppState) -> anyhow::Result<String> {
     Ok(profile_name)
 }
 
-fn set_summary() -> anyhow::Result<String> {
+fn set_summary() -> Result<String> {
     let summary = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the summary for your new profile? This will also be the summary of the playlist on the plex server.")
         .default(String::default())
@@ -76,7 +76,7 @@ fn set_summary() -> anyhow::Result<String> {
     Ok(summary)
 }
 
-fn select_refresh_interval() -> anyhow::Result<u32> {
+fn select_refresh_interval() -> Result<u32> {
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Select the refresh interval for this profile:")
         .default(0)
@@ -86,7 +86,7 @@ fn select_refresh_interval() -> anyhow::Result<u32> {
     Ok(VALID_INTERVALS[selection])
 }
 
-fn set_time_limit() -> anyhow::Result<u32> {
+fn set_time_limit() -> Result<u32> {
     let time_limit = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter a time limit in hours for the profile, or `0` for no time limit:")
         .default("24".to_string())
@@ -96,7 +96,7 @@ fn set_time_limit() -> anyhow::Result<u32> {
     Ok(time_limit)
 }
 
-fn select_profile_source() -> anyhow::Result<ProfileSource> {
+fn select_profile_source() -> Result<ProfileSource> {
     let choices = ProfileSource::VARIANTS;
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Select the source for this profile:")
@@ -107,7 +107,7 @@ fn select_profile_source() -> anyhow::Result<ProfileSource> {
     Ok(ProfileSource::from_repr(selection).unwrap())
 }
 
-async fn select_profile_source_id(profile_source: ProfileSource, app_state: &AppState) -> anyhow::Result<Option<String>> {
+async fn select_profile_source_id(profile_source: ProfileSource, app_state: &AppState) -> Result<Option<String>> {
     let plex = app_state.get_plex();
 
     let id = match profile_source {
@@ -168,7 +168,7 @@ async fn select_profile_source_id(profile_source: ProfileSource, app_state: &App
     Ok(id)
 }
 
-fn select_profile_sections() -> anyhow::Result<Sections> {
+fn select_profile_sections() -> Result<Sections> {
     let defaults = &[false, false, false];
     let selections = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Which sections do you want to include in your profile?")
@@ -199,7 +199,7 @@ fn select_profile_sections() -> anyhow::Result<Sections> {
     Ok(sections)
 }
 
-fn build_profile_section(section_type: SectionType) -> anyhow::Result<ProfileSection> {
+fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
     println!("\nBuilding Section: {section_type}");
 
     let deduplicate_tracks_by_guid = Confirm::with_theme(&ColorfulTheme::default())
@@ -216,7 +216,7 @@ fn build_profile_section(section_type: SectionType) -> anyhow::Result<ProfileSec
         Input::with_theme(&ColorfulTheme::default())
             .with_prompt("Enter a maximum number of tracks that can appear in a playlist by a single artist. (A value of `0` disables any limit.)")
             .default(25)
-            .validate_with(|input: &i32| -> anyhow::Result<(), &str> {
+            .validate_with(|input: &i32| -> Result<(), &str> {
                 if *input >= 0 {
                     Ok(())
                 } else {
@@ -228,7 +228,7 @@ fn build_profile_section(section_type: SectionType) -> anyhow::Result<ProfileSec
     let minimum_track_rating = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter a minimum star rating for included tracks:")
         .default(3)
-        .validate_with(|input: &u32| -> anyhow::Result<(), &str> {
+        .validate_with(|input: &u32| -> Result<(), &str> {
             if *input <= 5 {
                 Ok(())
             } else {
