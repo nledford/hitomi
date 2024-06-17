@@ -18,7 +18,7 @@ humantime = "2.1.0"
 log = "0.4.21"
 nanorand = { version = "0.7.0", features = ["getrandom", "rdseed", "chacha", "zeroize"] }
 rayon = "1.10.0"
-reqwest = { version = "0.12.4", features = ["brotli", "deflate", "gzip", "hickory-dns", "json", "zstd"] }
+reqwest = { version = "0.12.5", features = ["brotli", "deflate", "gzip", "hickory-dns", "json", "zstd"] }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 simplelog = { version = "0.12.2", features = ["paris", "termcolor"] }
