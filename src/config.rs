@@ -18,8 +18,8 @@ use crate::plex::Plex;
 
 /// Default config file path where application config will be stored.
 fn build_config_path() -> String {
-    let config_dir = if let Some(dir) = env::var("CONFIG_DIR") {
-        PathBuf::from_str(dir).expect("Error parsing `CONFIG_DIR`")
+    let config_dir = if let Ok(dir) = env::var("CONFIG_DIR") {
+        PathBuf::from_str(&dir).expect("Error parsing `CONFIG_DIR`")
     } else {
         dirs::config_dir().expect("Could not fetch the user's configuration directory")
     }
