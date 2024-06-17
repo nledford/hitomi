@@ -4,8 +4,8 @@ docker_build:
 
 docker_run:
 	docker run -h docker-dev-mbp\
-		-e TZ="America/New_York"\
-		-it -v "./data/profiles:/profiles" -v "./data/config:/config"\
+		-e TZ="America/New_York"\ -e PROFILES_DIRECTORY=/data/profiles
+		-it -v "./data/profiles:/data/profiles" -v "./data/config:/data/config"\
 		--rm --name chidori nledford/chidori:latest run -l
 
 install:
