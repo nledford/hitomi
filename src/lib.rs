@@ -7,3 +7,4 @@ pub mod http_client;
 pub mod plex;
 pub mod profiles;
 pub mod state;
+pub mod utils;
