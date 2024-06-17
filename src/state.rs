@@ -156,7 +156,9 @@ impl AppState {
 
             if !self.ran_once || minute_matches {
                 match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        refresh_failures = 0;
+                    }
                     Err(err) => {
                         refresh_failures += 1;
 
