@@ -1,6 +1,6 @@
 [package]
 name = "chidori"
-version = "0.2.0"
+version = "0.2.1"
 description = "Builds and updates custom playlists on a Plex server"
 authors = ["Nathaniel Ledford <nate@nateledford.com>"]
 repository = "https://github.com/nledford/chidori"
