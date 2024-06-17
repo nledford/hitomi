@@ -12,7 +12,7 @@ use crate::profiles::profile::Profile;
 use crate::profiles::ProfileAction;
 use crate::state::AppState;
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, PartialEq)]
 pub struct RunCmds {
     /// Run the application indefinitely, refreshing based on the interval provided in each profile
     #[arg(short = 'l', long, default_value_t = false)]

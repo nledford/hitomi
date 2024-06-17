@@ -84,9 +84,9 @@ impl Config {
 
         let default_config_path = build_config_path();
         let config_path = if let Some(config_path) = config_path {
-            Path::new(config_path)
+            Path::new(config_path).join("config.json")
         } else {
-            Path::new(&default_config_path)
+            Path::new(&default_config_path).to_path_buf()
         };
         let json = serde_json::to_string_pretty(self)?;
         let mut file = File::create(config_path)?;
@@ -95,14 +95,15 @@ impl Config {
         Ok(())
     }
 
-    pub async fn load_config(config_path: Option<&str>) -> Result<Self> {
+    pub async fn load_config() -> Result<Self> {
         debug!("Loading config...");
 
-        let default_config_path = build_config_path();
-        let config_path = match config_path {
-            None => Path::new(&default_config_path),
-            Some(path) => Path::new(path),
+        let config_path = if let Ok(dir) = env::var("CONFIG_DIR") {
+            dir
+        } else {
+            build_config_path()
         };
+        let config_path = Path::new(&config_path);
 
         if !config_path.exists() {
             return build_config_wizard().await;

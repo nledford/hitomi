@@ -17,7 +17,7 @@ pub struct AppState {
 
 impl AppState {
     pub async fn initialize() -> Result<Self> {
-        let config = Config::load_config(None).await?;
+        let config = Config::load_config().await?;
 
         let dir = config.get_profiles_directory();
         let profiles = Profile::load_profiles(dir).await?;

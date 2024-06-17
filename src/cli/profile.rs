@@ -8,7 +8,7 @@ use crate::profiles::{ProfileAction, wizards};
 use crate::profiles::profile::Profile;
 use crate::state::AppState;
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, PartialEq)]
 pub struct CliProfile {
     #[command(subcommand)]
     pub profile_cmds: ProfileAction,

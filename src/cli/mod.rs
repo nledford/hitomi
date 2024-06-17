@@ -10,7 +10,7 @@ mod config;
 mod profile;
 mod run;
 
-#[derive(Debug, Parser)]
+#[derive(PartialEq, Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Cli {
@@ -18,7 +18,7 @@ pub struct Cli {
     pub commands: Commands,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(PartialEq, Subcommand)]
 pub enum Commands {
     Run(RunCmds),
     Profile(CliProfile),
@@ -26,13 +26,17 @@ pub enum Commands {
 }
 
 pub async fn run_cli_command(cli: Cli) -> Result<()> {
-    let app_state = AppState::initialize().await?;
+    // let app_state = AppState::initialize().await?;
 
     match cli.commands {
         Commands::Run(run) => {
+            let app_state = AppState::initialize().await?;
             run::execute_run_cmd(run, &app_state).await?;
         }
-        Commands::Profile(profile) => profile::run_profile_command(profile, &app_state).await?,
+        Commands::Profile(profile) => {
+            let app_state = AppState::initialize().await?;
+            profile::run_profile_command(profile, &app_state).await?
+        }
         Commands::Config(cfg) => config::run_config_cmd(cfg).await?,
     }
 
