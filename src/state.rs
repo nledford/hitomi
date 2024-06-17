@@ -62,8 +62,21 @@ impl AppState {
 
 // Profiles
 impl AppState {
-    pub fn get_profiles(&self) -> &[Profile] {
+    pub fn get_all_profiles(&self) -> &[Profile] {
         &self.profiles
+    }
+
+    pub fn get_enabled_profiles(&self) -> Vec<Profile> {
+        self.profiles
+            .iter()
+            .filter_map(move |p| {
+                if p.get_enabled() {
+                    Some(p.to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<Profile>>()
     }
 
     pub fn get_profile_titles(&self) -> Vec<&str> {

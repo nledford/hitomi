@@ -58,6 +58,10 @@ impl Profile {
         self.playlist_id = playlist_id.to_string()
     }
 
+    pub fn get_enabled(&self) -> bool {
+        self.enabled
+    }
+
     pub fn get_playlist_id(&self) -> &str {
         &self.playlist_id
     }

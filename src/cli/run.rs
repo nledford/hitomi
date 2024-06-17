@@ -48,7 +48,7 @@ pub async fn execute_run_cmd(cmd: RunCmds, app_state: &AppState) -> Result<()> {
 }
 
 async fn perform_refresh(app_state: &AppState, run_loop: bool, ran_once: bool) -> Result<()> {
-    let mut profiles = app_state.get_profiles().to_vec();
+    let mut profiles = app_state.get_enabled_profiles();
     let mut refresh_failures = HashMap::new();
 
     for profile in profiles.iter_mut() {
