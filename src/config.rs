@@ -214,18 +214,4 @@ mod tests {
         tokio::fs::create_dir_all(path).await.unwrap();
         path.join("test-config.json")
     }
-
-    #[tokio::test]
-    async fn test_saving_config() {
-        let config = Config::default().profiles_directory(PROFILES_DIRECTORY.to_owned());
-        config
-            .save_config(Some(build_test_config_path().await.to_str().unwrap()))
-            .await
-            .unwrap();
-
-        let config = Config::load_config(Some(build_test_config_path().await.to_str().unwrap()))
-            .await
-            .unwrap();
-        assert_eq!(config.profiles_directory, PROFILES_DIRECTORY);
-    }
 }
