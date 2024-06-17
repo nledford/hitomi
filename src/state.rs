@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -149,24 +150,28 @@ impl AppState {
         let now = Local::now();
         let app_state = self.clone();
 
-        let mut refresh_failures = 0;
+
+        let mut refresh_failures = HashMap::new();
         for profile in self.profiles.iter_mut() {
             let current_minute = profile.get_current_refresh_minute(now);
             let minute_matches = now.minute() == current_minute;
+            let playlist_id = profile.get_playlist_id().to_string();
+            refresh_failures.entry(playlist_id.clone()).or_insert(0);
 
             if !self.ran_once || minute_matches {
                 match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
                     Ok(_) => {
-                        refresh_failures = 0;
+                        refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v = 0);
                     }
                     Err(err) => {
-                        refresh_failures += 1;
+                        refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v += 1);
+                        let failures = refresh_failures.get(&playlist_id.clone()).unwrap();
 
-                        if refresh_failures <= 3 {
+                        if *failures <= 3 {
                             error!("An error occurred while attempting to build the `{}` playlist: {err}", profile.get_title());
-                            error!("Skipping building this playlist. {} build attempt(s) remaining...", 3 - refresh_failures)
+                            error!("Skipping building this playlist. {} build attempt(s) remaining...", 3 - *failures);
                         } else {
-                            panic!("Failed to build `{}` playlist three times.", profile.get_title());
+                            panic!("Failed to connect to Plex server more than three times.");
                         }
                     }
                 }
