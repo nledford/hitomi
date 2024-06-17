@@ -100,11 +100,10 @@ impl Config {
         debug!("Loading config...");
 
         let config_path = if let Ok(dir) = env::var("CONFIG_DIR") {
-            dir
+            Path::new(&dir).join("config.json")
         } else {
-            build_config_path()
+            Path::new(&build_config_path()).to_path_buf()
         };
-        let config_path = Path::new(&config_path);
 
         if !config_path.exists() {
             return build_config_wizard().await;
