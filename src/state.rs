@@ -147,7 +147,6 @@ impl AppState {
     }
 
     async fn update_profiles(&mut self, run_loop: bool) -> Result<()> {
-        let now = Local::now();
         let app_state = self.clone();
 
         let mut refresh_failures = HashMap::new();
@@ -155,7 +154,7 @@ impl AppState {
             let playlist_id = profile.get_playlist_id().to_string();
             refresh_failures.entry(playlist_id.clone()).or_insert(0);
 
-            if !self.ran_once || now.minute() == profile.get_current_refresh_minute() {
+            if !self.ran_once || Local::now().minute() == profile.get_current_refresh_minute() {
                 match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
                     Ok(_) => {
                         refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v = 0);
