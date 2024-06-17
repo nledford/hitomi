@@ -164,21 +164,24 @@ pub async fn build_config_wizard() -> Result<Config> {
         }
     };
 
-    let plex = Plex::new_for_config(&plex_url, &plex_token).await?;
-    let sections = plex.get_music_sections();
-    let titles = sections
-        .iter()
-        .map(|x| x.title.to_owned())
-        .collect::<Vec<String>>();
-    let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select your music library:")
-        .default(0)
-        .items(&titles)
-        .interact()?;
-    let primary_section_id = sections[selection]
-        .id()
-        .parse::<i32>()
-        .expect("Could not parse section id");
+    let primary_section_id = if let Ok(id) = env::var("PRIMARY_SECTION_ID") {
+        id.parse::<i32>()
+    } else {
+        let plex = Plex::new_for_config(&plex_url, &plex_token).await?;
+        let sections = plex.get_music_sections();
+        let titles = sections
+            .iter()
+            .map(|x| x.title.to_owned())
+            .collect::<Vec<String>>();
+        let selection = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select your music library:")
+            .default(0)
+            .items(&titles)
+            .interact()?;
+        sections[selection]
+            .id()
+            .parse::<i32>()
+    }.expect("Could not parse section id");
 
     let config = Config::default()
         .profiles_directory(profiles_directory)
