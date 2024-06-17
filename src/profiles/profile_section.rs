@@ -4,7 +4,9 @@ use std::fmt::{Display, Formatter};
 use anyhow::Result;
 use chrono::TimeDelta;
 use default_struct_builder::DefaultBuilder;
-use nanorand::{Rng, WyRand};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rand::seq::SliceRandom;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -171,7 +173,7 @@ impl Display for ProfileSection {
         str += &format!("\n    Minimum track rating:                   {} stars", self.minimum_track_rating);
         str += &format!("\n    Sorting:                                {}", self.sorting);
 
-        write!(f, "{str}\n")
+        writeln!(f, "{str}")
     }
 }
 
@@ -240,8 +242,8 @@ impl ProfileSection {
         }
 
         if self.randomize_tracks {
-            let mut rng = WyRand::new();
-            rng.shuffle(&mut self.tracks);
+            let mut rng = StdRng::from_entropy();
+            self.tracks.shuffle(&mut rng)
         }
     }
 

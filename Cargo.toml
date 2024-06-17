@@ -16,7 +16,7 @@ dirs = "5.0.1"
 futures-lite = "2.3.0"
 humantime = "2.1.0"
 log = "0.4.21"
-nanorand = { version = "0.7.0", features = ["getrandom", "rdseed", "chacha", "zeroize"] }
+rand = "0.8.5"
 rayon = "1.10.0"
 reqwest = { version = "0.12.5", features = ["brotli", "deflate", "gzip", "hickory-dns", "json", "zstd"] }
 serde = { version = "1.0.203", features = ["derive"] }

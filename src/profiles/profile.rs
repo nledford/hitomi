@@ -1,5 +1,5 @@
 use std::cmp::PartialEq;
-use std::fmt::{Display, format, Formatter, write};
+use std::fmt::{Display, Formatter};
 use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
