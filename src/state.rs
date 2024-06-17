@@ -3,6 +3,7 @@ use std::time::Duration;
 use anyhow::Result;
 use chrono::{DateTime, Local, Timelike};
 use default_struct_builder::DefaultBuilder;
+use simplelog::error;
 use tokio::time::sleep;
 
 use crate::config::Config;
@@ -148,12 +149,25 @@ impl AppState {
         let now = Local::now();
         let app_state = self.clone();
 
+        let mut refresh_failures = 0;
         for profile in self.profiles.iter_mut() {
             let current_minute = profile.get_current_refresh_minute(now);
             let minute_matches = now.minute() == current_minute;
 
             if !self.ran_once || minute_matches {
-                Profile::build_playlist(profile, &app_state, ProfileAction::Update).await?;
+                match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
+                    Ok(_) => {}
+                    Err(err) => {
+                        refresh_failures += 1;
+
+                        if refresh_failures <= 3 {
+                            error!("An error occurred while attempting to build the `{}` playlist: {err}", profile.get_title());
+                            error!("Skipping building this playlist. {} build attempt(s) remaining...", 3 - refresh_failures)
+                        } else {
+                            panic!("Failed to build `{}` playlist three times.", profile.get_title());
+                        }
+                    }
+                }
 
                 if run_loop {
                     profile.print_next_refresh();
