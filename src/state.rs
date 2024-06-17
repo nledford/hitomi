@@ -1,5 +1,4 @@
 use anyhow::Result;
-use chrono::{DateTime, Local, Timelike};
 use default_struct_builder::DefaultBuilder;
 
 use crate::config::Config;
@@ -11,7 +10,6 @@ use crate::profiles::profile::Profile;
 #[derive(Clone, Debug, Default, DefaultBuilder)]
 pub struct AppState {
     config: Config,
-    current_time: DateTime<Local>,
     plex: Plex,
     playlists: Vec<Playlist>,
     profiles: Vec<Profile>,
@@ -30,7 +28,6 @@ impl AppState {
         Ok(
             Self::default()
                 .config(config)
-                .current_time(Local::now())
                 .plex(plex)
                 .profiles(profiles)
                 .playlists(playlists)
@@ -42,21 +39,6 @@ impl AppState {
 impl AppState {
     pub fn get_config(&self) -> &Config {
         &self.config
-    }
-}
-
-// Current Time
-impl AppState {
-    pub fn update_time(&mut self) {
-        self.current_time = Local::now()
-    }
-
-    pub fn get_current_minute(&self) -> u32 {
-        self.current_time.minute()
-    }
-
-    pub fn get_current_second(&self) -> u32 {
-        self.current_time.second()
     }
 }
 
