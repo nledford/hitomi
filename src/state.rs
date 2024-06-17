@@ -155,7 +155,7 @@ impl AppState {
             let playlist_id = profile.get_playlist_id().to_string();
             refresh_failures.entry(playlist_id.clone()).or_insert(0);
 
-            if !self.ran_once || now.minute() == profile.get_current_refresh_minute(now) {
+            if !self.ran_once || now.minute() == profile.get_current_refresh_minute() {
                 match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
                     Ok(_) => {
                         refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v = 0);

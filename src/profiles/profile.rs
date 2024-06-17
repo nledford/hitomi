@@ -125,24 +125,24 @@ impl Profile {
         }
     }
 
-    pub fn get_current_refresh_minute(&self, now: DateTime<Local>) -> u32 {
+    pub fn get_current_refresh_minute(&self) -> u32 {
         *build_refresh_minutes(self.refresh_interval)
             .iter()
-            .find(|x| *x >= &now.minute())
+            .find(|x| *x >= &Local::now().minute())
             .unwrap_or(&0)
     }
 
-    pub fn get_next_refresh_minute(&self, now: DateTime<Local>) -> u32 {
+    pub fn get_next_refresh_minute(&self) -> u32 {
         *build_refresh_minutes(self.refresh_interval)
             .iter()
-            .find(|x| *x > &now.minute())
+            .find(|x| *x > &Local::now().minute())
             .unwrap_or(&0)
     }
 
-    pub fn get_next_refresh_time(&self, now: DateTime<Local>) -> DateTime<Local> {
-        let next_minute = self.get_next_refresh_minute(now);
+    pub fn get_next_refresh_time(&self) -> DateTime<Local> {
+        let next_minute = self.get_next_refresh_minute();
 
-        now
+        Local::now()
             .with_minute(0)
             .unwrap()
             .with_second(0)
@@ -150,17 +150,17 @@ impl Profile {
             .add(TimeDelta::minutes(next_minute as i64))
     }
 
-    pub fn get_next_refresh_str(&self, now: DateTime<Local>) -> String {
-        let next_refresh_time = self.get_next_refresh_time(now);
+    pub fn get_next_refresh_str(&self) -> String {
+        let next_refresh_time = self.get_next_refresh_time();
         format!(
             "LAST UPDATE: {}\nNEXT UPDATE: {}",
-            now.format("%F %T"),
+            Local::now().format("%F %T"),
             next_refresh_time.format("%R")
         )
     }
 
     pub fn print_next_refresh(&self) {
-        info!("Next refresh at {}", self.get_next_refresh_time(Local::now()).format("%H:%M"))
+        info!("Next refresh at {}", self.get_next_refresh_time().format("%H:%M"))
     }
 
     fn get_unplayed_track(&self, index: usize) -> Option<Track> {
@@ -253,7 +253,7 @@ impl Profile {
                 plex.add_items_to_playlist(&profile.playlist_id, items)
                     .await?;
 
-                let summary = format!("{}\n{}", profile.get_next_refresh_str(Local::now()), profile.summary);
+                let summary = format!("{}\n{}", profile.get_next_refresh_str(), profile.summary);
                 plex.update_summary(&profile.playlist_id, &summary).await?;
             }
             // Other actions are not relevant to this function and are ignored
