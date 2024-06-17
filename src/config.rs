@@ -3,7 +3,8 @@
 use std::{env, fs};
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Args;
@@ -17,9 +18,11 @@ use crate::plex::Plex;
 
 /// Default config file path where application config will be stored.
 fn build_config_path() -> String {
-    let config_dir = dirs::config_dir()
-        .expect("Could not fetch the user's configuration directory")
-        .to_path_buf()
+    let config_dir = if let Some(dir) = env::var("CONFIG_DIR") {
+        PathBuf::from_str(dir).expect("Error parsing `CONFIG_DIR`")
+    } else {
+        dirs::config_dir().expect("Could not fetch the user's configuration directory")
+    }
         .join(env!("CARGO_PKG_NAME"));
 
     fs::create_dir_all(&config_dir).unwrap();
