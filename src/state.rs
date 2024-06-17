@@ -1,21 +1,11 @@
-use std::collections::HashMap;
-use std::time::Duration;
-
 use anyhow::Result;
 use chrono::{DateTime, Local, Timelike};
 use default_struct_builder::DefaultBuilder;
-use simplelog::error;
-use tokio::time::sleep;
 
 use crate::config::Config;
 use crate::plex::models::Playlist;
 use crate::plex::Plex;
 use crate::profiles::profile::Profile;
-use crate::profiles::ProfileAction;
-
-/// Global application state
-// pub static APP_STATE: Lazy<Arc<Mutex<AppState>>> =
-//     Lazy::new(|| Arc::new(Mutex::new(AppState::default())));
 
 /// Represents the application state
 #[derive(Clone, Debug, Default, DefaultBuilder)]
@@ -25,7 +15,6 @@ pub struct AppState {
     plex: Plex,
     playlists: Vec<Playlist>,
     profiles: Vec<Profile>,
-    ran_once: bool,
 }
 
 impl AppState {
@@ -45,7 +34,6 @@ impl AppState {
                 .plex(plex)
                 .profiles(profiles)
                 .playlists(playlists)
-                .ran_once(false)
         )
     }
 }
@@ -128,57 +116,5 @@ impl AppState {
                 println!("  - {}", title)
             }
         }
-    }
-
-    pub async fn update_state(&mut self, run_loop: bool) -> Result<()> {
-        self.update_profiles(run_loop).await?;
-
-        if run_loop {
-            loop {
-                sleep(Duration::from_secs(1)).await;
-
-                if Local::now().second() == 0 {
-                    self.update_profiles(run_loop).await?;
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    async fn update_profiles(&mut self, run_loop: bool) -> Result<()> {
-        let app_state = self.clone();
-
-        let mut refresh_failures = HashMap::new();
-        for profile in self.profiles.iter_mut() {
-            let playlist_id = profile.get_playlist_id().to_string();
-            refresh_failures.entry(playlist_id.clone()).or_insert(0);
-
-            if !self.ran_once || Local::now().minute() == profile.get_current_refresh_minute() {
-                match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
-                    Ok(_) => {
-                        refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v = 0);
-                    }
-                    Err(err) => {
-                        refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v += 1);
-                        let failures = refresh_failures.get(&playlist_id.clone()).unwrap();
-
-                        if *failures <= 3 {
-                            error!("An error occurred while attempting to build the `{}` playlist: {err}", profile.get_title());
-                            error!("Skipping building this playlist. {} build attempt(s) remaining...", 3 - *failures);
-                        } else {
-                            panic!("Failed to connect to Plex server more than three times.");
-                        }
-                    }
-                }
-
-                if run_loop {
-                    profile.print_next_refresh();
-                }
-            }
-        }
-        self.ran_once = true;
-
-        Ok(())
     }
 }

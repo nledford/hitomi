@@ -26,11 +26,11 @@ pub enum Commands {
 }
 
 pub async fn run_cli_command(cli: Cli) -> Result<()> {
-    let mut app_state = AppState::initialize().await?;
+    let app_state = AppState::initialize().await?;
 
     match cli.commands {
         Commands::Run(run) => {
-            run::execute_run_cmd(run, &mut app_state).await?;
+            run::execute_run_cmd(run, &app_state).await?;
         }
         Commands::Profile(profile) => profile::run_profile_command(profile, &app_state).await?,
         Commands::Config(cfg) => config::run_config_cmd(cfg).await?,
