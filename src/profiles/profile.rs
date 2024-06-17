@@ -98,37 +98,33 @@ impl Profile {
         })
     }
 
-    fn refresh_interval_str(&self) -> String {
-        format!(
-            "{} minutes ({} refreshes per hour)",
-            self.refresh_interval,
-            self.refreshes_per_hour()
-        )
-    }
+    // fn refresh_interval_str(&self) -> String {
+    //     format!(
+    //         "{} minutes ({} refreshes per hour)",
+    //         self.refresh_interval,
+    //         self.refreshes_per_hour()
+    //     )
+    // }
 
-    fn refreshes_per_hour(&self) -> i32 {
-        60 / self.refresh_interval as i32
-    }
+    // fn refreshes_per_hour(&self) -> i32 {
+    //     60 / self.refresh_interval as i32
+    // }
 
-    fn time_limit_str(&self) -> String {
-        format!("{} hours", self.time_limit)
-    }
+    // fn time_limit_str(&self) -> String {
+    //     format!("{} hours", self.time_limit)
+    // }
 
     pub fn get_section_time_limit(&self) -> f64 {
         self.time_limit as f64 / self.sections.num_enabled() as f64
     }
 
-    fn get_global_track_total(&self) -> usize {
-        self.sections.global_track_total()
-    }
-
-    fn get_track_limit(&self) -> Option<i32> {
-        if self.track_limit == 0 {
-            Some(1111)
-        } else {
-            Some(self.track_limit)
-        }
-    }
+    // fn get_track_limit(&self) -> Option<i32> {
+    //     if self.track_limit == 0 {
+    //         Some(1111)
+    //     } else {
+    //         Some(self.track_limit)
+    //     }
+    // }
 
     pub fn get_current_refresh_minute(&self) -> u32 {
         *build_refresh_minutes(self.refresh_interval)
