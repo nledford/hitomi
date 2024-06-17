@@ -25,7 +25,7 @@ fn build_config_path() -> String {
     }
         .join(env!("CARGO_PKG_NAME"));
 
-    fs::create_dir_all(&config_dir).unwrap();
+    fs::create_dir_all(&config_dir).expect("Error creating directory");
 
     let config_path = config_dir.join("config.json");
     config_path.into_os_string().into_string().unwrap()
@@ -84,6 +84,7 @@ impl Config {
 
         let default_config_path = build_config_path();
         let config_path = if let Some(config_path) = config_path {
+            fs::create_dir_all(config_path)?;
             Path::new(config_path).join("config.json")
         } else {
             Path::new(&default_config_path).to_path_buf()
