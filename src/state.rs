@@ -150,15 +150,12 @@ impl AppState {
         let now = Local::now();
         let app_state = self.clone();
 
-
         let mut refresh_failures = HashMap::new();
         for profile in self.profiles.iter_mut() {
-            let current_minute = profile.get_current_refresh_minute(now);
-            let minute_matches = now.minute() == current_minute;
             let playlist_id = profile.get_playlist_id().to_string();
             refresh_failures.entry(playlist_id.clone()).or_insert(0);
 
-            if !self.ran_once || minute_matches {
+            if !self.ran_once || now.minute() == profile.get_current_refresh_minute(now) {
                 match Profile::build_playlist(profile, &app_state, ProfileAction::Update).await {
                     Ok(_) => {
                         refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v = 0);
