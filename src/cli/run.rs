@@ -11,6 +11,7 @@ use tokio::time::sleep;
 use crate::profiles::profile::Profile;
 use crate::profiles::ProfileAction;
 use crate::state::AppState;
+use crate::utils;
 
 #[derive(Args, Debug, PartialEq)]
 pub struct RunCmds {
@@ -37,9 +38,14 @@ pub async fn execute_run_cmd(cmd: RunCmds, app_state: &AppState) -> Result<()> {
     if cmd.run_loop {
         loop {
             sleep(Duration::from_secs(1)).await;
+            let now = Local::now();
 
-            if Local::now().second() == 0 {
+            if now.second() == 0 {
                 perform_refresh(app_state, cmd.run_loop, true).await?;
+            }
+
+            if now.minute() == 0 && now.second() == 0 {
+                utils::mix_random_data().await?;
             }
         }
     }
