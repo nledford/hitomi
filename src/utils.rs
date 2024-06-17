@@ -8,7 +8,7 @@ pub async fn mix_random_data() -> Result<()> {
         data: String,
     }
 
-    match reqwest::get("https://csprng.xyz/v1/api").await {
+    match reqwest::get("https://csprng.xyz/v1/api?length=1234").await {
         Ok(resp) => {
             let contents = resp.text().await?;
 
