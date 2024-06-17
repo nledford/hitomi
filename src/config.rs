@@ -22,8 +22,8 @@ fn build_config_path() -> String {
         PathBuf::from_str(&dir).expect("Error parsing `CONFIG_DIR`")
     } else {
         dirs::config_dir().expect("Could not fetch the user's configuration directory")
-    }
-        .join(env!("CARGO_PKG_NAME"));
+            .join(env!("CARGO_PKG_NAME"))
+    };
 
     fs::create_dir_all(&config_dir).expect("Error creating directory");
 
