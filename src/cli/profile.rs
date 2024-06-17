@@ -1,5 +1,7 @@
 use anyhow::Result;
 use clap::Args;
+use dialoguer::Select;
+use dialoguer::theme::ColorfulTheme;
 use simplelog::info;
 
 use crate::profiles::{ProfileAction, wizards};
@@ -25,8 +27,26 @@ pub async fn run_profile_command(profile: CliProfile, app_state: &AppState) -> R
         ProfileAction::Delete => {}
         ProfileAction::List => app_state.list_profiles(),
         ProfileAction::Update => {}
-        ProfileAction::View => {}
+        ProfileAction::View => view_playlist(app_state)?,
     }
 
+    Ok(())
+}
+
+fn view_playlist(app_state: &AppState) -> Result<()> {
+    if app_state.num_profiles() <= 0 {
+        println!("No profiles found.");
+        return Ok(());
+    }
+
+    let titles = app_state.get_profile_titles();
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select which profile you would like to view:")
+        .items(&titles)
+        .default(0)
+        .interact()?;
+
+    let profile = app_state.get_profile(titles[selection]).unwrap();
+    println!("{profile}");
     Ok(())
 }

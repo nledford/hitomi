@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 use anyhow::Result;
 use chrono::TimeDelta;
@@ -14,9 +15,9 @@ use crate::state::AppState;
 
 #[derive(Clone, Debug, Default, DefaultBuilder, Deserialize, PartialEq, Serialize)]
 pub struct Sections {
-    unplayed_tracks: ProfileSection,
-    least_played_tracks: ProfileSection,
-    oldest_tracks: ProfileSection,
+    pub unplayed_tracks: ProfileSection,
+    pub least_played_tracks: ProfileSection,
+    pub oldest_tracks: ProfileSection,
 }
 
 impl Sections {
@@ -148,7 +149,7 @@ pub struct ProfileSection {
     /// the resulting playlist.
     deduplicate_tracks_by_guid: bool,
     deduplicate_tracks_by_title_and_artist: bool,
-    enabled: bool,
+    pub enabled: bool,
     /// Caps the number of tracks by an artist that can appear in a single playlist.
     /// A value of `0` allows for an unlimited number of tracks.
     maximum_tracks_by_artist: i32,
@@ -158,6 +159,20 @@ pub struct ProfileSection {
     sorting: String,
     #[serde(skip)]
     tracks: Vec<Track>,
+}
+
+impl Display for ProfileSection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut str = format!("  {}", self.section_type);
+        str += &format!("\n    Enabled:                                {}", self.enabled);
+        str += &format!("\n    Deduplicate tracks by GUID:             {}", self.deduplicate_tracks_by_guid);
+        str += &format!("\n    Deduplicate tracks by title and artist: {}", self.deduplicate_tracks_by_title_and_artist);
+        str += &format!("\n    Maximum tracks by artist:               {}", if self.maximum_tracks_by_artist == 0 { "Unlimited".to_string() } else { format!("{} track(s)", self.maximum_tracks_by_artist) });
+        str += &format!("\n    Minimum track rating:                   {} stars", self.minimum_track_rating);
+        str += &format!("\n    Sorting:                                {}", self.sorting);
+
+        write!(f, "{str}\n")
+    }
 }
 
 impl ProfileSection {

@@ -1,4 +1,5 @@
 use std::cmp::PartialEq;
+use std::fmt::{Display, format, Formatter, write};
 use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -163,12 +164,24 @@ impl Profile {
         info!("Next refresh at {}", self.get_next_refresh_time().format("%H:%M"))
     }
 
+    fn has_unplayed_tracks(&self) -> bool {
+        self.sections.unplayed_tracks.enabled
+    }
+
     fn get_unplayed_track(&self, index: usize) -> Option<Track> {
         self.sections.get_unplayed_tracks().get(index).cloned()
     }
 
+    fn has_least_played_tracks(&self) -> bool {
+        self.sections.least_played_tracks.enabled
+    }
+
     fn get_least_played_track(&self, index: usize) -> Option<Track> {
         self.sections.get_least_played_tracks().get(index).cloned()
+    }
+
+    fn has_oldest_tracks(&self) -> bool {
+        self.sections.oldest_tracks.enabled
     }
 
     fn get_oldest_track(&self, index: usize) -> Option<Track> {
@@ -205,24 +218,14 @@ impl Profile {
     pub async fn build_playlist(profile: &mut Profile, app_state: &AppState, action: ProfileAction) -> Result<()> {
         info!("Building `{}` playlist...", profile.title);
 
+        info!("Fetching tracks for section(s)...");
         profile
             .sections
             .fetch_tracks(&profile.clone(), app_state)
             .await?;
 
+        info!("Combining sections into single playlist...");
         let combined = profile.combine_sections()?;
-
-        // debug print sample
-        for (idx, track) in combined.iter().take(15).enumerate() {
-            println!(
-                "{idx:02} {:30} {:30} {:4} {:30}",
-                track.artist(),
-                track.title(),
-                track.plays(),
-                track.last_played_fmt()
-            )
-        }
-
         let items = &combined
             .iter()
             .map(|track| track.id())
@@ -306,6 +309,32 @@ fn show_results(tracks: &[Track], action: ProfileAction) {
         size,
         duration
     );
+}
+
+impl Display for Profile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut str = format!("\n{}", self.title);
+        str += &format!("\n{}", self.summary);
+        str += &format!("\nEnabled:          {}", self.enabled);
+        str += &format!("\nSource:           {}", self.profile_source);
+        str += &format!("\nRefresh Interval: Every {} minutes", self.refresh_interval);
+        str += &format!("\nTime Limit:       {}", if self.time_limit == 0 { "None".to_string() } else { format!("{} hours", self.time_limit) });
+
+        str += "\n\nSections:";
+        if self.has_unplayed_tracks() {
+            str += &format!("\n{}", self.sections.unplayed_tracks)
+        }
+
+        if self.has_least_played_tracks() {
+            str += &format!("\n{}", self.sections.least_played_tracks)
+        }
+
+        if self.has_oldest_tracks() {
+            str += &format!("\n{}", self.sections.oldest_tracks)
+        }
+
+        write!(f, "{str}")
+    }
 }
 
 impl Profile {

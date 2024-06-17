@@ -66,6 +66,13 @@ impl AppState {
         &self.profiles
     }
 
+    pub fn get_profile_titles(&self) -> Vec<&str> {
+        self.profiles
+            .iter()
+            .map(|p| p.get_title())
+            .collect::<Vec<&str>>()
+    }
+
     pub fn get_profile(&self, title: &str) -> Option<&Profile> {
         self.profiles.iter().find(|p| p.get_title() == title)
     }
