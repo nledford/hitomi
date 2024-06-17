@@ -104,6 +104,7 @@ impl Config {
         } else {
             Path::new(&build_config_path()).to_path_buf()
         };
+        debug!("{}", &config_path.display());
 
         if !config_path.exists() {
             return build_config_wizard().await;
