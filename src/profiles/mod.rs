@@ -1,6 +1,17 @@
+use std::collections::HashMap;
+use std::time::Duration;
+
+use anyhow::Result;
+use chrono::{Local, Timelike};
 use clap::Subcommand;
 use serde::{Deserialize, Serialize};
+use simplelog::error;
 use strum::{Display, EnumString, FromRepr, VariantNames};
+use tokio::time::sleep;
+
+use crate::profiles::profile::Profile;
+use crate::state::AppState;
+use crate::utils;
 
 pub mod profile;
 mod profile_section;
@@ -58,4 +69,70 @@ pub enum ProfileAction {
     Update,
     /// View profiles
     View,
+}
+
+pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()> {
+    refresh_playlists_from_profiles(app_state, run_loop, false).await?;
+
+    if run_loop {
+        loop {
+            sleep(Duration::from_secs(1)).await;
+            let now = Local::now();
+
+            if now.second() == 0 {
+                refresh_playlists_from_profiles(app_state, run_loop, true).await?;
+            }
+
+            if now.minute() == 0 && now.second() == 0 {
+                utils::mix_random_data().await?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool, ran_once: bool) -> Result<()> {
+    let mut profiles = app_state.get_enabled_profiles();
+    let mut refresh_failures = HashMap::new();
+
+    for profile in profiles.iter_mut() {
+        let playlist_id = profile.get_playlist_id().to_owned();
+        refresh_failures.entry(playlist_id.clone()).or_insert(0);
+
+        if !ran_once || Local::now().minute() == profile.get_current_refresh_minute() {
+            match Profile::build_playlist(profile, app_state, ProfileAction::Update).await {
+                Ok(_) => {
+                    refresh_failures
+                        .entry(playlist_id.clone())
+                        .and_modify(|v| *v = 0);
+                }
+                Err(err) => {
+                    refresh_failures
+                        .entry(playlist_id.clone())
+                        .and_modify(|v| *v += 1);
+                    let failures = refresh_failures.get(&playlist_id).unwrap();
+
+                    if *failures <= 3 {
+                        error!(
+                            "An error occurred while attempting to build the `{}` playlist: {err}",
+                            profile.get_title()
+                        );
+                        error!(
+                            "Skipping building this playlist. {} build attempt(s) remaining...",
+                            3 - *failures
+                        );
+                    } else {
+                        panic!("Failed to connect to Plex server more than three times.");
+                    }
+                }
+            }
+
+            if run_loop {
+                profile.print_next_refresh();
+            }
+        }
+    }
+
+    Ok(())
 }
