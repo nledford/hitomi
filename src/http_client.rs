@@ -9,6 +9,7 @@ use anyhow::{anyhow, Context, Result};
 use reqwest::header;
 use serde::Deserialize;
 use simplelog::debug;
+use url::Url;
 
 /// A custom [`Client`](reqwest::Client), with a base url and headers set during creation.
 #[derive(Clone, Default, Debug)]
@@ -58,9 +59,9 @@ impl HttpClient {
     where
         T: for<'de> Deserialize<'de> + Default,
     {
-        let url = self.build_final_url(path, params);
+        let url = self.build_final_url(path, params)?;
 
-        let req = self.client.get(&url).headers(self.headers.clone());
+        let req = self.client.get(url).headers(self.headers.clone());
         let req = if let Some(max_results) = max_results {
             req.header("X-Plex-Container-Size", max_results.to_string())
                 .header("X-Plex-Container-Start", "0")
@@ -85,7 +86,7 @@ impl HttpClient {
 
     /// Perform a `DELETE` request with the custom ['Client'](reqwest::Client)
     pub async fn delete(&self, path: &str, params: Params) -> Result<()> {
-        let url = self.build_final_url(path, params);
+        let url = self.build_final_url(path, params)?;
         self.client.delete(url).send().await?;
         Ok(())
     }
@@ -95,11 +96,11 @@ impl HttpClient {
     where
         T: for<'de> Deserialize<'de> + Default,
     {
-        let url = self.build_final_url(path, params);
+        let url = self.build_final_url(path, params)?;
 
         match self
             .client
-            .post(&url)
+            .post(url)
             .headers(self.headers.clone())
             .send()
             .await
@@ -123,10 +124,10 @@ impl HttpClient {
     where
         T: for<'de> Deserialize<'de> + Default,
     {
-        let url = self.build_final_url(path, params);
+        let url = self.build_final_url(path, params)?;
         match self
             .client
-            .put(&url)
+            .put(url)
             .headers(self.headers.clone())
             .send()
             .await
@@ -148,25 +149,20 @@ impl HttpClient {
     /// Constructs the final URL passed to the respective request
     ///
     /// Merges the base url, the path, and any parameters together
-    fn build_final_url(&self, path: &str, params: Params) -> String {
-        let url = format!(
-            "{}/{}?X-Plex-Token={}",
-            self.base_url, path, self.plex_token
-        );
+    fn build_final_url(&self, path: &str, params: Params) -> Result<Url> {
+        let mut url = Url::parse(&self.base_url)?
+            .join(path)?;
 
-        let url = if let Some(params) = params {
-            let params = params
-                .iter()
-                .map(|(k, v)| format!("{k}={v}"))
-                .collect::<Vec<String>>()
-                .join("&");
-            format!("{url}&{params}")
-        } else {
-            url
-        };
+        url.query_pairs_mut().append_pair("X-Plex-Token", &self.plex_token);
 
-        debug!("{url}");
+        if let Some(params) = params {
+            for (k, v) in params {
+                url.query_pairs_mut().append_pair(&k, &v);
+            }
+        }
 
-        url
+        debug!("FINAL URL: {url}");
+
+        Ok(url)
     }
 }

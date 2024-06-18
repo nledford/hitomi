@@ -189,7 +189,7 @@ impl Plex {
     pub async fn update_summary(&self, playlist_id: &str, summary: &str) -> Result<()> {
         let params = HashMap::from([(
             "summary".to_string(),
-            urlencoding::encode(summary).to_string(),
+            summary.to_string(),
         )]);
 
         self
@@ -211,9 +211,9 @@ impl Plex {
             ),
             (
                 "title".to_string(),
-                urlencoding::encode(profile.get_title()).to_string(),
+                profile.get_title().to_string(),
             ),
-            ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),
+            // ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),
             ("smart".to_string(), "0".to_string()),
             ("type".to_string(), "audio".to_string()),
         ]);

@@ -123,7 +123,7 @@ async fn fetch_section_tracks(
             let artists = plex
                 .fetch_artists_from_collection(&profile_source_id.unwrap())
                 .await?;
-            let artists = urlencoding::encode(&artists.join(",")).to_string();
+            let artists = artists.join(",");
 
             filters.insert("artist.id".to_string(), artists);
         }
