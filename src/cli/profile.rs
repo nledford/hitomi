@@ -36,7 +36,7 @@ pub async fn run_profile_command(profile: CliProfile, app_state: &AppState) -> R
 }
 
 fn view_playlist(app_state: &AppState) -> Result<()> {
-    if app_state.num_profiles() == 0 {
+    if !app_state.have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }

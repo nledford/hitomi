@@ -34,19 +34,8 @@ impl AppState {
     }
 }
 
-// Config
-impl AppState {
-    pub fn get_config(&self) -> &Config {
-        &self.config
-    }
-}
-
 // Playlists
 impl AppState {
-    pub fn get_playlists(&self) -> &[Playlist] {
-        &self.playlists
-    }
-
     pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
         self.playlists.iter().find(|p| p.title == title)
     }
@@ -61,10 +50,6 @@ impl AppState {
 
 // Profiles
 impl AppState {
-    pub fn get_all_profiles(&self) -> &[Profile] {
-        &self.profiles
-    }
-
     pub fn get_enabled_profiles(&self) -> Vec<Profile> {
         self.profiles
             .iter()
@@ -93,12 +78,8 @@ impl AppState {
         self.config.get_profiles_directory()
     }
 
-    pub fn num_profiles(&self) -> usize {
-        self.profiles.len()
-    }
-
-    pub fn add_profile(&mut self, profile: Profile) {
-        self.profiles.push(profile);
+    pub fn have_profiles(&self) -> bool {
+        !self.profiles.is_empty()
     }
 
     pub fn list_profiles(&self) {
