@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Args;
-use default_struct_builder::DefaultBuilder;
+use derive_builder::Builder;
 use dialoguer::{Input, Select};
 use dialoguer::theme::ColorfulTheme;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ fn build_config_path() -> String {
 }
 
 /// Represents the configuration file
-#[derive(Args, Clone, Debug, DefaultBuilder, Deserialize, Serialize, PartialEq)]
+#[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Config {
     #[arg(long)]
     plex_token: String,
@@ -75,6 +75,10 @@ impl Config {
         &self.profiles_directory
     }
 
+    pub fn set_profiles_directory(&mut self, dir: &str) {
+        self.profiles_directory = dir.to_string()
+    }
+
     pub fn is_loaded(&self) -> bool {
         self.loaded
     }
@@ -115,7 +119,7 @@ impl Config {
         file.read_to_string(&mut config)?;
 
         if let Ok(mut config) = serde_json::from_str::<Config>(&config) {
-            config = config.loaded(true);
+            config.loaded = true;
             Ok(config)
         } else {
             Ok(build_config_wizard().await?)
@@ -188,12 +192,13 @@ pub async fn build_config_wizard() -> Result<Config> {
             .parse::<i32>()
     }.expect("Could not parse section id");
 
-    let config = Config::default()
+    let config = ConfigBuilder::default()
         .profiles_directory(profiles_directory)
         .plex_url(plex_url)
         .plex_token(plex_token)
         .primary_section_id(primary_section_id)
-        .loaded(true);
+        .loaded(true)
+        .build()?;
     let data = serde_json::to_string_pretty(&config)?;
 
     let mut file = File::create(build_config_path())?;

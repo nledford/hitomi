@@ -7,8 +7,8 @@ use simplelog::info;
 use strum::VariantNames;
 
 use crate::profiles::{ProfileSource, SectionType};
-use crate::profiles::profile::Profile;
-use crate::profiles::profile_section::{ProfileSection, Sections};
+use crate::profiles::profile::{Profile, ProfileBuilder};
+use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
 use crate::state::AppState;
 
 /// Divisors of 60
@@ -27,13 +27,15 @@ pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
 
     let sections = select_profile_sections()?;
 
-    let profile = Profile::with_title(&profile_name)
+    let profile = ProfileBuilder::default()
+        .title(profile_name)
         .summary(summary)
         .profile_source(profile_source)
         .profile_source_id(profile_source_id)
         .sections(sections)
         .refresh_interval(refresh_interval)
-        .time_limit(time_limit);
+        .time_limit(time_limit)
+        .build()?;
 
     Ok(profile)
 }
@@ -188,15 +190,15 @@ fn select_profile_sections() -> Result<Sections> {
     let mut sections = Sections::default();
 
     if selections.contains(&0) {
-        sections = sections.unplayed_tracks(build_profile_section(SectionType::Unplayed)?)
+        sections.set_unplayed_tracks(build_profile_section(SectionType::Unplayed)?)
     }
 
     if selections.contains(&1) {
-        sections = sections.least_played_tracks(build_profile_section(SectionType::LeastPlayed)?)
+        sections.set_least_played_tracks(build_profile_section(SectionType::LeastPlayed)?)
     }
 
     if selections.contains(&2) {
-        sections = sections.oldest_tracks(build_profile_section(SectionType::Oldest)?)
+        sections.set_oldest_tracks(build_profile_section(SectionType::Oldest)?)
     }
 
     Ok(sections)
@@ -252,14 +254,16 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
         // TODO validate
         .interact_text()?;
 
-    let section = ProfileSection::with_enabled()
+    let section = ProfileSectionBuilder::default()
+        .enabled(true)
         .section_type(section_type)
         .deduplicate_tracks_by_guid(deduplicate_tracks_by_guid)
         .deduplicate_tracks_by_title_and_artist(deduplicate_by_track_and_artist)
         .maximum_tracks_by_artist(maximum_tracks_by_artists)
         .minimum_track_rating(minimum_track_rating)
         .randomize_tracks(randomize)
-        .sorting(sorting);
+        .sorting(sorting)
+        .build()?;
 
     Ok(section)
 }

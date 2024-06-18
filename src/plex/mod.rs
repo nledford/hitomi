@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use default_struct_builder::DefaultBuilder;
+use derive_builder::Builder;
 use log::{error, info};
 use rayon::prelude::*;
 use serde::Deserialize;
@@ -22,17 +22,21 @@ pub mod models;
 /// Dead code is allowed for this specific struct due to [`DefaultBuilder`](default_struct_builder::DefaultBuilder)
 /// using both the `plex_token` and `plex_url` fields.
 #[allow(dead_code)]
-#[derive(Clone, Debug, Default, DefaultBuilder)]
+#[derive(Builder, Clone, Debug, Default)]
 pub struct Plex {
     client: HttpClient,
     plex_token: String,
     plex_url: String,
+    #[builder(default)]
     machine_identifier: String,
 
     primary_section_id: i32,
 
+    #[builder(default)]
     playlists: Vec<Playlist>,
+    #[builder(default)]
     collections: Vec<Collection>,
+    #[builder(default)]
     sections: Vec<Section>,
 }
 
@@ -51,13 +55,14 @@ impl Plex {
 
         let client = HttpClient::new(plex_url, plex_token)?;
 
-        let mut plex = Self::default()
+        let mut plex = PlexBuilder::default()
             .client(client)
             .plex_token(plex_token.to_string())
             .plex_url(plex_url.to_string())
-            .primary_section_id(config.get_primary_section_id());
+            .primary_section_id(config.get_primary_section_id())
+            .build()?;
 
-        plex.get_machine_identifier().await?;
+        plex.fetch_machine_identifier().await?;
         plex.fetch_music_sections().await?;
         plex.fetch_collections().await?;
         plex.fetch_playlists().await?;
@@ -68,10 +73,11 @@ impl Plex {
     pub async fn new_for_config(plex_url: &str, plex_token: &str) -> Result<Self> {
         let client = HttpClient::new(plex_url, plex_token)?;
 
-        let mut plex = Self::default()
+        let mut plex = PlexBuilder::default()
             .client(client)
             .plex_token(plex_token.to_string())
-            .plex_url(plex_url.to_string());
+            .plex_url(plex_url.to_string())
+            .build()?;
 
         plex.fetch_music_sections().await?;
 
@@ -290,7 +296,9 @@ impl Plex {
         Ok(())
     }
 
-    async fn get_machine_identifier(&mut self) -> Result<()> {
+    async fn fetch_machine_identifier(&mut self) -> Result<()> {
+        debug!("Fetching machine identifier...");
+
         #[derive(Default, Deserialize)]
         struct Identity {
             #[serde(alias = "machineIdentifier")]

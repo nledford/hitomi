@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use anyhow::Result;
 use chrono::TimeDelta;
-use default_struct_builder::DefaultBuilder;
+use derive_builder::Builder;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rand::seq::SliceRandom;
@@ -15,14 +15,38 @@ use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::Profile;
 use crate::state::AppState;
 
-#[derive(Clone, Debug, Default, DefaultBuilder, Deserialize, PartialEq, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Sections {
-    pub unplayed_tracks: ProfileSection,
-    pub least_played_tracks: ProfileSection,
-    pub oldest_tracks: ProfileSection,
+    unplayed_tracks: ProfileSection,
+    least_played_tracks: ProfileSection,
+    oldest_tracks: ProfileSection,
 }
 
 impl Sections {
+    pub fn has_unplayed_tracks(&self) -> bool {
+        self.unplayed_tracks.enabled
+    }
+
+    pub fn has_least_played_tracks(&self) -> bool {
+        self.least_played_tracks.enabled
+    }
+
+    pub fn has_oldest_tracks(&self) -> bool {
+        self.oldest_tracks.enabled
+    }
+
+    pub fn set_unplayed_tracks(&mut self, section: ProfileSection) {
+        self.unplayed_tracks = section
+    }
+
+    pub fn set_least_played_tracks(&mut self, section: ProfileSection) {
+        self.least_played_tracks = section
+    }
+
+    pub fn set_oldest_tracks(&mut self, section: ProfileSection) {
+        self.oldest_tracks = section
+    }
+
     pub fn num_enabled(&self) -> i32 {
         [
             self.unplayed_tracks.enabled,
@@ -61,6 +85,10 @@ impl Sections {
         Ok(())
     }
 
+    pub fn get_unplayed_section(&self) -> &ProfileSection {
+        &self.unplayed_tracks
+    }
+
     pub fn get_unplayed_tracks(&self) -> &[Track] {
         &self.unplayed_tracks.tracks
     }
@@ -69,12 +97,20 @@ impl Sections {
         self.unplayed_tracks.num_tracks()
     }
 
+    pub fn get_least_played_section(&self) -> &ProfileSection {
+        &self.least_played_tracks
+    }
+
     pub fn get_least_played_tracks(&self) -> &[Track] {
         &self.least_played_tracks.tracks
     }
 
     fn num_least_played_tracks(&self) -> usize {
         self.least_played_tracks.num_tracks()
+    }
+
+    pub fn get_oldest_section(&self) -> &ProfileSection {
+        &self.oldest_tracks
     }
 
     pub fn get_oldest_tracks(&self) -> &[Track] {
@@ -144,7 +180,7 @@ async fn fetch_section_tracks(
     Ok(())
 }
 
-#[derive(Clone, Debug, Default, DefaultBuilder, Deserialize, PartialEq, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ProfileSection {
     /// Deduplicate tracks by its `guid`, so that the exact same track that appears on
     /// multiple albums (e.g., a studio album and a Greatest Hits album) only appears once in
@@ -178,10 +214,6 @@ impl Display for ProfileSection {
 }
 
 impl ProfileSection {
-    pub fn with_enabled() -> Self {
-        Self::default().enabled(true)
-    }
-
     pub fn get_deduplicate_tracks_by_guid(&self) -> bool {
         self.deduplicate_tracks_by_guid
     }

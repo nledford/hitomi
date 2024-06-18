@@ -1,5 +1,5 @@
 use anyhow::Result;
-use default_struct_builder::DefaultBuilder;
+use derive_builder::Builder;
 
 use crate::config::Config;
 use crate::plex::models::Playlist;
@@ -7,7 +7,7 @@ use crate::plex::Plex;
 use crate::profiles::profile::Profile;
 
 /// Represents the application state
-#[derive(Clone, Debug, Default, DefaultBuilder)]
+#[derive(Builder, Clone, Debug, Default)]
 pub struct AppState {
     config: Config,
     plex: Plex,
@@ -26,11 +26,12 @@ impl AppState {
         let playlists = plex.get_playlists().to_vec();
 
         Ok(
-            Self::default()
+            AppStateBuilder::default()
                 .config(config)
                 .plex(plex)
                 .profiles(profiles)
                 .playlists(playlists)
+                .build()?
         )
     }
 }

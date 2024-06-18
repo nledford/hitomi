@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
-use crate::config::Config as AppConfig;
+use crate::config::{Config as AppConfig, ConfigBuilder as AppConfigBuilder};
 
 #[derive(Args, PartialEq)]
 pub struct CliConfig {
@@ -39,11 +39,12 @@ struct UpdateArgs {
 pub async fn run_config_cmd(cfg: CliConfig) -> Result<()> {
     match cfg.config_cmds {
         ConfigCmds::Create(cmd) => {
-            let new_config = AppConfig::default()
+            let new_config = AppConfigBuilder::default()
                 .plex_token(cmd.plex_token)
                 .plex_url(cmd.plex_url)
                 .profiles_directory(cmd.profiles_directory)
-                .primary_section_id(cmd.primary_section_id);
+                .primary_section_id(cmd.primary_section_id)
+                .build()?;
 
             new_config.save_config(Some(&cmd.config_directory)).await?;
         }
@@ -55,7 +56,7 @@ pub async fn run_config_cmd(cfg: CliConfig) -> Result<()> {
             let mut config = AppConfig::load_config().await?;
 
             if let Some(profiles_directory) = args.profiles_directory {
-                config = config.profiles_directory(profiles_directory);
+                config.set_profiles_directory(&profiles_directory);
             }
 
             config.save_config(None).await?;

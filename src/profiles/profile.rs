@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{DateTime, Local, TimeDelta, Timelike};
-use default_struct_builder::DefaultBuilder;
+use derive_builder::Builder;
 use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
 use futures_lite::future;
@@ -23,7 +23,7 @@ use crate::state::AppState;
 
 // PROFILE ####################################################################
 
-#[derive(Clone, Debug, DefaultBuilder, Default, Deserialize, Serialize, PartialEq)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Profile {
     /// The plex ID for the playlist
     playlist_id: String,
@@ -46,14 +46,6 @@ pub struct Profile {
 }
 
 impl Profile {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn with_title(title: &str) -> Self {
-        Self::default().title(title.to_string())
-    }
-
     fn set_playlist_id(&mut self, playlist_id: &str) {
         self.playlist_id = playlist_id.to_string()
     }
@@ -165,7 +157,7 @@ impl Profile {
     }
 
     fn has_unplayed_tracks(&self) -> bool {
-        self.sections.unplayed_tracks.enabled
+        self.sections.has_unplayed_tracks()
     }
 
     fn get_unplayed_track(&self, index: usize) -> Option<Track> {
@@ -173,7 +165,7 @@ impl Profile {
     }
 
     fn has_least_played_tracks(&self) -> bool {
-        self.sections.least_played_tracks.enabled
+        self.sections.has_least_played_tracks()
     }
 
     fn get_least_played_track(&self, index: usize) -> Option<Track> {
@@ -181,7 +173,7 @@ impl Profile {
     }
 
     fn has_oldest_tracks(&self) -> bool {
-        self.sections.oldest_tracks.enabled
+        self.sections.has_oldest_tracks()
     }
 
     fn get_oldest_track(&self, index: usize) -> Option<Track> {
@@ -322,15 +314,15 @@ impl Display for Profile {
 
         str += "\n\nSections:";
         if self.has_unplayed_tracks() {
-            str += &format!("\n{}", self.sections.unplayed_tracks)
+            str += &format!("\n{}", self.sections.get_unplayed_section())
         }
 
         if self.has_least_played_tracks() {
-            str += &format!("\n{}", self.sections.least_played_tracks)
+            str += &format!("\n{}", self.sections.get_least_played_section())
         }
 
         if self.has_oldest_tracks() {
-            str += &format!("\n{}", self.sections.oldest_tracks)
+            str += &format!("\n{}", self.sections.get_oldest_section())
         }
 
         write!(f, "{str}")
