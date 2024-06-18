@@ -26,8 +26,6 @@ pub enum Commands {
 }
 
 pub async fn run_cli_command(cli: Cli) -> Result<()> {
-    // let app_state = AppState::initialize().await?;
-
     match cli.commands {
         Commands::Run(run) => {
             let app_state = AppState::initialize().await?;
