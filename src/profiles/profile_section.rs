@@ -116,7 +116,7 @@ async fn fetch_section_tracks(
         return Ok(());
     }
 
-    let plex = app_state.get_plex();
+    let plex = app_state.get_plex_client();
     let profile_source = profile.get_profile_source();
     let profile_source_id = profile.get_profile_source_id();
     let time_limit = profile.get_section_time_limit();

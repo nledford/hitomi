@@ -116,7 +116,7 @@ async fn select_profile_source_id(
     profile_source: ProfileSource,
     app_state: &AppState,
 ) -> Result<Option<String>> {
-    let plex = app_state.get_plex();
+    let plex = app_state.get_plex_client();
 
     let id = match profile_source {
         ProfileSource::Library => None,

@@ -230,7 +230,7 @@ impl Profile {
             .map(|track| track.id())
             .collect::<Vec<&str>>();
 
-        let plex = app_state.get_plex();
+        let plex = app_state.get_plex_client();
         match action {
             ProfileAction::Create => {
                 let save = Confirm::with_theme(&ColorfulTheme::default())
