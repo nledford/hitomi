@@ -25,14 +25,12 @@ impl AppState {
         let plex = Plex::initialize(&config).await?;
         let playlists = plex.get_playlists().to_vec();
 
-        Ok(
-            AppStateBuilder::default()
-                .config(config)
-                .plex(plex)
-                .profiles(profiles)
-                .playlists(playlists)
-                .build()?
-        )
+        Ok(AppStateBuilder::default()
+            .config(config)
+            .plex(plex)
+            .profiles(profiles)
+            .playlists(playlists)
+            .build()?)
     }
 }
 

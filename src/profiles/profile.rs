@@ -7,8 +7,8 @@ use std::time::Duration;
 use anyhow::Result;
 use chrono::{DateTime, Local, TimeDelta, Timelike};
 use derive_builder::Builder;
-use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use futures_lite::future;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
@@ -17,8 +17,8 @@ use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
-use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::profile_section::Sections;
+use crate::profiles::{ProfileAction, ProfileSource};
 use crate::state::AppState;
 
 // PROFILE ####################################################################
@@ -153,7 +153,10 @@ impl Profile {
     }
 
     pub fn print_next_refresh(&self) {
-        info!("Next refresh at {}", self.get_next_refresh_time().format("%H:%M"))
+        info!(
+            "Next refresh at {}",
+            self.get_next_refresh_time().format("%H:%M")
+        )
     }
 
     fn has_unplayed_tracks(&self) -> bool {
@@ -186,9 +189,9 @@ impl Profile {
             self.sections.get_least_played_tracks().len(),
             self.sections.get_oldest_tracks().len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0)
+        .iter()
+        .max()
+        .unwrap_or(&0)
     }
 }
 
@@ -207,7 +210,11 @@ fn build_refresh_minutes(refresh_interval: u32) -> Vec<u32> {
 
 /// Plex functions
 impl Profile {
-    pub async fn build_playlist(profile: &mut Profile, app_state: &AppState, action: ProfileAction) -> Result<()> {
+    pub async fn build_playlist(
+        profile: &mut Profile,
+        app_state: &AppState,
+        action: ProfileAction,
+    ) -> Result<()> {
         info!("Building `{}` playlist...", profile.title);
 
         info!("Fetching tracks for section(s)...");
@@ -309,8 +316,18 @@ impl Display for Profile {
         str += &format!("\n{}", self.summary);
         str += &format!("\nEnabled:          {}", self.enabled);
         str += &format!("\nSource:           {}", self.profile_source);
-        str += &format!("\nRefresh Interval: Every {} minutes", self.refresh_interval);
-        str += &format!("\nTime Limit:       {}", if self.time_limit == 0 { "None".to_string() } else { format!("{} hours", self.time_limit) });
+        str += &format!(
+            "\nRefresh Interval: Every {} minutes",
+            self.refresh_interval
+        );
+        str += &format!(
+            "\nTime Limit:       {}",
+            if self.time_limit == 0 {
+                "None".to_string()
+            } else {
+                format!("{} hours", self.time_limit)
+            }
+        );
 
         str += "\n\nSections:";
         if self.has_unplayed_tracks() {

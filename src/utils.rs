@@ -17,15 +17,13 @@ pub async fn mix_random_data() -> Result<()> {
                     tokio::fs::write("/dev/urandom", csprng.data).await?;
                     Ok(())
                 }
-                Err(err) => {
-                    Err(err).with_context(|| {
-                        format!("Unable to deserialise response. Body was: \"{}\"", contents)
-                    })
-                }
+                Err(err) => Err(err).with_context(|| {
+                    format!("Unable to deserialise response. Body was: \"{}\"", contents)
+                }),
             }
         }
-        Err(err) => {
-            Err(anyhow!("An error occurred while attempting to fetch random data: {err}"))
-        }
+        Err(err) => Err(anyhow!(
+            "An error occurred while attempting to fetch random data: {err}"
+        )),
     }
 }

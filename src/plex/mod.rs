@@ -193,13 +193,9 @@ impl Plex {
     }
 
     pub async fn update_summary(&self, playlist_id: &str, summary: &str) -> Result<()> {
-        let params = HashMap::from([(
-            "summary".to_string(),
-            summary.to_string(),
-        )]);
+        let params = HashMap::from([("summary".to_string(), summary.to_string())]);
 
-        self
-            .client
+        self.client
             .put(&format!("playlists/{}", playlist_id), Some(params))
             .await?;
 
@@ -210,15 +206,9 @@ impl Plex {
         let params = HashMap::from([
             (
                 "uri".to_string(),
-                format!(
-                    "{}/library/metadata",
-                    self.uri_root(),
-                ),
+                format!("{}/library/metadata", self.uri_root(),),
             ),
-            (
-                "title".to_string(),
-                profile.get_title().to_string(),
-            ),
+            ("title".to_string(), profile.get_title().to_string()),
             // ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),
             ("smart".to_string(), "0".to_string()),
             ("type".to_string(), "audio".to_string()),

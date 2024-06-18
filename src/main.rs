@@ -10,7 +10,9 @@ use chidori::cli;
 #[tokio::main]
 async fn main() -> Result<()> {
     let logger_config = ConfigBuilder::new()
-        .set_time_offset(UtcOffset::from_whole_seconds(Local::now().offset().local_minus_utc()).unwrap())
+        .set_time_offset(
+            UtcOffset::from_whole_seconds(Local::now().offset().local_minus_utc()).unwrap(),
+        )
         .build();
 
     TermLogger::init(

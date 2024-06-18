@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clap::Args;
-use dialoguer::Select;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Select;
 use simplelog::info;
 
-use crate::profiles::{ProfileAction, wizards};
 use crate::profiles::profile::Profile;
+use crate::profiles::{wizards, ProfileAction};
 use crate::state::AppState;
 
 #[derive(Args, Debug, PartialEq)]
@@ -19,7 +19,9 @@ pub async fn run_profile_command(profile: CliProfile, app_state: &AppState) -> R
         ProfileAction::Create => {
             let mut profile = wizards::create_profile_wizard(app_state).await?;
             Profile::build_playlist(&mut profile, app_state, ProfileAction::Create).await?;
-            profile.save_to_file(app_state.get_profiles_directory()).await?;
+            profile
+                .save_to_file(app_state.get_profiles_directory())
+                .await?;
 
             info!("Profile created successfully!")
         }

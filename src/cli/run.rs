@@ -64,15 +64,25 @@ async fn perform_refresh(app_state: &AppState, run_loop: bool, ran_once: bool) -
         if !ran_once || Local::now().minute() == profile.get_current_refresh_minute() {
             match Profile::build_playlist(profile, app_state, ProfileAction::Update).await {
                 Ok(_) => {
-                    refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v = 0);
+                    refresh_failures
+                        .entry(playlist_id.clone())
+                        .and_modify(|v| *v = 0);
                 }
                 Err(err) => {
-                    refresh_failures.entry(playlist_id.clone()).and_modify(|v| *v += 1);
+                    refresh_failures
+                        .entry(playlist_id.clone())
+                        .and_modify(|v| *v += 1);
                     let failures = refresh_failures.get(&playlist_id).unwrap();
 
                     if *failures <= 3 {
-                        error!("An error occurred while attempting to build the `{}` playlist: {err}", profile.get_title());
-                        error!("Skipping building this playlist. {} build attempt(s) remaining...", 3 - *failures);
+                        error!(
+                            "An error occurred while attempting to build the `{}` playlist: {err}",
+                            profile.get_title()
+                        );
+                        error!(
+                            "Skipping building this playlist. {} build attempt(s) remaining...",
+                            3 - *failures
+                        );
                     } else {
                         panic!("Failed to connect to Plex server more than three times.");
                     }

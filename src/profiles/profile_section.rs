@@ -5,14 +5,14 @@ use anyhow::Result;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::plex::models::Track;
-use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::Profile;
+use crate::profiles::{ProfileSource, SectionType};
 use crate::state::AppState;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
@@ -51,36 +51,17 @@ impl Sections {
         [
             self.unplayed_tracks.enabled,
             self.least_played_tracks.enabled,
-            self.oldest_tracks.enabled
+            self.oldest_tracks.enabled,
         ]
-            .into_iter()
-            .filter(|x| *x)
-            .count() as i32
+        .into_iter()
+        .filter(|x| *x)
+        .count() as i32
     }
 
-    pub async fn fetch_tracks(
-        &mut self,
-        profile: &Profile,
-        app_state: &AppState,
-    ) -> Result<()> {
-        fetch_section_tracks(
-            &mut self.unplayed_tracks,
-            profile,
-            app_state,
-        )
-            .await?;
-        fetch_section_tracks(
-            &mut self.least_played_tracks,
-            profile,
-            app_state,
-        )
-            .await?;
-        fetch_section_tracks(
-            &mut self.oldest_tracks,
-            profile,
-            app_state,
-        )
-            .await?;
+    pub async fn fetch_tracks(&mut self, profile: &Profile, app_state: &AppState) -> Result<()> {
+        fetch_section_tracks(&mut self.unplayed_tracks, profile, app_state).await?;
+        fetch_section_tracks(&mut self.least_played_tracks, profile, app_state).await?;
+        fetch_section_tracks(&mut self.oldest_tracks, profile, app_state).await?;
 
         Ok(())
     }
@@ -202,12 +183,34 @@ pub struct ProfileSection {
 impl Display for ProfileSection {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut str = format!("  {}", self.section_type);
-        str += &format!("\n    Enabled:                                {}", self.enabled);
-        str += &format!("\n    Deduplicate tracks by GUID:             {}", self.deduplicate_tracks_by_guid);
-        str += &format!("\n    Deduplicate tracks by title and artist: {}", self.deduplicate_tracks_by_title_and_artist);
-        str += &format!("\n    Maximum tracks by artist:               {}", if self.maximum_tracks_by_artist == 0 { "Unlimited".to_string() } else { format!("{} track(s)", self.maximum_tracks_by_artist) });
-        str += &format!("\n    Minimum track rating:                   {} stars", self.minimum_track_rating);
-        str += &format!("\n    Sorting:                                {}", self.sorting);
+        str += &format!(
+            "\n    Enabled:                                {}",
+            self.enabled
+        );
+        str += &format!(
+            "\n    Deduplicate tracks by GUID:             {}",
+            self.deduplicate_tracks_by_guid
+        );
+        str += &format!(
+            "\n    Deduplicate tracks by title and artist: {}",
+            self.deduplicate_tracks_by_title_and_artist
+        );
+        str += &format!(
+            "\n    Maximum tracks by artist:               {}",
+            if self.maximum_tracks_by_artist == 0 {
+                "Unlimited".to_string()
+            } else {
+                format!("{} track(s)", self.maximum_tracks_by_artist)
+            }
+        );
+        str += &format!(
+            "\n    Minimum track rating:                   {} stars",
+            self.minimum_track_rating
+        );
+        str += &format!(
+            "\n    Sorting:                                {}",
+            self.sorting
+        );
 
         writeln!(f, "{str}")
     }

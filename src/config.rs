@@ -1,16 +1,16 @@
 //! Configuration for `chidori`
 
-use std::{env, fs};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::{env, fs};
 
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
-use dialoguer::{Input, Select};
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
@@ -21,7 +21,8 @@ fn build_config_path() -> String {
     let config_dir = if let Ok(dir) = env::var("CONFIG_DIR") {
         PathBuf::from_str(&dir).expect("Error parsing `CONFIG_DIR`")
     } else {
-        dirs::config_dir().expect("Could not fetch the user's configuration directory")
+        dirs::config_dir()
+            .expect("Could not fetch the user's configuration directory")
             .join(env!("CARGO_PKG_NAME"))
     };
 
@@ -187,10 +188,9 @@ pub async fn build_config_wizard() -> Result<Config> {
             .default(0)
             .items(&titles)
             .interact()?;
-        sections[selection]
-            .id()
-            .parse::<i32>()
-    }.expect("Could not parse section id");
+        sections[selection].id().parse::<i32>()
+    }
+    .expect("Could not parse section id");
 
     let config = ConfigBuilder::default()
         .profiles_directory(profiles_directory)

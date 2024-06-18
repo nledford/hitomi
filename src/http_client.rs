@@ -150,10 +150,10 @@ impl HttpClient {
     ///
     /// Merges the base url, the path, and any parameters together
     fn build_final_url(&self, path: &str, params: Params) -> Result<Url> {
-        let mut url = Url::parse(&self.base_url)?
-            .join(path)?;
+        let mut url = Url::parse(&self.base_url)?.join(path)?;
 
-        url.query_pairs_mut().append_pair("X-Plex-Token", &self.plex_token);
+        url.query_pairs_mut()
+            .append_pair("X-Plex-Token", &self.plex_token);
 
         if let Some(params) = params {
             for (k, v) in params {

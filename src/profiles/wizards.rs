@@ -1,14 +1,14 @@
 //! Profile wizards
 
 use anyhow::{anyhow, Result};
-use dialoguer::{Confirm, Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
 
-use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
+use crate::profiles::{ProfileSource, SectionType};
 use crate::state::AppState;
 
 /// Divisors of 60
@@ -112,7 +112,10 @@ fn select_profile_source() -> Result<ProfileSource> {
     Ok(ProfileSource::from_repr(selection).unwrap())
 }
 
-async fn select_profile_source_id(profile_source: ProfileSource, app_state: &AppState) -> Result<Option<String>> {
+async fn select_profile_source_id(
+    profile_source: ProfileSource,
+    app_state: &AppState,
+) -> Result<Option<String>> {
     let plex = app_state.get_plex();
 
     let id = match profile_source {
@@ -270,9 +273,15 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
 
 fn get_default_sorting(section_type: SectionType) -> String {
     match section_type {
-        SectionType::Unplayed => vec!["userRating:desc", "viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
+        SectionType::Unplayed => vec![
+            "userRating:desc",
+            "viewCount",
+            "lastViewedAt",
+            "guid",
+            "mediaBitrate:desc",
+        ],
         SectionType::LeastPlayed => vec!["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
         SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
     }
-        .join(",")
+    .join(",")
 }
