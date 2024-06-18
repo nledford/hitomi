@@ -48,7 +48,7 @@ fn view_playlist(app_state: &AppState) -> Result<()> {
         .default(0)
         .interact()?;
 
-    let profile = app_state.get_profile(titles[selection]).unwrap();
+    let profile = app_state.get_profile_by_title(titles[selection]).unwrap();
     println!("{profile}");
     Ok(())
 }

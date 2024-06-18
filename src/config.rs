@@ -206,18 +206,3 @@ pub async fn build_config_wizard() -> Result<Config> {
 
     Ok(config)
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use std::path::PathBuf;
-//
-//     use super::*;
-//
-//     static PROFILES_DIRECTORY: &str = "/data";
-//
-//     async fn build_test_config_path() -> PathBuf {
-//         let path = Path::new("./data/test");
-//         tokio::fs::create_dir_all(path).await.unwrap();
-//         path.join("test-config.json")
-//     }
-// }

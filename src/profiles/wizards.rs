@@ -1,14 +1,14 @@
 //! Profile wizards
 
 use anyhow::{anyhow, Result};
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
+use dialoguer::theme::ColorfulTheme;
 use simplelog::info;
 use strum::VariantNames;
 
+use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
-use crate::profiles::{ProfileSource, SectionType};
 use crate::state::AppState;
 
 /// Divisors of 60
@@ -45,7 +45,7 @@ async fn set_profile_name(app_state: &AppState) -> Result<String> {
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
 
-    if app_state.get_profile(&profile_name).is_some() {
+    if app_state.get_profile_by_title(&profile_name).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"
@@ -283,5 +283,5 @@ fn get_default_sorting(section_type: SectionType) -> String {
         SectionType::LeastPlayed => vec!["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
         SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
     }
-    .join(",")
+        .join(",")
 }
