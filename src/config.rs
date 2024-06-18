@@ -166,7 +166,10 @@ pub async fn build_config_wizard() -> Result<Config> {
         };
 
         info!("Testing connection to plex. Please wait...");
-        if PlexClient::new_for_config(&plex_url, &plex_token).await.is_ok() {
+        if PlexClient::new_for_config(&plex_url, &plex_token)
+            .await
+            .is_ok()
+        {
             info!("Success!");
             break (plex_url, plex_token);
         } else {

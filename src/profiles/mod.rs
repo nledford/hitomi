@@ -92,7 +92,11 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
     Ok(())
 }
 
-async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool, ran_once: bool) -> Result<()> {
+async fn refresh_playlists_from_profiles(
+    app_state: &AppState,
+    run_loop: bool,
+    ran_once: bool,
+) -> Result<()> {
     let mut profiles = app_state.get_enabled_profiles();
     let mut refresh_failures = HashMap::new();
 

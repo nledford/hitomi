@@ -1,14 +1,14 @@
 //! Profile wizards
 
 use anyhow::{anyhow, Result};
-use dialoguer::{Confirm, Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
 
-use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
+use crate::profiles::{ProfileSource, SectionType};
 use crate::state::AppState;
 
 /// Divisors of 60
@@ -283,5 +283,5 @@ fn get_default_sorting(section_type: SectionType) -> String {
         SectionType::LeastPlayed => vec!["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
         SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
     }
-        .join(",")
+    .join(",")
 }
