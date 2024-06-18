@@ -14,7 +14,7 @@ use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
-use crate::plex::Plex;
+use crate::plex::PlexClient;
 
 /// Default config file path where application config will be stored.
 fn build_config_path() -> String {
@@ -166,7 +166,7 @@ pub async fn build_config_wizard() -> Result<Config> {
         };
 
         info!("Testing connection to plex. Please wait...");
-        if Plex::new_for_config(&plex_url, &plex_token).await.is_ok() {
+        if PlexClient::new_for_config(&plex_url, &plex_token).await.is_ok() {
             info!("Success!");
             break (plex_url, plex_token);
         } else {
@@ -177,7 +177,7 @@ pub async fn build_config_wizard() -> Result<Config> {
     let primary_section_id = if let Ok(id) = env::var("PRIMARY_SECTION_ID") {
         id.parse::<i32>()
     } else {
-        let plex = Plex::new_for_config(&plex_url, &plex_token).await?;
+        let plex = PlexClient::new_for_config(&plex_url, &plex_token).await?;
         let sections = plex.get_music_sections();
         let titles = sections
             .iter()

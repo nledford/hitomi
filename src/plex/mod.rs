@@ -23,7 +23,7 @@ pub mod models;
 /// using both the `plex_token` and `plex_url` fields.
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, Default)]
-pub struct Plex {
+pub struct PlexClient {
     client: HttpClient,
     plex_token: String,
     plex_url: String,
@@ -40,7 +40,7 @@ pub struct Plex {
     sections: Vec<Section>,
 }
 
-impl Plex {
+impl PlexClient {
     pub async fn initialize(config: &Config) -> Result<Self> {
         debug!("Initializing plex...");
 
@@ -55,7 +55,7 @@ impl Plex {
 
         let client = HttpClient::new(plex_url, plex_token)?;
 
-        let mut plex = PlexBuilder::default()
+        let mut plex = PlexClientBuilder::default()
             .client(client)
             .plex_token(plex_token.to_string())
             .plex_url(plex_url.to_string())
@@ -73,7 +73,7 @@ impl Plex {
     pub async fn new_for_config(plex_url: &str, plex_token: &str) -> Result<Self> {
         let client = HttpClient::new(plex_url, plex_token)?;
 
-        let mut plex = PlexBuilder::default()
+        let mut plex = PlexClientBuilder::default()
             .client(client)
             .plex_token(plex_token.to_string())
             .plex_url(plex_url.to_string())
@@ -206,7 +206,7 @@ impl Plex {
         let params = HashMap::from([
             (
                 "uri".to_string(),
-                format!("{}/library/metadata", self.uri_root(),),
+                format!("{}/library/metadata", self.uri_root(), ),
             ),
             ("title".to_string(), profile.get_title().to_string()),
             // ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),

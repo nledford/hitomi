@@ -3,14 +3,14 @@ use derive_builder::Builder;
 
 use crate::config::Config;
 use crate::plex::models::Playlist;
-use crate::plex::Plex;
+use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 
 /// Represents the application state
 #[derive(Builder, Clone, Debug, Default)]
 pub struct AppState {
     config: Config,
-    plex: Plex,
+    plex: PlexClient,
     playlists: Vec<Playlist>,
     profiles: Vec<Profile>,
 }
@@ -22,7 +22,7 @@ impl AppState {
         let dir = config.get_profiles_directory();
         let profiles = Profile::load_profiles(dir).await?;
 
-        let plex = Plex::initialize(&config).await?;
+        let plex = PlexClient::initialize(&config).await?;
         let playlists = plex.get_playlists().to_vec();
 
         Ok(AppStateBuilder::default()
@@ -43,7 +43,7 @@ impl AppState {
 
 // Plex
 impl AppState {
-    pub fn get_plex(&self) -> &Plex {
+    pub fn get_plex(&self) -> &PlexClient {
         &self.plex
     }
 }
