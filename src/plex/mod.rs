@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use derive_builder::Builder;
 use log::{error, info};
-use rayon::prelude::*;
 use serde::Deserialize;
 use simplelog::debug;
 
@@ -182,7 +181,7 @@ impl PlexClient {
         self.clear_playlist(playlist_id).await?;
 
         info!("Updating destination playlist...");
-        let ids = tracks.par_iter().map(|t| t.id()).collect::<Vec<&str>>();
+        let ids = tracks.iter().map(|t| t.id()).collect::<Vec<&str>>();
         for chunk in ids.chunks(200) {
             self.add_items_to_playlist(playlist_id, chunk).await?;
         }

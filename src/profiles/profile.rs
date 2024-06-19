@@ -10,8 +10,6 @@ use derive_builder::Builder;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use futures_lite::future;
-use rayon::iter::IntoParallelRefIterator;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -292,7 +290,7 @@ impl Profile {
 fn show_results(tracks: &[Track], action: ProfileAction) {
     let size = tracks.len();
 
-    let duration: i64 = tracks.par_iter().map(|t| t.duration()).sum();
+    let duration: i64 = tracks.iter().map(|t| t.duration()).sum();
     let duration = Duration::from_millis(duration as u64);
     let duration = humantime::format_duration(duration).to_string();
 

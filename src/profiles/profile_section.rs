@@ -5,14 +5,13 @@ use anyhow::Result;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use rayon::prelude::*;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
 use crate::plex::models::Track;
-use crate::profiles::profile::Profile;
 use crate::profiles::{ProfileSource, SectionType};
+use crate::profiles::profile::Profile;
 use crate::state::AppState;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
@@ -53,9 +52,9 @@ impl Sections {
             self.least_played_tracks.enabled,
             self.oldest_tracks.enabled,
         ]
-        .into_iter()
-        .filter(|x| *x)
-        .count() as i32
+            .into_iter()
+            .filter(|x| *x)
+            .count() as i32
     }
 
     pub async fn fetch_tracks(&mut self, profile: &Profile, app_state: &AppState) -> Result<()> {
@@ -291,7 +290,7 @@ impl ProfileSection {
     fn run_deduplicate_by_title_and_artist(&mut self) {
         if self.deduplicate_tracks_by_title_and_artist {
             self.tracks
-                .par_sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
+                .sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
             self.tracks
                 .dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
         }
@@ -304,10 +303,10 @@ impl ProfileSection {
 
         if self.is_unplayed() || self.is_least_played() {
             self.tracks
-                .par_sort_by_key(|track| (track.view_count, track.last_played()))
+                .sort_by_key(|track| (track.view_count, track.last_played()))
         } else {
             self.tracks
-                .par_sort_by_key(|track| (track.last_played(), track.view_count))
+                .sort_by_key(|track| (track.last_played(), track.view_count))
         }
 
         let mut artist_occurrences: HashMap<&str, i32> = HashMap::new();
@@ -319,8 +318,8 @@ impl ProfileSection {
             if *occurrences >= self.maximum_tracks_by_artist {
                 let index = self
                     .tracks
-                    .par_iter()
-                    .position_first(|t| t == track)
+                    .iter()
+                    .position(|t| t == track)
                     .expect("Index not found");
                 self.tracks.remove(index);
             }
@@ -330,10 +329,10 @@ impl ProfileSection {
     fn sort_tracks(&mut self) {
         if self.is_least_played() {
             self.tracks
-                .par_sort_by_key(|t| (t.plays(), t.last_played()))
+                .sort_by_key(|t| (t.plays(), t.last_played()))
         } else if self.is_oldest() {
             self.tracks
-                .par_sort_by_key(|t| (t.last_played(), t.plays()))
+                .sort_by_key(|t| (t.last_played(), t.plays()))
         }
     }
 
@@ -350,7 +349,7 @@ fn dedup_lists(lst: &mut Vec<Track>, comp: &[Track]) {
     for a in lst.clone().iter() {
         for b in comp {
             if a.id() == b.id() {
-                let index = lst.par_iter().position_first(|t| t == a).unwrap();
+                let index = lst.iter().position(|t| t == a).unwrap();
                 lst.remove(index);
             }
         }
