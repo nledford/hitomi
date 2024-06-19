@@ -337,22 +337,11 @@ impl ProfileSection {
     }
 
     fn dedup_tracks_by_list(&mut self, comp: &[Track]) {
-        dedup_lists(&mut self.tracks, comp)
+        self.tracks.retain(|t| !comp.contains(t))
     }
 
     pub fn reduce_to_time_limit(&mut self, time_limit: f64) {
         self.tracks = get_tracks_within_time_range(&self.tracks, time_limit)
-    }
-}
-
-fn dedup_lists(lst: &mut Vec<Track>, comp: &[Track]) {
-    for a in lst.clone().iter() {
-        for b in comp {
-            if a.id() == b.id() {
-                let index = lst.iter().position(|t| t == a).unwrap();
-                lst.remove(index);
-            }
-        }
     }
 }
 
