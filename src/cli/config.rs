@@ -13,8 +13,8 @@ pub struct CliConfig {
 #[derive(Subcommand, PartialEq)]
 enum ConfigCmds {
     Create(CreateArgs),
-    Read,
     Update(UpdateArgs),
+    View,
 }
 
 #[derive(Args, PartialEq)]
@@ -49,7 +49,7 @@ pub async fn run_config_cmd(cfg: CliConfig) -> Result<()> {
 
             new_config.save_config(Some(&cmd.config_directory)).await?;
         }
-        ConfigCmds::Read => {
+        ConfigCmds::View => {
             let _config = AppConfig::load_config().await;
             // config.print_table();
         }
