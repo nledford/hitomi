@@ -1,16 +1,16 @@
 //! Configuration for `chidori`
 
+use std::{env, fs};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::{env, fs};
 
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
+use dialoguer::theme::ColorfulTheme;
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
@@ -100,31 +100,31 @@ impl Config {
 
         Ok(())
     }
+}
 
-    pub async fn load_config() -> Result<Self> {
-        debug!("Loading config...");
+pub async fn load_config() -> Result<Config> {
+    debug!("Loading config...");
 
-        let config_path = if let Ok(dir) = env::var("CONFIG_DIR") {
-            Path::new(&dir).join("config.json")
-        } else {
-            Path::new(&build_config_path()).to_path_buf()
-        };
-        debug!("{}", &config_path.display());
+    let config_path = if let Ok(dir) = env::var("CONFIG_DIR") {
+        Path::new(&dir).join("config.json")
+    } else {
+        Path::new(&build_config_path()).to_path_buf()
+    };
+    debug!("{}", &config_path.display());
 
-        if !config_path.exists() {
-            return build_config_wizard().await;
-        }
+    if !config_path.exists() {
+        return build_config_wizard().await;
+    }
 
-        let mut file = File::open(config_path)?;
-        let mut config = String::default();
-        file.read_to_string(&mut config)?;
+    let mut file = File::open(config_path)?;
+    let mut config = String::default();
+    file.read_to_string(&mut config)?;
 
-        if let Ok(mut config) = serde_json::from_str::<Config>(&config) {
-            config.loaded = true;
-            Ok(config)
-        } else {
-            Ok(build_config_wizard().await?)
-        }
+    if let Ok(mut config) = serde_json::from_str::<Config>(&config) {
+        config.loaded = true;
+        Ok(config)
+    } else {
+        Ok(build_config_wizard().await?)
     }
 }
 
@@ -193,7 +193,7 @@ pub async fn build_config_wizard() -> Result<Config> {
             .interact()?;
         sections[selection].id().parse::<i32>()
     }
-    .expect("Could not parse section id");
+        .expect("Could not parse section id");
 
     let config = ConfigBuilder::default()
         .profiles_directory(profiles_directory)

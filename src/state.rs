@@ -6,6 +6,7 @@
 use anyhow::Result;
 use derive_builder::Builder;
 
+use crate::config;
 use crate::config::Config;
 use crate::plex::models::Playlist;
 use crate::plex::PlexClient;
@@ -30,7 +31,7 @@ impl AppState {
     /// A ['PlexClient'](crate::plex::PlexClient) is then created, which is used to load playlists
     /// from the Plex server.
     pub async fn initialize() -> Result<Self> {
-        let config = Config::load_config().await?;
+        let config = config::load_config().await?;
 
         let dir = config.get_profiles_directory();
         let profiles = Profile::load_profiles(dir).await?;

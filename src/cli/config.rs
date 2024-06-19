@@ -1,7 +1,8 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
-use crate::config::{Config as AppConfig, ConfigBuilder as AppConfigBuilder};
+use crate::config as AppConfig;
+use crate::config::ConfigBuilder as AppConfigBuilder;
 
 #[derive(Args, PartialEq)]
 pub struct CliConfig {
