@@ -1,16 +1,16 @@
 //! Configuration for `hitomi`
 
-use std::{env, fs};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::{env, fs};
 
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
-use dialoguer::{Input, Select};
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
@@ -193,7 +193,7 @@ pub async fn build_config_wizard() -> Result<Config> {
             .interact()?;
         sections[selection].id().parse::<i32>()
     }
-        .expect("Could not parse section id");
+    .expect("Could not parse section id");
 
     let config = ConfigBuilder::default()
         .profiles_directory(profiles_directory)
