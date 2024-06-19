@@ -1,4 +1,4 @@
-//! Configuration for `chidori`
+//! Configuration for `hitomi`
 
 use std::{env, fs};
 use std::fs::File;

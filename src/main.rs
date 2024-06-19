@@ -3,7 +3,7 @@ use clap::Parser;
 use log::*;
 use simplelog::*;
 
-use chidori::cli;
+use hitomi::cli;
 
 #[tokio::main]
 async fn main() -> Result<()> {
