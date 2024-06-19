@@ -309,21 +309,14 @@ impl ProfileSection {
                 .sort_by_key(|track| (track.last_played(), track.view_count))
         }
 
-        let mut artist_occurrences: HashMap<&str, i32> = HashMap::new();
-        for track in self.tracks.clone().iter() {
-            let artist_guid = track.artist_guid();
+        let mut artist_occurrences: HashMap<String, i32> = HashMap::new();
+        self.tracks.retain(|track| {
+            let artist_guid = track.artist_guid().to_owned();
             let occurrences = artist_occurrences.entry(artist_guid).or_insert(0);
             *occurrences += 1;
 
-            if *occurrences >= self.maximum_tracks_by_artist {
-                let index = self
-                    .tracks
-                    .iter()
-                    .position(|t| t == track)
-                    .expect("Index not found");
-                self.tracks.remove(index);
-            }
-        }
+            *occurrences < self.maximum_tracks_by_artist
+        })
     }
 
     fn sort_tracks(&mut self) {
