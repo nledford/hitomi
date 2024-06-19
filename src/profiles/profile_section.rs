@@ -315,7 +315,7 @@ impl ProfileSection {
             let occurrences = artist_occurrences.entry(artist_guid).or_insert(0);
             *occurrences += 1;
 
-            *occurrences < self.maximum_tracks_by_artist
+            *occurrences <= self.maximum_tracks_by_artist
         })
     }
 
