@@ -3,7 +3,9 @@ name = "chidori"
 version = "0.3.1"
 description = "Builds and updates custom playlists on a Plex server"
 authors = ["Nathaniel Ledford <nate@nateledford.com>"]
+homepage = "https://github.com/nledford/chidori"
 repository = "https://github.com/nledford/chidori"
+license = "GPL-3.0"
 edition = "2021"
 
 [dependencies]
