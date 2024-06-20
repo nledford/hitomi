@@ -11,7 +11,6 @@ use tokio::time::sleep;
 
 use crate::profiles::profile::Profile;
 use crate::state::AppState;
-use crate::utils;
 
 pub mod profile;
 mod profile_section;
@@ -81,10 +80,6 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
 
             if now.second() == 0 {
                 refresh_playlists_from_profiles(app_state, run_loop, true).await?;
-            }
-
-            if now.minute() == 0 && now.second() == 0 {
-                utils::mix_random_data().await?;
             }
         }
     }
