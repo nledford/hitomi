@@ -9,7 +9,6 @@ use chrono::{DateTime, Local, TimeDelta, Timelike};
 use derive_builder::Builder;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
-use futures_lite::future;
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -81,11 +80,9 @@ impl Profile {
     }
 
     fn profile_path(&self, profiles_directory: &str) -> PathBuf {
-        future::block_on(async {
-            PathBuf::new()
-                .join(profiles_directory)
-                .join(self.file_name())
-        })
+        PathBuf::new()
+            .join(profiles_directory)
+            .join(self.file_name())
     }
 
     // fn refresh_interval_str(&self) -> String {
@@ -117,10 +114,10 @@ impl Profile {
     // }
 
     pub fn get_current_refresh_minute(&self) -> u32 {
-        *build_refresh_minutes(self.refresh_interval)
-            .iter()
-            .find(|x| *x >= &Local::now().minute())
-            .unwrap_or(&0)
+        build_refresh_minutes(self.refresh_interval)
+            .into_iter()
+            .find(|x| *x >= Local::now().minute())
+            .unwrap_or(0)
     }
 
     pub fn get_next_refresh_minute(&self) -> u32 {
@@ -141,7 +138,7 @@ impl Profile {
             .add(TimeDelta::minutes(next_minute as i64))
     }
 
-    pub fn get_next_refresh_str(&self) -> String {
+    fn get_next_refresh_str(&self) -> String {
         let next_refresh_time = self.get_next_refresh_time();
         format!(
             "LAST UPDATE: {}\nNEXT UPDATE: {}",
@@ -228,7 +225,7 @@ impl Profile {
             .map(|track| track.id())
             .collect::<Vec<&str>>();
 
-        let plex = app_state.get_plex_client();
+        let plex_client = app_state.get_plex_client();
         match action {
             ProfileAction::Create => {
                 let save = Confirm::with_theme(&ColorfulTheme::default())
@@ -238,23 +235,30 @@ impl Profile {
 
                 if save {
                     info!("Creating playlist in plex...");
-                    let playlist_id = plex.create_playlist(profile).await?;
+                    let playlist_id = plex_client.create_playlist(profile).await?;
                     profile.set_playlist_id(&playlist_id);
 
                     info!("Adding tracks to newly created playlist...");
-                    plex.add_items_to_playlist(&playlist_id, items).await?;
+                    plex_client
+                        .add_items_to_playlist(&playlist_id, items)
+                        .await?;
+                } else {
+                    info!("Playlist not saved");
                 }
             }
             ProfileAction::Update => {
                 info!("Wiping destination playlist...");
-                plex.clear_playlist(&profile.playlist_id).await?;
+                plex_client.clear_playlist(&profile.playlist_id).await?;
 
                 info!("Updating destination playlist...");
-                plex.add_items_to_playlist(&profile.playlist_id, items)
+                plex_client
+                    .add_items_to_playlist(&profile.playlist_id, items)
                     .await?;
 
                 let summary = format!("{}\n{}", profile.get_next_refresh_str(), profile.summary);
-                plex.update_summary(&profile.playlist_id, &summary).await?;
+                plex_client
+                    .update_summary(&profile.playlist_id, &summary)
+                    .await?;
             }
             // Other actions are not relevant to this function and are ignored
             _ => {}
