@@ -18,6 +18,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "aho-corasick"
+version = "1.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e60d3430d3a69478ad0993f19238d2df97c507009a52b3c10addcd7f6bcb916"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "alloc-no-stdlib"
 version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -304,7 +313,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
 dependencies = [
-    "unicode-segmentation",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -719,15 +728,17 @@ dependencies = [
  "futures-lite",
  "humantime",
  "log",
-    "nutype",
+ "nutype",
+ "once_cell",
  "pretty_assertions",
  "rand 0.9.0-alpha.1",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
  "simplelog",
  "strum",
-    "thiserror",
+ "thiserror",
  "tokio",
  "url",
 ]
@@ -975,7 +986,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce4bdbb2f423660b19f0e9f7115182214732d8dd5f840cd0a3aee3e22562f34c"
 dependencies = [
-    "kinded_macros",
+ "kinded_macros",
 ]
 
 [[package]]
@@ -984,10 +995,10 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a13b4ddc5dcb32f45dac3d6f606da2a52fdb9964a18427e63cd5ef6c0d13288d"
 dependencies = [
-    "convert_case",
-    "proc-macro2",
-    "quote",
-    "syn",
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -1144,7 +1155,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "801187d4ee2f03db47daf0f5fc335a7b1b94f60f47942293060b762641b83f2e"
 dependencies = [
-    "nutype_macros",
+ "nutype_macros",
 ]
 
 [[package]]
@@ -1153,12 +1164,13 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e96467936d36285839340d692fcd974106d9bc203e36f55a477e0243737a8af7"
 dependencies = [
-    "cfg-if",
-    "kinded",
-    "proc-macro2",
-    "quote",
-    "syn",
-    "urlencoding",
+ "cfg-if",
+ "kinded",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn",
+ "urlencoding",
 ]
 
 [[package]]
@@ -1431,6 +1443,35 @@ dependencies = [
  "libredox",
  "thiserror",
 ]
+
+[[package]]
+name = "regex"
+version = "1.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b91213439dad192326a0d7c6ee3955910425f441d7038e0d6933b0aec5c4517f"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38caf58cc5ef2fed281f89292ef23f6365465ed9a41b7a7754eb4e26496c92df"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 
 [[package]]
 name = "reqwest"

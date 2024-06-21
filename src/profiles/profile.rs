@@ -15,7 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
 use crate::profiles::profile_section::Sections;
-use crate::profiles::types::RefreshInterval;
+use crate::profiles::types::{ProfileSourceId, ProfileTitle, RefreshInterval};
 use crate::profiles::{ProfileAction, ProfileSource};
 use crate::state::AppState;
 
@@ -26,7 +26,7 @@ pub struct Profile {
     /// The plex ID for the playlist
     playlist_id: String,
     /// The name of the profile and the resulting playlist
-    title: String,
+    title: ProfileTitle,
     /// The summary for the profile and the resulting playlist
     summary: String,
     /// Indicates whether to use the profile. If false, the application will skip this profile when
@@ -34,7 +34,7 @@ pub struct Profile {
     enabled: bool,
     /// The location from which the profile fetches tracks
     profile_source: ProfileSource,
-    profile_source_id: Option<String>,
+    profile_source_id: Option<ProfileSourceId>,
     /// How often in minutes the profile should refresh in an hour
     refresh_interval: RefreshInterval,
     /// The time limit in hours of the playlist.
@@ -62,8 +62,8 @@ impl Profile {
         self.profile_source
     }
 
-    pub fn get_profile_source_id(&self) -> Option<String> {
-        self.profile_source_id.clone()
+    pub fn get_profile_source_id(&self) -> Option<ProfileSourceId> {
+        self.profile_source_id.to_owned()
     }
 
     pub fn get_title(&self) -> &str {

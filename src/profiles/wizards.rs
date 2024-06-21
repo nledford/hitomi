@@ -1,6 +1,6 @@
 //! Profile wizards
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
@@ -8,7 +8,7 @@ use strum::VariantNames;
 
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
-use crate::profiles::types::RefreshInterval;
+use crate::profiles::types::{ProfileSourceId, ProfileTitle, RefreshInterval};
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::state::AppState;
 
@@ -38,7 +38,7 @@ pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
     Ok(profile)
 }
 
-async fn set_profile_name(app_state: &AppState) -> Result<String> {
+async fn set_profile_name(app_state: &AppState) -> Result<ProfileTitle> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
@@ -67,7 +67,8 @@ async fn set_profile_name(app_state: &AppState) -> Result<String> {
         }
     }
 
-    Ok(profile_name)
+    Ok(ProfileTitle::new(profile_name)
+        .with_context(|| "Error setting profile title from wizard")?)
 }
 
 fn set_summary() -> Result<String> {
@@ -113,7 +114,7 @@ fn select_profile_source() -> Result<ProfileSource> {
 async fn select_profile_source_id(
     profile_source: ProfileSource,
     app_state: &AppState,
-) -> Result<Option<String>> {
+) -> Result<Option<ProfileSourceId>> {
     let plex = app_state.get_plex_client();
 
     let id = match profile_source {
@@ -171,7 +172,10 @@ async fn select_profile_source_id(
         }
     };
 
-    Ok(id)
+    Ok(match id {
+        Some(id) => Some(ProfileSourceId::new(id)?),
+        None => None,
+    })
 }
 
 fn select_profile_sections() -> Result<Sections> {
