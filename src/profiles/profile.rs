@@ -19,6 +19,7 @@ use crate::profiles::profile_section::Sections;
 use crate::profiles::types::{ProfileSourceId, ProfileTitle, RefreshInterval};
 use crate::profiles::{ProfileAction, ProfileSource};
 use crate::state::AppState;
+use crate::utils;
 
 // PROFILE ####################################################################
 
@@ -118,14 +119,14 @@ impl Profile {
     // }
 
     pub fn get_current_refresh_minute(&self) -> u32 {
-        build_refresh_minutes(&self.refresh_interval)
+        utils::build_refresh_minutes(&self.refresh_interval)
             .into_iter()
             .find(|x| *x >= Local::now().minute())
             .unwrap_or(0)
     }
 
     pub fn get_next_refresh_minute(&self) -> u32 {
-        *build_refresh_minutes(&self.refresh_interval)
+        *utils::build_refresh_minutes(&self.refresh_interval)
             .iter()
             .find(|x| *x > &Local::now().minute())
             .unwrap_or(&0)
@@ -192,13 +193,6 @@ impl Profile {
         .max()
         .unwrap_or(&0)
     }
-}
-
-/// Constructs a `vec` of valid refresh minutes from a given refresh intervals
-fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
-    let interval: u32 = refresh_interval.clone().into_inner();
-
-    (1..=60).filter(|i| i % interval == 0).collect()
 }
 
 /// Plex functions
