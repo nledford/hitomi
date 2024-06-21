@@ -15,6 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
 use crate::profiles::profile_section::Sections;
+use crate::profiles::types::RefreshInterval;
 use crate::profiles::{ProfileAction, ProfileSource};
 use crate::state::AppState;
 
@@ -35,7 +36,7 @@ pub struct Profile {
     profile_source: ProfileSource,
     profile_source_id: Option<String>,
     /// How often in minutes the profile should refresh in an hour
-    refresh_interval: u32,
+    refresh_interval: RefreshInterval,
     /// The time limit in hours of the playlist. Maximum value is 72 hours.
     time_limit: u32,
     track_limit: i32,
@@ -114,14 +115,14 @@ impl Profile {
     // }
 
     pub fn get_current_refresh_minute(&self) -> u32 {
-        build_refresh_minutes(self.refresh_interval)
+        build_refresh_minutes(&self.refresh_interval)
             .into_iter()
             .find(|x| *x >= Local::now().minute())
             .unwrap_or(0)
     }
 
     pub fn get_next_refresh_minute(&self) -> u32 {
-        *build_refresh_minutes(self.refresh_interval)
+        *build_refresh_minutes(&self.refresh_interval)
             .iter()
             .find(|x| *x > &Local::now().minute())
             .unwrap_or(&0)
@@ -191,16 +192,10 @@ impl Profile {
 }
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
-fn build_refresh_minutes(refresh_interval: u32) -> Vec<u32> {
-    let refresh_interval = if refresh_interval < 2 {
-        5
-    } else if refresh_interval > 30 {
-        30
-    } else {
-        refresh_interval
-    };
+fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
+    let interval: u32 = refresh_interval.clone().into_inner();
 
-    (1..=60).filter(|i| i % refresh_interval == 0).collect()
+    (1..=60).filter(|i| i % interval == 0).collect()
 }
 
 /// Plex functions
@@ -409,4 +404,23 @@ impl Profile {
 // TESTS ######################################################################
 
 #[cfg(test)]
-mod tests {}
+mod refresh_interval_tests {
+    use pretty_assertions::assert_eq;
+
+    use super::*;
+
+    #[test]
+    fn test_valid_refresh_interval() {
+        let valid_refresh_interval = 5_u32;
+        let refresh_interval = RefreshInterval::new(5).unwrap();
+
+        assert_eq!(valid_refresh_interval, refresh_interval.into_inner());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_refresh_interval() {
+        let invalid_refresh_interval = 72_u32;
+        let _ = RefreshInterval::new(invalid_refresh_interval).unwrap();
+    }
+}

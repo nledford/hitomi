@@ -8,11 +8,9 @@ use strum::VariantNames;
 
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
-use crate::profiles::{ProfileSource, SectionType};
+use crate::profiles::types::RefreshInterval;
+use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::state::AppState;
-
-/// Divisors of 60
-static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
 
 /// The main entrypoint of the wizard
 pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
@@ -81,14 +79,14 @@ fn set_summary() -> Result<String> {
     Ok(summary)
 }
 
-fn select_refresh_interval() -> Result<u32> {
+fn select_refresh_interval() -> Result<RefreshInterval> {
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Select the refresh interval for this profile:")
         .default(0)
         .items(&VALID_INTERVALS.map(|i| format!("{i} minutes")))
         .interact()?;
 
-    Ok(VALID_INTERVALS[selection])
+    Ok(RefreshInterval::new(VALID_INTERVALS[selection])?)
 }
 
 fn set_time_limit() -> Result<u32> {

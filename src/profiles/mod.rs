@@ -14,7 +14,11 @@ use crate::state::AppState;
 
 pub mod profile;
 mod profile_section;
+pub mod types;
 pub mod wizards;
+
+/// Divisors of 60
+static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
 
 #[derive(
     Clone,
