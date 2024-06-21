@@ -37,9 +37,11 @@ pub struct Profile {
     profile_source_id: Option<String>,
     /// How often in minutes the profile should refresh in an hour
     refresh_interval: RefreshInterval,
-    /// The time limit in hours of the playlist. Maximum value is 72 hours.
+    /// The time limit in hours of the playlist.
     time_limit: u32,
+    /// The track limit of the playlist
     track_limit: i32,
+    /// Profile [`section`](crate::profiles::profile_section::ProfileSection)s
     sections: Sections,
 }
 
