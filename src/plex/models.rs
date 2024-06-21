@@ -1,4 +1,4 @@
-use std::fmt::{format, Display, Formatter};
+use std::fmt::{Display, Formatter};
 
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
