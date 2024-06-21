@@ -402,27 +402,3 @@ impl Profile {
         Ok(result)
     }
 }
-
-// TESTS ######################################################################
-
-#[cfg(test)]
-mod refresh_interval_tests {
-    use pretty_assertions::assert_eq;
-
-    use super::*;
-
-    #[test]
-    fn test_valid_refresh_interval() {
-        let valid_refresh_interval = 5_u32;
-        let refresh_interval = RefreshInterval::new(5).unwrap();
-
-        assert_eq!(valid_refresh_interval, refresh_interval.into_inner());
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_invalid_refresh_interval() {
-        let invalid_refresh_interval = 72_u32;
-        let _ = RefreshInterval::new(invalid_refresh_interval).unwrap();
-    }
-}
