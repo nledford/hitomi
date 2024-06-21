@@ -1,3 +1,5 @@
+use std::fmt::{format, Display, Formatter};
+
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 
@@ -93,7 +95,7 @@ pub struct Track {
     // added_at: Option<i64>,
     // updated_at: Option<i64>,
     skip_count: Option<i32>,
-    pub music_analysis_version: Option<String>,
+    // pub music_analysis_version: Option<String>,
     original_title: Option<String>,
     #[serde(alias = "Media")]
     pub media: Vec<Media>,
@@ -113,12 +115,11 @@ impl Track {
     }
 
     pub fn artist(&self) -> &str {
-        let artist = match &self.original_title {
+        match &self.original_title {
             Some(artist) => artist,
             None => &self.grandparent_title,
-        };
-
-        artist.trim()
+        }
+        .trim()
     }
 
     pub fn artist_guid(&self) -> &str {
@@ -147,6 +148,20 @@ impl Track {
 
     pub fn never_played(&self) -> bool {
         self.plays() == 0 || self.last_played() == 0
+    }
+}
+
+impl Display for Track {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut str = String::default();
+
+        str += &format!("{} ", self.title);
+        str += &format!("{} ", self.artist());
+        str += &format!("{} ", self.album());
+        str += &format!("{} ", self.plays());
+        str += &format!("{} ", self.last_played_fmt());
+
+        write!(f, "{str}")
     }
 }
 

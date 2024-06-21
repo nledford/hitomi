@@ -209,13 +209,14 @@ impl Profile {
         profile: &mut Profile,
         app_state: &AppState,
         action: ProfileAction,
+        limit: Option<i32>,
     ) -> Result<()> {
         info!("Building `{}` playlist...", profile.title);
 
         info!("Fetching tracks for section(s)...");
         profile
             .sections
-            .fetch_tracks(&profile.clone(), app_state)
+            .fetch_tracks(&profile.clone(), app_state, limit)
             .await?;
 
         info!("Combining sections into single playlist...");
@@ -246,6 +247,11 @@ impl Profile {
                     info!("Playlist not saved");
                 }
             }
+            ProfileAction::Preview => {
+                for (i, track) in combined.iter().take(25).enumerate() {
+                    println!("{:2} {}", i + 1, track)
+                }
+            }
             ProfileAction::Update => {
                 info!("Wiping destination playlist...");
                 plex_client.clear_playlist(&profile.playlist_id).await?;
@@ -264,7 +270,9 @@ impl Profile {
             _ => {}
         };
 
-        show_results(&combined, action);
+        if action != ProfileAction::Preview {
+            show_results(&combined, action);
+        }
 
         Ok(())
     }

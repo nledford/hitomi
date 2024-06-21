@@ -57,10 +57,15 @@ impl Sections {
         .count() as i32
     }
 
-    pub async fn fetch_tracks(&mut self, profile: &Profile, app_state: &AppState) -> Result<()> {
-        fetch_section_tracks(&mut self.unplayed_tracks, profile, app_state).await?;
-        fetch_section_tracks(&mut self.least_played_tracks, profile, app_state).await?;
-        fetch_section_tracks(&mut self.oldest_tracks, profile, app_state).await?;
+    pub async fn fetch_tracks(
+        &mut self,
+        profile: &Profile,
+        app_state: &AppState,
+        limit: Option<i32>,
+    ) -> Result<()> {
+        fetch_section_tracks(&mut self.unplayed_tracks, profile, app_state, limit).await?;
+        fetch_section_tracks(&mut self.least_played_tracks, profile, app_state, limit).await?;
+        fetch_section_tracks(&mut self.oldest_tracks, profile, app_state, limit).await?;
 
         Ok(())
     }
@@ -110,6 +115,7 @@ async fn fetch_section_tracks(
     section: &mut ProfileSection,
     profile: &Profile,
     app_state: &AppState,
+    limit: Option<i32>,
 ) -> Result<()> {
     if !section.enabled {
         return Ok(());
@@ -152,7 +158,7 @@ async fn fetch_section_tracks(
     }
 
     section.tracks = plex
-        .fetch_music(filters, section.get_sorting(), Some(1111))
+        .fetch_music(filters, section.get_sorting(), limit)
         .await?;
 
     section.run_manual_filters(time_limit, None);
@@ -332,23 +338,20 @@ impl ProfileSection {
     }
 
     pub fn reduce_to_time_limit(&mut self, time_limit: f64) {
-        self.tracks = get_tracks_within_time_range(&self.tracks, time_limit)
+        let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
+
+        let mut total = TimeDelta::seconds(0);
+        let index = self
+            .tracks
+            .iter()
+            .position(|track| {
+                total += TimeDelta::milliseconds(track.duration());
+                total > limit
+            })
+            .unwrap_or(0);
+
+        self.tracks = self.tracks[..=index].to_vec()
     }
-}
-
-fn get_tracks_within_time_range(tracks: &[Track], time_limit: f64) -> Vec<Track> {
-    let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
-
-    let mut total = TimeDelta::seconds(0);
-    let index = tracks
-        .iter()
-        .position(|track| {
-            total += TimeDelta::milliseconds(track.duration());
-            total > limit
-        })
-        .unwrap_or(0);
-
-    tracks[..=index].to_vec()
 }
 
 // TESTS ######################################################################

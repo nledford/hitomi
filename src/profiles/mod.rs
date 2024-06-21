@@ -64,6 +64,8 @@ pub enum ProfileAction {
     Edit,
     /// List existing profiles found on disk
     List,
+    /// Display a sample of songs from the profile
+    Preview,
     /// Update profile's playlist on the plex server
     Update,
     /// View profiles
@@ -100,7 +102,7 @@ async fn refresh_playlists_from_profiles(
         refresh_failures.entry(playlist_id.clone()).or_insert(0);
 
         if !ran_once || Local::now().minute() == profile.get_current_refresh_minute() {
-            match Profile::build_playlist(profile, app_state, ProfileAction::Update).await {
+            match Profile::build_playlist(profile, app_state, ProfileAction::Update, None).await {
                 Ok(_) => {
                     refresh_failures
                         .entry(playlist_id.clone())
