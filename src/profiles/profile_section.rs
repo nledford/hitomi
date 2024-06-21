@@ -176,7 +176,7 @@ pub struct ProfileSection {
     pub enabled: bool,
     /// Caps the number of tracks by an artist that can appear in a single playlist.
     /// A value of `0` allows for an unlimited number of tracks.
-    maximum_tracks_by_artist: i32,
+    maximum_tracks_by_artist: u32,
     minimum_track_rating: u32,
     randomize_tracks: bool,
     section_type: SectionType,
@@ -230,7 +230,7 @@ impl ProfileSection {
         self.maximum_tracks_by_artist > 0
     }
 
-    pub fn get_maximum_tracks_by_artist(&self) -> i32 {
+    pub fn get_maximum_tracks_by_artist(&self) -> u32 {
         self.maximum_tracks_by_artist
     }
 
@@ -315,7 +315,7 @@ impl ProfileSection {
                 .sort_by_key(|track| (track.last_played(), track.view_count))
         }
 
-        let mut artist_occurrences: HashMap<String, i32> = HashMap::new();
+        let mut artist_occurrences: HashMap<String, u32> = HashMap::new();
         self.tracks.retain(|track| {
             let artist_guid = track.artist_guid().to_owned();
             let occurrences = artist_occurrences.entry(artist_guid).or_insert(0);

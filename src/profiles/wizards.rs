@@ -226,13 +226,6 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
         Input::with_theme(&ColorfulTheme::default())
             .with_prompt("Enter a maximum number of tracks that can appear in a playlist by a single artist. (A value of `0` disables any limit.)")
             .default(25)
-            .validate_with(|input: &i32| -> Result<(), &str> {
-                if *input >= 0 {
-                    Ok(())
-                } else {
-                    Err("Value cannot be less than zero")
-                }
-            })
             .interact_text()?;
 
     let minimum_track_rating = Input::with_theme(&ColorfulTheme::default())

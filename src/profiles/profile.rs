@@ -40,7 +40,7 @@ pub struct Profile {
     /// The time limit in hours of the playlist.
     time_limit: u32,
     /// The track limit of the playlist
-    track_limit: i32,
+    track_limit: u32,
     /// Profile [`section`](crate::profiles::profile_section::ProfileSection)s
     sections: Sections,
 }
