@@ -309,10 +309,10 @@ impl ProfileSection {
 
         if self.is_unplayed() || self.is_least_played() {
             self.tracks
-                .sort_by_key(|track| (track.view_count, track.last_played()))
+                .sort_by_key(|track| (track.plays(), track.last_played()))
         } else {
             self.tracks
-                .sort_by_key(|track| (track.last_played(), track.view_count))
+                .sort_by_key(|track| (track.last_played(), track.plays()))
         }
 
         let mut artist_occurrences: HashMap<String, u32> = HashMap::new();

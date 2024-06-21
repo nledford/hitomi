@@ -82,7 +82,7 @@ pub struct Track {
     pub parent_index: i32,
     // rating_count: Option<i32>,
     // user_rating: f32,
-    pub view_count: Option<i32>,
+    view_count: Option<i32>,
     last_viewed_at: Option<i64>,
     // pub last_rated_at: Option<i64>,
     parent_year: Option<i32>,
