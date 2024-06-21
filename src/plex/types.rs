@@ -73,7 +73,15 @@ mod plex_url_tests {
         let result = PlexUrl::new(valid).unwrap();
         assert_eq!(valid, result.into_inner());
 
+        let valid = "http://127.0.0.1:2112";
+        let result = PlexUrl::new(valid).unwrap();
+        assert_eq!(valid, result.into_inner());
+
         let valid = "https://plex.domain.com";
+        let result = PlexUrl::new(valid).unwrap();
+        assert_eq!(valid, result.into_inner());
+
+        let valid = "https://domain.com/plex";
         let result = PlexUrl::new(valid).unwrap();
         assert_eq!(valid, result.into_inner());
     }
