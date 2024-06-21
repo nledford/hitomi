@@ -14,6 +14,7 @@ use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::Track;
+use crate::plex::types::PlaylistId;
 use crate::profiles::profile_section::Sections;
 use crate::profiles::types::{ProfileSourceId, ProfileTitle, RefreshInterval};
 use crate::profiles::{ProfileAction, ProfileSource};
@@ -24,7 +25,7 @@ use crate::state::AppState;
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Profile {
     /// The plex ID for the playlist
-    playlist_id: String,
+    playlist_id: PlaylistId,
     /// The name of the profile and the resulting playlist
     title: ProfileTitle,
     /// The summary for the profile and the resulting playlist
@@ -46,8 +47,8 @@ pub struct Profile {
 }
 
 impl Profile {
-    fn set_playlist_id(&mut self, playlist_id: &str) {
-        self.playlist_id = playlist_id.to_string()
+    fn set_playlist_id(&mut self, playlist_id: &PlaylistId) {
+        self.playlist_id = playlist_id.to_owned()
     }
 
     pub fn get_enabled(&self) -> bool {
@@ -234,6 +235,7 @@ impl Profile {
                 if save {
                     info!("Creating playlist in plex...");
                     let playlist_id = plex_client.create_playlist(profile).await?;
+                    let playlist_id = PlaylistId::new(playlist_id)?;
                     profile.set_playlist_id(&playlist_id);
 
                     info!("Adding tracks to newly created playlist...");
