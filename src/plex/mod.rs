@@ -12,9 +12,11 @@ use crate::plex::models::{
     Artist, Collection, MediaContainerWrapper, NewPlaylist, Playlist, PlexResponse, Section,
     SectionResponse, Track,
 };
+use crate::plex::types::{PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
 
 pub mod models;
+pub mod types;
 
 /// Plex API wrapper
 ///
@@ -24,8 +26,8 @@ pub mod models;
 #[derive(Builder, Clone, Debug, Default)]
 pub struct PlexClient {
     client: HttpClient,
-    plex_token: String,
-    plex_url: String,
+    plex_token: PlexToken,
+    plex_url: PlexUrl,
     #[builder(default)]
     machine_identifier: String,
 
@@ -49,15 +51,15 @@ impl PlexClient {
             ));
         }
 
-        let plex_url = config.get_plex_url();
-        let plex_token = config.get_plex_token();
+        let plex_url = PlexUrl::new(config.get_plex_url())?;
+        let plex_token = PlexToken::new(config.get_plex_token())?;
 
-        let client = HttpClient::new(plex_url, plex_token)?;
+        let client = HttpClient::new(plex_url.as_str(), plex_token.as_str())?;
 
         let mut plex = PlexClientBuilder::default()
             .client(client)
-            .plex_token(plex_token.to_string())
-            .plex_url(plex_url.to_string())
+            .plex_token(plex_token)
+            .plex_url(plex_url)
             .primary_section_id(config.get_primary_section_id())
             .build()?;
 
@@ -69,13 +71,13 @@ impl PlexClient {
         Ok(plex)
     }
 
-    pub async fn new_for_config(plex_url: &str, plex_token: &str) -> Result<Self> {
-        let client = HttpClient::new(plex_url, plex_token)?;
+    pub async fn new_for_config(plex_url: &PlexUrl, plex_token: &PlexToken) -> Result<Self> {
+        let client = HttpClient::new(plex_url.as_str(), plex_token.as_str())?;
 
         let mut plex = PlexClientBuilder::default()
             .client(client)
-            .plex_token(plex_token.to_string())
-            .plex_url(plex_url.to_string())
+            .plex_token(plex_token.to_owned())
+            .plex_url(plex_url.to_owned())
             .build()?;
 
         plex.fetch_music_sections().await?;

@@ -14,6 +14,7 @@ use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
+use crate::plex::types::{PlexToken, PlexUrl};
 use crate::plex::PlexClient;
 
 /// Default config file path where application config will be stored.
@@ -155,6 +156,7 @@ pub async fn build_config_wizard() -> Result<Config> {
                 .interact_text()?
                 .to_string()
         };
+        let plex_url = PlexUrl::new(plex_url)?;
 
         let plex_token = if let Ok(plex_token) = env::var("PLEX_TOKEN") {
             plex_token
@@ -164,6 +166,7 @@ pub async fn build_config_wizard() -> Result<Config> {
                 .interact_text()?
                 .to_string()
         };
+        let plex_token = PlexToken::new(plex_token)?;
 
         info!("Testing connection to plex. Please wait...");
         if PlexClient::new_for_config(&plex_url, &plex_token)
@@ -197,8 +200,8 @@ pub async fn build_config_wizard() -> Result<Config> {
 
     let config = ConfigBuilder::default()
         .profiles_directory(profiles_directory)
-        .plex_url(plex_url)
-        .plex_token(plex_token)
+        .plex_url(plex_url.to_string())
+        .plex_token(plex_token.to_string())
         .primary_section_id(primary_section_id)
         .loaded(true)
         .build()?;
