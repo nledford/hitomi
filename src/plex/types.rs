@@ -6,7 +6,7 @@ static PLEX_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[\w\d]{9}-[\w\
 
 // SOURCE: https://stackoverflow.com/a/3809435
 static PLEX_URL_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap()
+    Regex::new(r"https?://(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)").unwrap()
 });
 
 #[nutype(
