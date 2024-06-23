@@ -81,7 +81,7 @@ pub struct Track {
     pub index: Option<i32>,
     pub parent_index: i32,
     // rating_count: Option<i32>,
-    // user_rating: f32,
+    user_rating: f32,
     view_count: Option<i32>,
     last_viewed_at: Option<i64>,
     // pub last_rated_at: Option<i64>,
@@ -148,6 +148,10 @@ impl Track {
 
     pub fn never_played(&self) -> bool {
         self.plays() == 0 || self.last_played() == 0
+    }
+
+    pub fn rating(&self) -> i32 {
+        (self.user_rating / 2_f32).floor() as i32
     }
 }
 

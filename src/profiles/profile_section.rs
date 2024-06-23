@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
@@ -331,9 +332,14 @@ impl ProfileSection {
     }
 
     fn sort_tracks(&mut self) {
+        if self.is_unplayed() {
+            self.tracks
+                .sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
+        }
         if self.is_least_played() {
             self.tracks.sort_by_key(|t| (t.plays(), t.last_played()))
-        } else if self.is_oldest() {
+        }
+        if self.is_oldest() {
             self.tracks.sort_by_key(|t| (t.last_played(), t.plays()))
         }
     }
