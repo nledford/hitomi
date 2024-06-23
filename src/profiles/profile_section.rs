@@ -127,10 +127,12 @@ async fn fetch_section_tracks(
     let time_limit = profile.get_section_time_limit();
 
     let mut filters = HashMap::new();
-    filters.insert(
-        "userRating>>".to_string(),
-        section.get_minimum_track_rating().to_string(),
-    );
+    if section.get_minimum_track_rating() != 0 {
+        filters.insert(
+            "userRating>>".to_string(),
+            section.get_minimum_track_rating().to_string(),
+        );
+    }
 
     if section.is_unplayed() {
         filters.insert("viewCount".to_string(), "0".to_string());
@@ -235,6 +237,9 @@ impl ProfileSection {
     }
 
     pub fn get_minimum_track_rating(&self) -> u32 {
+        if self.minimum_track_rating <= 1 {
+            return 0;
+        }
         (self.minimum_track_rating - 1) * 2
     }
 
