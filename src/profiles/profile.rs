@@ -49,7 +49,7 @@ pub struct Profile {
 
 impl Profile {
     fn set_playlist_id(&mut self, playlist_id: &PlaylistId) {
-        self.playlist_id = playlist_id.to_owned()
+        playlist_id.clone_into(&mut self.playlist_id)
     }
 
     pub fn get_enabled(&self) -> bool {

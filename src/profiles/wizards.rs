@@ -67,8 +67,7 @@ async fn set_profile_name(app_state: &AppState) -> Result<ProfileTitle> {
         }
     }
 
-    Ok(ProfileTitle::new(profile_name)
-        .with_context(|| "Error setting profile title from wizard")?)
+    ProfileTitle::new(profile_name).with_context(|| "Error setting profile title from wizard")
 }
 
 fn set_summary() -> Result<String> {

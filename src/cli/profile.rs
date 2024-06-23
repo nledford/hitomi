@@ -44,10 +44,7 @@ async fn preview_playlist(app_state: &AppState) -> Result<()> {
         return Ok(());
     }
 
-    let profile = select_profile(
-        "Select which profile you would like to preview:",
-        &app_state,
-    )?;
+    let profile = select_profile("Select which profile you would like to preview:", app_state)?;
     Profile::build_playlist(
         &mut profile.clone(),
         app_state,
@@ -65,7 +62,7 @@ fn view_playlist(app_state: &AppState) -> Result<()> {
         return Ok(());
     }
 
-    let profile = select_profile("Select which profile you would like to view:", &app_state)?;
+    let profile = select_profile("Select which profile you would like to view:", app_state)?;
     println!("{profile}");
     Ok(())
 }
