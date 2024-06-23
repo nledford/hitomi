@@ -2,7 +2,11 @@ use nutype::nutype;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+use crate::profiles::SectionType;
+
 static PROFILE_SOURCE_ID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\d+$").unwrap());
+static PROFILE_SECTION_SORT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^(([A-Za-z]+:?[A-Za-z]*),?)+$").unwrap());
 
 #[nutype(
     derive(
@@ -134,5 +138,33 @@ mod refresh_interval_tests {
         let invalid_refresh_interval = 72_u32;
         let result = RefreshInterval::new(invalid_refresh_interval);
         assert_eq!(expected, result);
+    }
+}
+
+#[nutype(
+    derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, AsRef, Deref),
+    default = "viewCount,lastViewedAt",
+    validate(regex = PROFILE_SECTION_SORT_REGEX)
+)]
+pub struct ProfileSectionSort(String);
+
+impl ProfileSectionSort {
+    pub fn default_from(section_type: SectionType) -> Self {
+        let sort = match section_type {
+            SectionType::Unplayed => vec![
+                "userRating:desc",
+                "viewCount",
+                "lastViewedAt",
+                "guid",
+                "mediaBitrate:desc",
+            ],
+            SectionType::LeastPlayed => {
+                vec!["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"]
+            }
+            SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
+        }
+        .join(",");
+
+        Self::new(sort).unwrap()
     }
 }

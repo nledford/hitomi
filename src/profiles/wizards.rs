@@ -8,7 +8,7 @@ use strum::VariantNames;
 
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
-use crate::profiles::types::{ProfileSourceId, ProfileTitle, RefreshInterval};
+use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, ProfileTitle, RefreshInterval};
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::state::AppState;
 
@@ -245,9 +245,10 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
         .interact()?;
 
     // TODO get valid sort fields from plex
+    let section_sort = ProfileSectionSort::default_from(section_type);
     let sorting = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter a comma separated list of fields to sort")
-        .default(get_default_sorting(section_type))
+        .default(section_sort.into_inner())
         // TODO validate
         .interact_text()?;
 
@@ -263,19 +264,4 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
         .build()?;
 
     Ok(section)
-}
-
-fn get_default_sorting(section_type: SectionType) -> String {
-    match section_type {
-        SectionType::Unplayed => vec![
-            "userRating:desc",
-            "viewCount",
-            "lastViewedAt",
-            "guid",
-            "mediaBitrate:desc",
-        ],
-        SectionType::LeastPlayed => vec!["viewCount", "lastViewedAt", "guid", "mediaBitrate:desc"],
-        SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
-    }
-    .join(",")
 }
