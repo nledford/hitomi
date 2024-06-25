@@ -6,10 +6,9 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
-use reqwest::header;
+use reqwest::{header, Url};
 use serde::Deserialize;
 use simplelog::debug;
-use url::Url;
 
 /// A custom [`Client`](reqwest::Client), with a base url and headers set during creation.
 #[derive(Clone, Default, Debug)]
