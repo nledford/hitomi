@@ -134,7 +134,7 @@ impl PlexClient {
     pub fn get_playlist(&self, playlist_id: &PlaylistId) -> &Playlist {
         self.playlists
             .iter()
-            .find(|p| p.rating_key == playlist_id.as_str())
+            .find(|p| p.get_id() == playlist_id.as_str())
             .unwrap()
     }
 
@@ -261,7 +261,7 @@ impl PlexClient {
             .media_container
             .metadata
             .into_iter()
-            .map(|item| item.rating_key)
+            .map(|item| item.get_id().to_owned())
             .collect::<_>();
 
         Ok(artists)

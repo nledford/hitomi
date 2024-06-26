@@ -35,19 +35,19 @@ pub struct MediaContainer<T> {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
-    pub rating_key: String,
+    rating_key: String,
     pub key: String,
     pub guid: String,
-    #[serde(alias = "type")]
-    pub item_type: String,
+    // #[serde(alias = "type")]
+    // pub item_type: String,
     pub title: PlaylistTitle,
     pub summary: String,
     pub smart: bool,
     pub playlist_type: PlaylistType,
     // pub composite: String,
     // pub icon: Option<String>,
-    pub view_count: i32,
-    pub last_viewed_at: u128,
+    // pub view_count: i32,
+    // pub last_viewed_at: u128,
     pub duration: Option<u128>,
     pub leaf_count: i32,
     // pub added_at: u128,
@@ -55,6 +55,10 @@ pub struct Playlist {
 }
 
 impl Playlist {
+    pub fn get_id(&self) -> &str {
+        &self.rating_key
+    }
+
     pub fn get_title(&self) -> &str {
         &self.title
     }
@@ -217,8 +221,18 @@ impl Playlist {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Collection {
     #[serde(alias = "ratingKey")]
-    pub rating_key: String,
-    pub title: String,
+    rating_key: String,
+    title: String,
+}
+
+impl Collection {
+    pub fn get_id(&self) -> &str {
+        &self.rating_key
+    }
+
+    pub fn get_title(&self) -> &str {
+        &self.title
+    }
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]

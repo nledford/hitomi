@@ -116,13 +116,13 @@ async fn select_profile_source_id(
 ) -> Result<Option<ProfileSourceId>> {
     let plex = app_state.get_plex_client();
 
-    let id = match profile_source {
+    let id: Option<String> = match profile_source {
         ProfileSource::Library => None,
         ProfileSource::Collection => {
             let collections = plex.get_collections();
             let titles = collections
                 .iter()
-                .map(|x| x.title.as_str())
+                .map(|x| x.get_title())
                 .collect::<Vec<&str>>();
 
             let selection = Select::with_theme(&ColorfulTheme::default())
@@ -131,7 +131,9 @@ async fn select_profile_source_id(
                 .items(&titles)
                 .interact()?;
 
-            Some(collections[selection].rating_key.to_owned())
+            let id = collections[selection].get_id().to_owned();
+
+            Some(id)
         }
         ProfileSource::Playlist => {
             let playlists = plex.get_playlists();
@@ -146,7 +148,7 @@ async fn select_profile_source_id(
                 .items(&titles)
                 .interact()?;
 
-            Some(playlists[selection].rating_key.to_owned())
+            Some(playlists[selection].get_id().to_owned())
         }
         ProfileSource::SingleArtist => {
             let artist: String = Input::with_theme(&ColorfulTheme::default())
@@ -167,7 +169,9 @@ async fn select_profile_source_id(
                 .items(names)
                 .interact()?;
 
-            Some(artists[selection].id().to_owned())
+            let id = artists[selection].id().to_owned();
+
+            Some(id)
         }
     };
 
