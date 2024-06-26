@@ -3,6 +3,8 @@ use std::fmt::{Display, Formatter};
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 
+use crate::plex::types::PlaylistTitle;
+
 pub type PlexResponse<T> = MediaContainerWrapper<MediaContainer<T>>;
 pub type SectionResponse = MediaContainerWrapper<SectionContainer>;
 
@@ -29,7 +31,7 @@ pub struct Playlist {
     pub guid: String,
     #[serde(alias = "type")]
     pub item_type: String,
-    pub title: String,
+    pub title: PlaylistTitle,
     pub summary: String,
     pub smart: bool,
     pub playlist_type: String,
@@ -41,6 +43,12 @@ pub struct Playlist {
     pub leaf_count: i32,
     pub added_at: u128,
     pub updated_at: u128,
+}
+
+impl Playlist {
+    pub fn get_title(&self) -> &str {
+        &self.title
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

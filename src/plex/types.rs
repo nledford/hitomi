@@ -73,6 +73,45 @@ mod playlist_id_tests {
 }
 
 #[nutype(
+    derive(
+        Clone,
+        Debug,
+        Default,
+        Deserialize,
+        Display,
+        Serialize,
+        AsRef,
+        Deref,
+        PartialEq
+    ),
+    default = "New Playlist",
+    validate(not_empty)
+)]
+pub struct PlaylistTitle(String);
+
+#[cfg(test)]
+mod playlist_title_tests {
+    use pretty_assertions::assert_eq;
+
+    use super::*;
+
+    #[test]
+    fn test_playlist_title_valid() {
+        let valid = "Valid Playlist Title";
+        let result = PlaylistTitle::new(valid).unwrap();
+        assert_eq!(valid, result.into_inner());
+    }
+
+    #[test]
+    fn test_invalid_playlist_title_empty() {
+        let expected = Err(PlaylistTitleError::NotEmptyViolated);
+        let invalid = "";
+        let result = PlaylistTitle::new(invalid);
+        assert_eq!(expected, result);
+    }
+}
+
+#[nutype(
     derive(Clone, Debug, Default, Deserialize, Display, Serialize, AsRef, Deref, PartialEq),
     default = "PLEXPLEX1-TOKENTOKEN",
     validate(not_empty, regex = PLEX_TOKEN_REGEX)

@@ -53,7 +53,7 @@ impl AppState {
     /// Searches for a [`Playlist`](crate::plex::models::Playlist) by its title from the
     /// application state
     pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
-        self.playlists.iter().find(|p| p.title == title)
+        self.playlists.iter().find(|p| p.get_title() == title)
     }
 }
 
