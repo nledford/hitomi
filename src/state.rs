@@ -8,7 +8,7 @@ use derive_builder::Builder;
 
 use crate::config;
 use crate::config::Config;
-use crate::plex::models::Playlist;
+use crate::plex::models::playlists::Playlist;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 

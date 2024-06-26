@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::plex::models::Track;
+use crate::plex::models::tracks::Track;
 use crate::plex::types::PlaylistId;
 use crate::profiles::profile_section::Sections;
 use crate::profiles::types::{ProfileSourceId, ProfileTitle, RefreshInterval};

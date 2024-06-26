@@ -10,7 +10,7 @@ use rand::seq::SliceRandom;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-use crate::plex::models::Track;
+use crate::plex::models::tracks::Track;
 use crate::profiles::profile::Profile;
 use crate::profiles::{ProfileSource, SectionType};
 use crate::state::AppState;
