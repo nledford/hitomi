@@ -2,11 +2,20 @@ use std::fmt::{Display, Formatter};
 
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+use strum::EnumString;
 
 use crate::plex::types::PlaylistTitle;
 
 pub type PlexResponse<T> = MediaContainerWrapper<MediaContainer<T>>;
 pub type SectionResponse = MediaContainerWrapper<SectionContainer>;
+
+#[derive(Clone, Default, Debug, Deserialize, EnumString, Serialize)]
+pub enum PlaylistType {
+    #[default]
+    Audio,
+    Photo,
+    Video,
+}
 
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,15 +43,15 @@ pub struct Playlist {
     pub title: PlaylistTitle,
     pub summary: String,
     pub smart: bool,
-    pub playlist_type: String,
+    pub playlist_type: PlaylistType,
     // pub composite: String,
-    pub icon: Option<String>,
+    // pub icon: Option<String>,
     pub view_count: i32,
     pub last_viewed_at: u128,
     pub duration: Option<u128>,
     pub leaf_count: i32,
-    pub added_at: u128,
-    pub updated_at: u128,
+    // pub added_at: u128,
+    // pub updated_at: u128,
 }
 
 impl Playlist {
