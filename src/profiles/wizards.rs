@@ -158,10 +158,7 @@ async fn select_profile_source_id(
             info!("Searching for artists. Please wait...");
             let artists = plex.search_for_artist(&artist).await?;
 
-            let names = &artists
-                .iter()
-                .map(|x| x.title.to_owned())
-                .collect::<Vec<String>>();
+            let names = &artists.iter().map(|x| x.title.as_str()).collect::<Vec<_>>();
 
             let selection = Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Select an artist:")
