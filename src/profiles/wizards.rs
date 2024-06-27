@@ -169,7 +169,7 @@ async fn select_profile_source_id(
                 .items(names)
                 .interact()?;
 
-            let id = artists[selection].id().to_owned();
+            let id = artists[selection].get_id().to_owned();
 
             Some(id)
         }

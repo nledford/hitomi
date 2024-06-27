@@ -11,7 +11,7 @@ pub struct Artist {
 }
 
 impl Artist {
-    pub fn id(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         &self.rating_key
     }
 }
