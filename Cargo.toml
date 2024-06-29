@@ -1,6 +1,6 @@
 [package]
 name = "hitomi"
-version = "0.4.0"
+version = "0.4.1"
 description = "Builds and updates custom playlists on a Plex server"
 authors = ["Nathaniel Ledford <nate@nateledford.com>"]
 homepage = "https://github.com/nledford/hitomi"

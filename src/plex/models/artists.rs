@@ -17,7 +17,7 @@ impl Artist {
     }
 
     pub fn get_title(&self) -> &str {
-        &self.title.as_str()
+        self.title.as_str()
     }
 }
 
