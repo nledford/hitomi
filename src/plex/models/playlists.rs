@@ -1,37 +1,16 @@
-use serde::{Deserialize, Serialize};
-use strum::EnumString;
+use serde::Deserialize;
 
 use crate::plex::types::PlaylistTitle;
-
-#[derive(Clone, Default, Debug, Deserialize, EnumString, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum PlaylistType {
-    #[default]
-    Audio,
-    Photo,
-    Video,
-}
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
     rating_key: String,
-    pub key: String,
-    pub guid: String,
-    // #[serde(alias = "type")]
-    // pub item_type: String,
-    pub title: PlaylistTitle,
-    pub summary: String,
-    pub smart: bool,
-    pub playlist_type: PlaylistType,
-    // pub composite: String,
-    // pub icon: Option<String>,
-    // pub view_count: i32,
-    // pub last_viewed_at: u128,
-    pub duration: Option<u128>,
-    pub leaf_count: i32,
-    // pub added_at: u128,
-    // pub updated_at: u128,
+    title: PlaylistTitle,
+    summary: String,
+    // smart: bool,
+    duration: Option<u128>,
+    leaf_count: u32,
 }
 
 impl Playlist {
@@ -41,5 +20,17 @@ impl Playlist {
 
     pub fn get_title(&self) -> &str {
         &self.title
+    }
+
+    pub fn get_summary(&self) -> &str {
+        &self.summary
+    }
+
+    pub fn get_length(&self) -> i32 {
+        self.leaf_count as i32
+    }
+
+    pub fn get_duration(&self) -> i128 {
+        self.duration.unwrap_or(0) as i128
     }
 }

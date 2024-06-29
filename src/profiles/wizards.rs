@@ -139,7 +139,7 @@ async fn select_profile_source_id(
             let playlists = plex.get_playlists();
             let titles = playlists
                 .iter()
-                .map(|x| x.title.as_str())
+                .map(|x| x.get_title())
                 .collect::<Vec<&str>>();
 
             let selection = Select::with_theme(&ColorfulTheme::default())
