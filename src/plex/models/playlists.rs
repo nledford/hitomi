@@ -4,6 +4,7 @@ use strum::EnumString;
 use crate::plex::types::PlaylistTitle;
 
 #[derive(Clone, Default, Debug, Deserialize, EnumString, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum PlaylistType {
     #[default]
     Audio,
