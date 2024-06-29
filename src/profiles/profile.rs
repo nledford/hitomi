@@ -154,7 +154,8 @@ impl Profile {
 
     pub fn print_next_refresh(&self) {
         info!(
-            "Next refresh at {}",
+            "Next refresh of `{}` at {}",
+            self.get_title(),
             self.get_next_refresh_time().format("%H:%M")
         )
     }
@@ -264,7 +265,7 @@ impl Profile {
         };
 
         if action != ProfileAction::Preview {
-            show_results(&combined, action);
+            show_results(&combined, profile.get_title(), action);
         }
 
         Ok(())
@@ -292,7 +293,7 @@ impl Profile {
     }
 }
 
-fn show_results(tracks: &[Track], action: ProfileAction) {
+fn show_results(tracks: &[Track], title: &str, action: ProfileAction) {
     let size = tracks.len();
 
     let duration: i64 = tracks.iter().map(|t| t.duration()).sum();
@@ -306,8 +307,9 @@ fn show_results(tracks: &[Track], action: ProfileAction) {
     };
 
     log::info!(
-        "Successfully {} playlist!\n\tFinal size: {}\n\tFinal duration: {}",
+        "Successfully {} `{}` playlist!\n\tFinal size: {}\n\tFinal duration: {}",
         action,
+        title,
         size,
         duration
     );
