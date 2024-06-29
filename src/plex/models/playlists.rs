@@ -30,7 +30,7 @@ impl Playlist {
         self.leaf_count as i32
     }
 
-    pub fn get_duration(&self) -> i128 {
-        self.duration.unwrap_or(0) as i128
+    pub fn get_duration(&self) -> u128 {
+        self.duration.unwrap_or(0)
     }
 }
