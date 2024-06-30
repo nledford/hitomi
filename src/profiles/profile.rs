@@ -140,25 +140,32 @@ impl Profile {
     // }
 
     pub fn check_for_refresh(&self) -> bool {
-        !self.has_refreshed_once() || Local::now().minute() == self.get_current_refresh_minute()
+        let current_minute = Local::now().minute();
+        let matches_top_of_the_hour = current_minute == 0;
+        let matches_refresh_minute = current_minute == self.get_current_refresh_time().minute();
+
+        !self.has_refreshed_once() || matches_top_of_the_hour || matches_refresh_minute
     }
 
-    fn get_current_refresh_minute(&self) -> u32 {
-        utils::build_refresh_minutes(&self.refresh_interval)
+    fn get_current_refresh_time(&self) -> DateTime<Local> {
+        let current_minute = utils::build_refresh_minutes(&self.refresh_interval)
             .into_iter()
             .find(|x| *x >= Local::now().minute())
-            .unwrap_or(0)
-    }
+            .unwrap_or(0);
 
-    fn get_next_refresh_minute(&self) -> u32 {
-        utils::build_refresh_minutes(&self.refresh_interval)
-            .into_iter()
-            .find(|x| *x > Local::now().minute())
-            .unwrap_or(0)
+        Local::now()
+            .with_minute(0)
+            .unwrap()
+            .with_second(0)
+            .unwrap()
+            .add(TimeDelta::minutes(current_minute as i64))
     }
 
     fn get_next_refresh_time(&self) -> DateTime<Local> {
-        let next_minute = self.get_next_refresh_minute();
+        let next_minute = utils::build_refresh_minutes(&self.refresh_interval)
+            .into_iter()
+            .find(|x| *x > Local::now().minute())
+            .unwrap_or(0);
 
         Local::now()
             .with_minute(0)
