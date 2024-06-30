@@ -81,6 +81,17 @@ impl AppState {
             .collect::<Vec<Profile>>()
     }
 
+    pub fn get_profiles_to_refresh(&self, ran_once: bool) -> Vec<Profile> {
+        if ran_once && !self.any_profile_refresh() {
+            return vec![];
+        }
+
+        self.get_enabled_profiles()
+            .into_iter()
+            .filter(|profile| profile.check_for_refresh())
+            .collect::<Vec<_>>()
+    }
+
     /// Returns a `vec` of titles from all profiles loaded in the application state
     pub fn get_profile_titles(&self) -> Vec<&str> {
         self.profiles
@@ -122,5 +133,11 @@ impl AppState {
                 println!("  - {}", title)
             }
         }
+    }
+
+    pub fn any_profile_refresh(&self) -> bool {
+        self.get_enabled_profiles()
+            .iter()
+            .any(|profile| profile.check_for_refresh())
     }
 }

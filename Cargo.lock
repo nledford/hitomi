@@ -760,7 +760,6 @@ dependencies = [
  "log",
  "nutype",
  "once_cell",
- "parking_lot",
  "pretty_assertions",
  "rand 0.9.0-alpha.1",
  "regex",

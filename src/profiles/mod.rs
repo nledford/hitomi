@@ -1,15 +1,12 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike};
 use clap::Subcommand;
 use futures::future;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use simplelog::error;
+use simplelog::{error, info};
 use strum::{Display, EnumString, FromRepr, VariantNames};
-use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 use crate::profiles::profile::Profile;
@@ -22,7 +19,6 @@ pub mod wizards;
 
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
-static RAN_ONCE: Lazy<Arc<Mutex<bool>>> = Lazy::new(|| Arc::new(Mutex::new(false)));
 
 #[derive(
     Clone,
@@ -81,15 +77,14 @@ pub enum ProfileAction {
 }
 
 pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()> {
-    refresh_playlists_from_profiles(app_state, run_loop).await?;
+    refresh_playlists_from_profiles(app_state, run_loop, false).await?;
 
     if run_loop {
         loop {
             sleep(Duration::from_secs(1)).await;
-            let now = Local::now();
 
-            if now.second() == 0 {
-                refresh_playlists_from_profiles(app_state, run_loop).await?;
+            if Local::now().second() == 0 && app_state.any_profile_refresh() {
+                refresh_playlists_from_profiles(app_state, run_loop, true).await?;
             }
         }
     }
@@ -97,34 +92,35 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
     Ok(())
 }
 
-async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool) -> Result<()> {
-    let mut profiles = app_state.get_enabled_profiles();
-    let mut ran_once = RAN_ONCE.lock().await;
-
-    let mut tasks: Vec<_> = vec![];
-    for profile in profiles.iter_mut() {
-        if !*ran_once || profile.check_for_refresh() {
-            let task = Profile::build_playlist(profile, app_state, ProfileAction::Update, None);
-            tasks.push(task);
-        }
+async fn refresh_playlists_from_profiles(
+    app_state: &AppState,
+    run_loop: bool,
+    ran_once: bool,
+) -> Result<()> {
+    if ran_once && !app_state.any_profile_refresh() {
+        return Ok(());
     }
 
-    if !tasks.is_empty() {
-        match future::try_join_all(tasks).await {
-            Ok(_) => {
-                if run_loop {
-                    profiles
-                        .iter()
-                        .for_each(|profile| profile.print_next_refresh())
-                }
-            }
-            Err(err) => {
-                error!("Error occurred while attempting to refresh profiles: {err}")
+    let mut profiles = app_state.get_profiles_to_refresh(ran_once);
+
+    let tasks = profiles
+        .iter_mut()
+        .map(|profile| Profile::build_playlist(profile, app_state, ProfileAction::Update, None))
+        .collect::<Vec<_>>();
+
+    match future::try_join_all(tasks).await {
+        Ok(_) => {
+            if run_loop {
+                info!("Current time is {}", Local::now().format("%H:%M:%S"));
+                profiles
+                    .iter()
+                    .for_each(|profile| profile.print_next_refresh())
             }
         }
+        Err(err) => {
+            error!("Error occurred while attempting to refresh profiles: {err}")
+        }
     }
-
-    *ran_once = true;
 
     Ok(())
 }
