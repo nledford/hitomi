@@ -185,6 +185,7 @@ pub struct ProfileSection {
     section_type: SectionType,
     sorting: String,
     #[serde(skip)]
+    #[builder(default)]
     tracks: Vec<Track>,
 }
 

@@ -24,6 +24,7 @@ use crate::utils;
 // PROFILE ####################################################################
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
+#[builder(default)]
 pub struct Profile {
     /// The plex ID for the playlist
     playlist_id: PlaylistId,
