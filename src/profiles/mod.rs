@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -9,6 +9,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use simplelog::error;
 use strum::{Display, EnumString, FromRepr, VariantNames};
+use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 use crate::profiles::profile::Profile;
@@ -98,7 +99,7 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
 
 async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool) -> Result<()> {
     let mut profiles = app_state.get_enabled_profiles();
-    let mut ran_once = RAN_ONCE.lock().unwrap();
+    let mut ran_once = RAN_ONCE.lock().await;
 
     let mut tasks: Vec<_> = vec![];
     for profile in profiles.iter_mut() {

@@ -201,7 +201,8 @@ impl PlexClient {
     pub async fn update_summary(&self, playlist_id: &PlaylistId, summary: &str) -> Result<()> {
         let params = HashMap::from([("summary".to_string(), summary.to_string())]);
 
-        self.client
+        let _: () = self
+            .client
             .put(&format!("playlists/{}", playlist_id), Some(params))
             .await?;
 
