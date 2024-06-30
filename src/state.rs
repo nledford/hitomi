@@ -69,7 +69,8 @@ impl AppState {
 impl AppState {
     /// Returns a `vec` of enabled profiles loaded in the application state
     pub fn get_enabled_profiles(&self) -> Vec<Profile> {
-        self.profiles
+        let mut profiles = self
+            .profiles
             .iter()
             .filter_map(move |p| {
                 if p.get_enabled() {
@@ -78,7 +79,9 @@ impl AppState {
                     None
                 }
             })
-            .collect::<Vec<Profile>>()
+            .collect::<Vec<Profile>>();
+        profiles.sort_unstable_by_key(|p| p.get_title().to_owned());
+        profiles
     }
 
     pub fn get_profiles_to_refresh(&self, ran_once: bool) -> Vec<Profile> {
@@ -86,18 +89,24 @@ impl AppState {
             return vec![];
         }
 
-        self.get_enabled_profiles()
+        let mut profiles = self
+            .get_enabled_profiles()
             .into_iter()
-            .filter(|profile| profile.check_for_refresh())
-            .collect::<Vec<_>>()
+            .filter(|profile| profile.check_for_refresh(!ran_once))
+            .collect::<Vec<_>>();
+        profiles.sort_unstable_by_key(|p| p.get_title().to_owned());
+        profiles
     }
 
     /// Returns a `vec` of titles from all profiles loaded in the application state
     pub fn get_profile_titles(&self) -> Vec<&str> {
-        self.profiles
+        let mut profiles = self
+            .profiles
             .iter()
             .map(|p| p.get_title())
-            .collect::<Vec<&str>>()
+            .collect::<Vec<&str>>();
+        profiles.sort_unstable();
+        profiles
     }
 
     /// Searches for a specific [`profile`](crate::profiles::profile::Profile) by its title.
@@ -138,6 +147,6 @@ impl AppState {
     pub fn any_profile_refresh(&self) -> bool {
         self.get_enabled_profiles()
             .iter()
-            .any(|profile| profile.check_for_refresh())
+            .any(|profile| profile.check_for_refresh(false))
     }
 }

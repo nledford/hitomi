@@ -34,6 +34,7 @@ pub struct Profile {
     summary: String,
     /// Indicates whether to use the profile. If false, the application will skip this profile when
     /// refreshing playlists
+    #[builder(default = "true")]
     enabled: bool,
     /// The location from which the profile fetches tracks
     profile_source: ProfileSource,
@@ -123,7 +124,11 @@ impl Profile {
         }
     }
 
-    pub fn check_for_refresh(&self) -> bool {
+    pub fn check_for_refresh(&self, force_refresh: bool) -> bool {
+        if force_refresh {
+            return true;
+        }
+
         let current_minute = Local::now().minute();
         let matches_top_of_the_hour = current_minute == 0;
         let matches_refresh_minute = current_minute == self.get_current_refresh_time().minute();
