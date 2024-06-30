@@ -150,7 +150,7 @@ impl Profile {
             .add(TimeDelta::minutes(current_minute as i64))
     }
 
-    fn get_next_refresh_time(&self) -> DateTime<Local> {
+    pub fn get_next_refresh_time(&self) -> DateTime<Local> {
         let next_minute = utils::build_refresh_minutes(&self.refresh_interval)
             .into_iter()
             .find(|x| *x > Local::now().minute())
@@ -170,14 +170,6 @@ impl Profile {
             "LAST UPDATE: {}\nNEXT UPDATE: {}",
             Local::now().format("%F %T"),
             next_refresh_time.format("%R")
-        )
-    }
-
-    pub fn print_next_refresh(&self) {
-        info!(
-            "Next refresh of `{}` at {}",
-            self.get_title(),
-            self.get_next_refresh_time().format("%H:%M")
         )
     }
 

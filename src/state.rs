@@ -4,7 +4,9 @@
 //! [`PlexClient`](crate::plex::PlexClient) and loading playlists from the Plex server.
 
 use anyhow::Result;
+use chrono::Local;
 use derive_builder::Builder;
+use simplelog::info;
 
 use crate::config;
 use crate::config::Config;
@@ -148,5 +150,29 @@ impl AppState {
         self.get_enabled_profiles()
             .iter()
             .any(|profile| profile.check_for_refresh(false))
+    }
+
+    pub fn print_update(&self, playlists_updated: usize) {
+        info!(
+            "Updated {playlists_updated} playlists at {}",
+            Local::now().format("%F %T")
+        );
+
+        let mut profiles = self.get_enabled_profiles();
+        profiles.sort_by_key(|x| {
+            (
+                x.get_next_refresh_time().to_owned(),
+                x.get_title().to_owned(),
+            )
+        });
+        let str = profiles.iter().fold(String::default(), |str, profile| {
+            format!(
+                "{}\tNext refresh of `{}` is at {}\n",
+                str,
+                profile.get_title(),
+                profile.get_next_refresh_time().format("%R")
+            )
+        });
+        info!("Upcoming refreshes:\n{str}")
     }
 }

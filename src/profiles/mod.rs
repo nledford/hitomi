@@ -5,7 +5,7 @@ use chrono::{Local, Timelike};
 use clap::Subcommand;
 use futures::future;
 use serde::{Deserialize, Serialize};
-use simplelog::{error, info};
+use simplelog::error;
 use strum::{Display, EnumString, FromRepr, VariantNames};
 use tokio::time::sleep;
 
@@ -112,12 +112,7 @@ async fn refresh_playlists_from_profiles(
     match future::try_join_all(tasks).await {
         Ok(_) => {
             if run_loop {
-                info!("Updated {} playlists", num_tasks);
-                info!("Current time is {}", Local::now().format("%H:%M:%S"));
-                app_state
-                    .get_enabled_profiles()
-                    .iter()
-                    .for_each(|profile| profile.print_next_refresh())
+                app_state.print_update(num_tasks);
             }
         }
         Err(err) => {
