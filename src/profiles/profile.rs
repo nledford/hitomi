@@ -45,6 +45,12 @@ pub struct Profile {
     track_limit: u32,
     /// Profile [`section`](crate::profiles::profile_section::ProfileSection)s
     sections: Sections,
+    #[serde(skip)]
+    times_refreshed: u32,
+    #[serde(skip)]
+    last_refresh: DateTime<Local>,
+    #[serde(skip)]
+    next_refresh: DateTime<Local>,
 }
 
 impl Profile {
@@ -78,6 +84,21 @@ impl Profile {
 
     pub fn get_sections(&self) -> &Sections {
         &self.sections
+    }
+
+    fn has_refreshed_once(&self) -> bool {
+        self.times_refreshed > 0
+    }
+
+    pub fn get_times_refreshed(&self) -> u32 {
+        self.times_refreshed
+    }
+
+    pub fn refreshed(&mut self) -> u32 {
+        self.times_refreshed += 1;
+        self.last_refresh = Local::now();
+        self.next_refresh = self.get_next_refresh_time();
+        self.times_refreshed
     }
 
     fn file_name(&self) -> String {
@@ -118,21 +139,25 @@ impl Profile {
     //     }
     // }
 
-    pub fn get_current_refresh_minute(&self) -> u32 {
+    pub fn check_for_refresh(&self) -> bool {
+        !self.has_refreshed_once() || Local::now().minute() == self.get_current_refresh_minute()
+    }
+
+    fn get_current_refresh_minute(&self) -> u32 {
         utils::build_refresh_minutes(&self.refresh_interval)
             .into_iter()
             .find(|x| *x >= Local::now().minute())
             .unwrap_or(0)
     }
 
-    pub fn get_next_refresh_minute(&self) -> u32 {
-        *utils::build_refresh_minutes(&self.refresh_interval)
-            .iter()
-            .find(|x| *x > &Local::now().minute())
-            .unwrap_or(&0)
+    fn get_next_refresh_minute(&self) -> u32 {
+        utils::build_refresh_minutes(&self.refresh_interval)
+            .into_iter()
+            .find(|x| *x > Local::now().minute())
+            .unwrap_or(0)
     }
 
-    pub fn get_next_refresh_time(&self) -> DateTime<Local> {
+    fn get_next_refresh_time(&self) -> DateTime<Local> {
         let next_minute = self.get_next_refresh_minute();
 
         Local::now()
@@ -156,7 +181,7 @@ impl Profile {
         info!(
             "Next refresh of `{}` at {}",
             self.get_title(),
-            self.get_next_refresh_time().format("%H:%M")
+            self.next_refresh.format("%H:%M")
         )
     }
 
@@ -259,6 +284,8 @@ impl Profile {
                 plex_client
                     .update_summary(&profile.playlist_id, &summary)
                     .await?;
+
+                profile.refreshed();
             }
             // Other actions are not relevant to this function and are ignored
             _ => {}

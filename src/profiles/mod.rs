@@ -77,7 +77,7 @@ pub enum ProfileAction {
 }
 
 pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()> {
-    refresh_playlists_from_profiles(app_state, run_loop, false).await?;
+    refresh_playlists_from_profiles(app_state, run_loop).await?;
 
     if run_loop {
         loop {
@@ -85,7 +85,7 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
             let now = Local::now();
 
             if now.second() == 0 {
-                refresh_playlists_from_profiles(app_state, run_loop, true).await?;
+                refresh_playlists_from_profiles(app_state, run_loop).await?;
             }
         }
     }
@@ -93,33 +93,29 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
     Ok(())
 }
 
-async fn refresh_playlists_from_profiles(
-    app_state: &AppState,
-    run_loop: bool,
-    ran_once: bool,
-) -> Result<()> {
+async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool) -> Result<()> {
     let mut profiles = app_state.get_enabled_profiles();
 
     let mut tasks: Vec<_> = vec![];
     for profile in profiles.iter_mut() {
-        let is_current_minute = Local::now().minute() == profile.get_current_refresh_minute();
-
-        if !ran_once || is_current_minute {
+        if profile.check_for_refresh() {
             let task = Profile::build_playlist(profile, app_state, ProfileAction::Update, None);
             tasks.push(task);
         }
     }
 
-    match future::try_join_all(tasks).await {
-        Ok(_) => {
-            if run_loop {
-                profiles
-                    .iter()
-                    .for_each(|profile| profile.print_next_refresh())
+    if !tasks.is_empty() {
+        match future::try_join_all(tasks).await {
+            Ok(_) => {
+                if run_loop {
+                    profiles
+                        .iter()
+                        .for_each(|profile| profile.print_next_refresh())
+                }
             }
-        }
-        Err(err) => {
-            error!("Error occurred while attempting to refresh profiles: {err}")
+            Err(err) => {
+                error!("Error occurred while attempting to refresh profiles: {err}")
+            }
         }
     }
 
