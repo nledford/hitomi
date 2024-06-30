@@ -1,9 +1,11 @@
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike};
 use clap::Subcommand;
 use futures::future;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use simplelog::error;
 use strum::{Display, EnumString, FromRepr, VariantNames};
@@ -19,6 +21,7 @@ pub mod wizards;
 
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
+static RAN_ONCE: Lazy<Arc<Mutex<bool>>> = Lazy::new(|| Arc::new(Mutex::new(false)));
 
 #[derive(
     Clone,
@@ -95,10 +98,11 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
 
 async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool) -> Result<()> {
     let mut profiles = app_state.get_enabled_profiles();
+    let mut ran_once = RAN_ONCE.lock().unwrap();
 
     let mut tasks: Vec<_> = vec![];
     for profile in profiles.iter_mut() {
-        if profile.check_for_refresh() {
+        if !*ran_once || profile.check_for_refresh() {
             let task = Profile::build_playlist(profile, app_state, ProfileAction::Update, None);
             tasks.push(task);
         }
@@ -118,6 +122,8 @@ async fn refresh_playlists_from_profiles(app_state: &AppState, run_loop: bool) -
             }
         }
     }
+
+    *ran_once = true;
 
     Ok(())
 }

@@ -45,12 +45,6 @@ pub struct Profile {
     track_limit: u32,
     /// Profile [`section`](crate::profiles::profile_section::ProfileSection)s
     sections: Sections,
-    #[serde(skip)]
-    times_refreshed: u32,
-    #[serde(skip)]
-    last_refresh: DateTime<Local>,
-    #[serde(skip)]
-    next_refresh: DateTime<Local>,
 }
 
 impl Profile {
@@ -86,21 +80,6 @@ impl Profile {
         &self.sections
     }
 
-    fn has_refreshed_once(&self) -> bool {
-        self.times_refreshed > 0
-    }
-
-    pub fn get_times_refreshed(&self) -> u32 {
-        self.times_refreshed
-    }
-
-    pub fn refreshed(&mut self) -> u32 {
-        self.times_refreshed += 1;
-        self.last_refresh = Local::now();
-        self.next_refresh = self.get_next_refresh_time();
-        self.times_refreshed
-    }
-
     fn file_name(&self) -> String {
         format!("{}.json", self.title)
     }
@@ -111,40 +90,44 @@ impl Profile {
             .join(self.file_name())
     }
 
-    // fn refresh_interval_str(&self) -> String {
-    //     format!(
-    //         "{} minutes ({} refreshes per hour)",
-    //         self.refresh_interval,
-    //         self.refreshes_per_hour()
-    //     )
-    // }
+    fn refresh_interval_str(&self) -> String {
+        format!(
+            "Every {} minutes ({} refreshes per hour)",
+            self.refresh_interval,
+            self.refreshes_per_hour()
+        )
+    }
 
-    // fn refreshes_per_hour(&self) -> i32 {
-    //     60 / self.refresh_interval as i32
-    // }
+    fn refreshes_per_hour(&self) -> i32 {
+        60 / *self.refresh_interval.as_ref() as i32
+    }
 
-    // fn time_limit_str(&self) -> String {
-    //     format!("{} hours", self.time_limit)
-    // }
+    fn time_limit_str(&self) -> String {
+        if self.time_limit == 0 {
+            "No Limit".to_string()
+        } else {
+            format!("{} hours", self.time_limit)
+        }
+    }
 
     pub fn get_section_time_limit(&self) -> f64 {
         self.time_limit as f64 / self.sections.num_enabled() as f64
     }
 
-    // fn get_track_limit(&self) -> Option<i32> {
-    //     if self.track_limit == 0 {
-    //         Some(1111)
-    //     } else {
-    //         Some(self.track_limit)
-    //     }
-    // }
+    fn get_track_limit_str(&self) -> String {
+        if self.track_limit == 0 {
+            "No Limit".to_string()
+        } else {
+            format!("{} tracks", self.track_limit)
+        }
+    }
 
     pub fn check_for_refresh(&self) -> bool {
         let current_minute = Local::now().minute();
         let matches_top_of_the_hour = current_minute == 0;
         let matches_refresh_minute = current_minute == self.get_current_refresh_time().minute();
 
-        !self.has_refreshed_once() || matches_top_of_the_hour || matches_refresh_minute
+        matches_top_of_the_hour || matches_refresh_minute
     }
 
     fn get_current_refresh_time(&self) -> DateTime<Local> {
@@ -188,7 +171,7 @@ impl Profile {
         info!(
             "Next refresh of `{}` at {}",
             self.get_title(),
-            self.next_refresh.format("%H:%M")
+            self.get_next_refresh_time().format("%H:%M")
         )
     }
 
@@ -291,8 +274,6 @@ impl Profile {
                 plex_client
                     .update_summary(&profile.playlist_id, &summary)
                     .await?;
-
-                profile.refreshed();
             }
             // Other actions are not relevant to this function and are ignored
             _ => {}
@@ -355,18 +336,9 @@ impl Display for Profile {
         str += &format!("\n{}", self.summary);
         str += &format!("\nEnabled:          {}", self.enabled);
         str += &format!("\nSource:           {}", self.profile_source);
-        str += &format!(
-            "\nRefresh Interval: Every {} minutes",
-            self.refresh_interval
-        );
-        str += &format!(
-            "\nTime Limit:       {}",
-            if self.time_limit == 0 {
-                "None".to_string()
-            } else {
-                format!("{} hours", self.time_limit)
-            }
-        );
+        str += &format!("\nRefresh Interval: {}", self.refresh_interval_str());
+        str += &format!("\nTime Limit:       {}", self.time_limit_str());
+        str += &format!("\nTrack Limit:      {}", self.get_track_limit_str());
 
         str += "\n\nSections:";
         if self.has_unplayed_tracks() {
