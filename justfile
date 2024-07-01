@@ -14,9 +14,9 @@ clippy:
     cargo clippy -- -Dwarnings
 
 format:
-    cargo fmt --all -- --check
+    cargo fmt --all
 
-build:
+build: format clippy
     cargo build
 
 test: build
