@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::plex::types::{Guid, PlexId};
+use crate::plex::types::{Guid, PlexId, PlexKey};
 use crate::types::Title;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Track {
     rating_key: PlexId,
-    pub key: String,
+    pub key: PlexKey,
     pub parent_rating_key: PlexId,
     pub grandparent_rating_key: PlexId,
     pub guid: Guid,
@@ -19,8 +19,8 @@ pub struct Track {
     #[serde(alias = "type")]
     pub track_type: String,
     title: Title,
-    pub parent_key: String,
-    pub grandparent_key: String,
+    pub parent_key: PlexKey,
+    pub grandparent_key: PlexKey,
     grandparent_title: Title,
     parent_title: Title,
     pub summary: String,

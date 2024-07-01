@@ -1,11 +1,13 @@
-use crate::plex::types::PlexId;
-use crate::types::Title;
 use serde::Deserialize;
+
+use crate::plex::types::{PlexId, PlexKey};
+use crate::types::Title;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
     rating_key: PlexId,
+    key: PlexKey,
     title: Title,
     summary: String,
     // smart: bool,
@@ -16,6 +18,10 @@ pub struct Playlist {
 impl Playlist {
     pub fn get_id(&self) -> &str {
         &self.rating_key
+    }
+
+    pub fn get_key(&self) -> &str {
+        &self.key
     }
 
     pub fn get_title(&self) -> &str {

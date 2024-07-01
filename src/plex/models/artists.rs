@@ -1,12 +1,13 @@
-use crate::plex::types::PlexId;
-use crate::types::Title;
 use nutype::nutype;
 use serde::{Deserialize, Serialize};
+
+use crate::plex::types::{PlexId, PlexKey};
+use crate::types::Title;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Artist {
     rating_key: PlexId,
-    pub key: String,
+    key: PlexKey,
     pub guid: String,
     pub title: Title,
     #[serde(alias = "titleSort")]
@@ -16,6 +17,10 @@ pub struct Artist {
 impl Artist {
     pub fn get_id(&self) -> &str {
         &self.rating_key
+    }
+
+    pub fn get_key(&self) -> &str {
+        &self.key
     }
 
     pub fn get_title(&self) -> &str {
