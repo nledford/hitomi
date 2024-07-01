@@ -13,7 +13,7 @@ use nutype::nutype;
         Deref
     ),
     default = "New Profile/Playlist",
-    validate(not_empty, len_char_max = 50)
+    validate(not_empty, len_char_max = 100)
 )]
 pub struct Title(String);
 
