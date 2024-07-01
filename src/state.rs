@@ -14,9 +14,10 @@ use simplelog::info;
 use crate::config;
 use crate::config::Config;
 use crate::plex::models::playlists::Playlist;
-use crate::plex::types::{PlaylistId, PlaylistTitle};
+use crate::plex::types::PlaylistId;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
+use crate::types::Title;
 
 /// Represents the application state
 #[derive(Builder, Clone, Debug, Default)]
@@ -61,7 +62,7 @@ impl AppState {
 impl AppState {
     /// Searches for a [`Playlist`](crate::plex::models::Playlist) by its title from the
     /// application state
-    pub fn get_playlist_by_title(&self, title: &PlaylistTitle) -> Option<&Playlist> {
+    pub fn get_playlist_by_title(&self, title: &Title) -> Option<&Playlist> {
         self.playlists
             .iter()
             .find(|p| p.get_title() == title.as_ref())

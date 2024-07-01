@@ -9,52 +9,6 @@ static PROFILE_SECTION_SORT_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(([A-Za-z]+:?[A-Za-z]*),?)+$").unwrap());
 
 #[nutype(
-    derive(
-        Clone,
-        Default,
-        Debug,
-        Deserialize,
-        Display,
-        PartialEq,
-        Serialize,
-        AsRef,
-        Deref
-    ),
-    default = "New Profile",
-    validate(not_empty, len_char_max = 25)
-)]
-pub struct ProfileTitle(String);
-
-#[cfg(test)]
-mod profile_title_tests {
-    use pretty_assertions::assert_eq;
-
-    use super::*;
-
-    #[test]
-    fn test_valid_title() {
-        let valid_title = "Valid Title";
-        let title = ProfileTitle::new(valid_title).unwrap();
-        assert_eq!(valid_title, title.into_inner())
-    }
-
-    #[test]
-    fn test_invalid_title_blank() {
-        let expected = Err(ProfileTitleError::NotEmptyViolated);
-        let result = ProfileTitle::new("");
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_invalid_title_too_long() {
-        let expected = Err(ProfileTitleError::LenCharMaxViolated);
-        let invalid_title = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
-        let result = ProfileTitle::new(invalid_title);
-        assert_eq!(expected, result)
-    }
-}
-
-#[nutype(
     derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, AsRef, Deref),
     default = "0",
     validate(not_empty, regex = PROFILE_SOURCE_ID_REGEX)

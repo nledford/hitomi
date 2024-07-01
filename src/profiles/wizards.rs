@@ -1,11 +1,11 @@
 //! Profile wizards
 
-use crate::plex::types::PlaylistTitle;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
-use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, ProfileTitle, RefreshInterval};
+use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::state::AppState;
+use crate::types::Title;
 use anyhow::{anyhow, Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
@@ -38,14 +38,14 @@ pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
     Ok(profile)
 }
 
-async fn set_profile_name(app_state: &AppState) -> Result<ProfileTitle> {
+async fn set_profile_name(app_state: &AppState) -> Result<Title> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
-    let profile_title = ProfileTitle::new(profile_name.clone())
-        .with_context(|| "Error setting profile title from wizard")?;
+    let title = Title::new(profile_name.clone())
+        .with_context(|| "Error setting profile/playlist title from wizard")?;
 
-    if app_state.get_profile_by_title(&profile_title).is_some() {
+    if app_state.get_profile_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"
@@ -58,9 +58,7 @@ async fn set_profile_name(app_state: &AppState) -> Result<ProfileTitle> {
         }
     }
 
-    let playlist_title = PlaylistTitle::new(profile_name.clone())
-        .with_context(|| "Error setting playlist title from wizard")?;
-    if app_state.get_playlist_by_title(&playlist_title).is_some() {
+    if app_state.get_playlist_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!("Playlist `{profile_name}` already exists in plex. Do you want to overwrite this playlist?"))
             .default(false)
@@ -71,7 +69,7 @@ async fn set_profile_name(app_state: &AppState) -> Result<ProfileTitle> {
         }
     }
 
-    Ok(profile_title)
+    Ok(title)
 }
 
 fn set_summary() -> Result<String> {
