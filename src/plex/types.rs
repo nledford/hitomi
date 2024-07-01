@@ -69,6 +69,14 @@ mod plex_id_tests {
 
     #[test]
     fn test_valid_plex_id() {
+        let valid_id = "1234";
+        let result = PlexId::new(valid_id).unwrap();
+        assert_eq!(valid_id, result.into_inner());
+
+        let valid_id = "12345";
+        let result = PlexId::new(valid_id).unwrap();
+        assert_eq!(valid_id, result.into_inner());
+
         let valid_id = "123456";
         let result = PlexId::new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
