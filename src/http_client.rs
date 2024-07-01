@@ -8,7 +8,9 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Context, Result};
 use reqwest::{header, Url};
 use serde::Deserialize;
-use simplelog::debug;
+use simplelog::{debug, error};
+
+use crate::utils;
 
 /// A custom [`Client`](reqwest::Client), with a base url and headers set during creation.
 #[derive(Clone, Default, Debug)]
@@ -76,7 +78,10 @@ impl HttpClient {
                 }
 
                 serde_json::from_str(&contents).with_context(|| {
-                    format!("Unable to deserialise response. Body was: \"{}\"", contents)
+                    format!(
+                        "Unable to deserialise response. Body was: \"{}\"",
+                        utils::truncate_string(&contents, 2000)
+                    )
                 })
             }
             Err(err) => Err(anyhow!("An error occurred while attempting to GET: {err}")),

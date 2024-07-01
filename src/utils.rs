@@ -7,6 +7,13 @@ pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
     (1..=60).filter(|i| i % interval == 0).collect()
 }
 
+pub fn truncate_string(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        None => s,
+        Some((idx, _)) => &s[..idx],
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use pretty_assertions::{assert_eq, assert_ne};
@@ -29,5 +36,15 @@ mod tests {
         let interval = RefreshInterval::new(INVALID_INTERVAL).unwrap();
         let minutes = build_refresh_minutes(&interval);
         assert_ne!(EXPECTED_MINUTES.to_vec(), minutes);
+    }
+
+    #[test]
+    fn test_truncate_string() {
+        let str = "It's not possible to convince a monkey to give you a banana by promising it infinite bananas when they die.";
+        let truncated = truncate_string(str, 50);
+        let expected = "It's not possible to convince a monkey to give you";
+
+        assert_ne!(truncated, str);
+        assert_eq!(expected, truncated);
     }
 }
