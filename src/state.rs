@@ -89,8 +89,7 @@ impl AppState {
 impl AppState {
     /// Returns a `vec` of enabled profiles loaded in the application state
     pub fn get_enabled_profiles(&self) -> Vec<Profile> {
-        let profiles = self
-            .profiles
+        self.profiles
             .iter()
             .sorted_unstable_by_key(|p| p.get_title().to_owned())
             .filter_map(move |p| {
@@ -100,8 +99,7 @@ impl AppState {
                     None
                 }
             })
-            .collect::<Vec<_>>();
-        profiles
+            .collect::<Vec<_>>()
     }
 
     pub fn get_profiles_to_refresh(&self, ran_once: bool) -> Vec<Profile> {
@@ -110,13 +108,11 @@ impl AppState {
         }
 
         // If the application has run once, we DO NOT want to override refreshing profiles
-        let profiles = self
-            .get_enabled_profiles()
+        self.get_enabled_profiles()
             .into_iter()
             .sorted_unstable_by_key(|p| p.get_title().to_owned())
             .filter(|profile| profile.check_for_refresh(!ran_once))
-            .collect::<Vec<_>>();
-        profiles
+            .collect::<Vec<_>>()
     }
 
     /// Returns a `vec` of titles from all profiles loaded in the application state
