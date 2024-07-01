@@ -176,7 +176,7 @@ impl AppState {
             .into_iter()
             .sorted()
             .fold(String::default(), |mut acc, (k, v)| {
-                acc += &format!("  Refreshing at {k}:\n");
+                acc += &format!("  <b>Refreshing at {k}:</b>\n");
                 for title in v {
                     acc += &format!("    - {title}\n");
                 }
