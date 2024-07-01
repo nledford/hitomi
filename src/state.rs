@@ -14,6 +14,7 @@ use simplelog::info;
 use crate::config;
 use crate::config::Config;
 use crate::plex::models::playlists::Playlist;
+use crate::plex::types::{PlaylistId, PlaylistTitle};
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 
@@ -28,6 +29,7 @@ pub struct AppState {
     playlists: Vec<Playlist>,
     /// [`profile`](crate::profiles::profile::Profile)s loaded from disk
     profiles: Vec<Profile>,
+    refresh_failures: HashMap<String, u32>,
 }
 
 impl AppState {
@@ -43,12 +45,14 @@ impl AppState {
 
         let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
+        let refresh_failures = HashMap::new();
 
         Ok(AppStateBuilder::default()
             .config(config)
             .plex_client(plex_client)
             .profiles(profiles)
             .playlists(playlists)
+            .refresh_failures(refresh_failures)
             .build()?)
     }
 }
@@ -57,8 +61,18 @@ impl AppState {
 impl AppState {
     /// Searches for a [`Playlist`](crate::plex::models::Playlist) by its title from the
     /// application state
-    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
-        self.playlists.iter().find(|p| p.get_title() == title)
+    pub fn get_playlist_by_title(&self, title: &PlaylistTitle) -> Option<&Playlist> {
+        self.playlists
+            .iter()
+            .find(|p| p.get_title() == title.as_ref())
+    }
+
+    pub fn get_playlist_by_id(&self, id: &PlaylistId) -> Option<&Playlist> {
+        self.playlists.iter().find(|p| p.get_id() == id.as_ref())
+    }
+
+    pub fn update_refresh_failures(&mut self, id: &PlaylistId) {
+        *self.refresh_failures.entry(id.to_string()).or_default() += 1;
     }
 }
 
