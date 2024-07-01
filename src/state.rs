@@ -3,9 +3,12 @@
 //! Loads the application configuration file and profiles from disk, as well as building a
 //! [`PlexClient`](crate::plex::PlexClient) and loading playlists from the Plex server.
 
+use std::collections::HashMap;
+
 use anyhow::Result;
 use chrono::Local;
 use derive_builder::Builder;
+use itertools::Itertools;
 use simplelog::info;
 
 use crate::config;
@@ -158,21 +161,24 @@ impl AppState {
             Local::now().format("%F %T")
         );
 
-        let mut profiles = self.get_enabled_profiles();
-        profiles.sort_by_key(|x| {
-            (
-                x.get_next_refresh_time().to_owned(),
-                x.get_title().to_owned(),
-            )
-        });
-        let str = profiles.iter().fold(String::default(), |str, profile| {
-            format!(
-                "{}\tNext refresh of `{}` is at {}\n",
-                str,
-                profile.get_title(),
-                profile.get_next_refresh_time().format("%R")
-            )
-        });
+        let str = self
+            .get_enabled_profiles()
+            .into_iter()
+            .fold(HashMap::new(), |mut acc, profile| {
+                acc.entry(profile.get_next_refresh_time().format("%R").to_string())
+                    .or_insert_with(Vec::new)
+                    .push(profile.get_title().to_owned());
+                acc
+            })
+            .into_iter()
+            .sorted()
+            .fold(String::default(), |mut acc, (k, v)| {
+                acc += &format!("  Refreshing at {k}:\n");
+                for title in v {
+                    acc += &format!("    - {title}\n");
+                }
+                acc
+            });
         info!("Upcoming refreshes:\n{str}")
     }
 }
