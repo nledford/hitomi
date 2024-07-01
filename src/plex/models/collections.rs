@@ -1,9 +1,10 @@
+use crate::plex::types::PlexId;
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Collection {
     #[serde(alias = "ratingKey")]
-    rating_key: String,
+    rating_key: PlexId,
     title: String,
 }
 

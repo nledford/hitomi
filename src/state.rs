@@ -14,7 +14,7 @@ use simplelog::info;
 use crate::config;
 use crate::config::Config;
 use crate::plex::models::playlists::Playlist;
-use crate::plex::types::PlaylistId;
+use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::types::Title;
@@ -68,11 +68,11 @@ impl AppState {
             .find(|p| p.get_title() == title.as_ref())
     }
 
-    pub fn get_playlist_by_id(&self, id: &PlaylistId) -> Option<&Playlist> {
+    pub fn get_playlist_by_id(&self, id: &PlexId) -> Option<&Playlist> {
         self.playlists.iter().find(|p| p.get_id() == id.as_ref())
     }
 
-    pub fn update_refresh_failures(&mut self, id: &PlaylistId) {
+    pub fn update_refresh_failures(&mut self, id: &PlexId) {
         *self.refresh_failures.entry(id.to_string()).or_default() += 1;
     }
 }

@@ -1,10 +1,11 @@
+use crate::plex::types::PlexId;
 use crate::types::Title;
 use nutype::nutype;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Artist {
-    rating_key: String,
+    rating_key: PlexId,
     pub key: String,
     pub guid: String,
     pub title: Title,

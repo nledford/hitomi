@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::plex::types::Guid;
+use crate::plex::types::{Guid, PlexId};
 use crate::types::Title;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
-    rating_key: String,
+    rating_key: PlexId,
     pub key: String,
-    pub parent_rating_key: String,
-    pub grandparent_rating_key: String,
+    pub parent_rating_key: PlexId,
+    pub grandparent_rating_key: PlexId,
     pub guid: Guid,
     pub parent_guid: Guid,
     pub grandparent_guid: Guid,

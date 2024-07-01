@@ -2,8 +2,8 @@ use nutype::nutype;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-static PLAYLIST_ID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[0-9]{6}$").unwrap());
-static PLEX_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[\w\d]{9}-[\w\d]{10}$").unwrap());
+static PLEX_ID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[0-9]{4,6}$").unwrap());
+static PLEX_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\w{9}-\w{10}$").unwrap());
 
 // SOURCE: https://stackoverflow.com/a/3809435
 static PLEX_URL_REGEX: Lazy<Regex> = Lazy::new(|| {
@@ -57,63 +57,63 @@ mod guid_tests {
 #[nutype(
     derive(Clone, Debug, Default, Deserialize, Display, Serialize, AsRef, Deref, PartialEq),
     default = "123456",
-    validate(not_empty, len_char_max = 6, regex = PLAYLIST_ID_REGEX)
+    validate(not_empty, len_char_max = 6, regex = PLEX_ID_REGEX)
 )]
-pub struct PlaylistId(String);
+pub struct PlexId(String);
 
 #[cfg(test)]
-mod playlist_id_tests {
+mod plex_id_tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
 
     #[test]
-    fn test_valid_playlist_id() {
+    fn test_valid_plex_id() {
         let valid_id = "123456";
-        let result = PlaylistId::new(valid_id).unwrap();
+        let result = PlexId::new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
 
         let valid_id = "666666";
-        let result = PlaylistId::new(valid_id).unwrap();
+        let result = PlexId::new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
 
         let valid_id = "999999";
-        let result = PlaylistId::new(valid_id).unwrap();
+        let result = PlexId::new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
     }
 
     #[test]
-    fn test_invalid_playlist_id_empty() {
-        let expected = Err(PlaylistIdError::NotEmptyViolated);
-        let result = PlaylistId::new("");
+    fn test_invalid_plex_id_empty() {
+        let expected = Err(PlexIdError::NotEmptyViolated);
+        let result = PlexId::new("");
         assert_eq!(expected, result);
     }
 
     #[test]
-    fn test_invalid_playlist_id_length() {
-        let expected = Err(PlaylistIdError::LenCharMaxViolated);
-        let result = PlaylistId::new("1234567");
+    fn test_invalid_plex_id_length() {
+        let expected = Err(PlexIdError::LenCharMaxViolated);
+        let result = PlexId::new("1234567");
         assert_eq!(expected, result);
 
         let result =
-            PlaylistId::new("It's important to remember to be aware of rampaging grizzly bears.");
+            PlexId::new("It's important to remember to be aware of rampaging grizzly bears.");
         assert_eq!(expected, result);
     }
 
     #[test]
-    fn test_invalid_playlist_id_regex() {
-        let expected = Err(PlaylistIdError::RegexViolated);
+    fn test_invalid_plex_id_regex() {
+        let expected = Err(PlexIdError::RegexViolated);
 
-        let result = PlaylistId::new("0");
+        let result = PlexId::new("0");
         assert_eq!(expected, result);
 
-        let result = PlaylistId::new("123abc");
+        let result = PlexId::new("123abc");
         assert_eq!(expected, result);
 
-        let result = PlaylistId::new("abcdef");
+        let result = PlexId::new("abcdef");
         assert_eq!(expected, result);
 
-        let result = PlaylistId::new("a@7)bc");
+        let result = PlexId::new("a@7)bc");
         assert_eq!(expected, result);
     }
 }

@@ -1,11 +1,11 @@
-use serde::Deserialize;
-
+use crate::plex::types::PlexId;
 use crate::types::Title;
+use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
-    rating_key: String,
+    rating_key: PlexId,
     title: Title,
     summary: String,
     // smart: bool,

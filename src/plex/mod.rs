@@ -15,7 +15,7 @@ use crate::plex::models::playlists::Playlist;
 use crate::plex::models::sections::Section;
 use crate::plex::models::tracks::Track;
 use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
-use crate::plex::types::{PlaylistId, PlexToken, PlexUrl};
+use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
 
 pub mod models;
@@ -134,14 +134,14 @@ impl PlexClient {
         &self.playlists
     }
 
-    pub fn get_playlist(&self, playlist_id: &PlaylistId) -> &Playlist {
+    pub fn get_playlist(&self, playlist_id: &PlexId) -> &Playlist {
         self.playlists
             .iter()
             .find(|p| p.get_id() == playlist_id.as_str())
             .unwrap()
     }
 
-    pub async fn fetch_playlist_items(&self, playlist_id: &PlaylistId) -> Result<Vec<Track>> {
+    pub async fn fetch_playlist_items(&self, playlist_id: &PlexId) -> Result<Vec<Track>> {
         let resp: PlexResponse<Vec<Track>> = self
             .client
             .get(&format!("playlists/{playlist_id}/items"), None, None)
@@ -180,7 +180,7 @@ impl PlexClient {
 
     pub async fn update_playlist(
         &self,
-        playlist_id: &PlaylistId,
+        playlist_id: &PlexId,
         tracks: &[Track],
         summary: &str,
     ) -> Result<()> {
@@ -198,7 +198,7 @@ impl PlexClient {
         Ok(())
     }
 
-    pub async fn update_summary(&self, playlist_id: &PlaylistId, summary: &str) -> Result<()> {
+    pub async fn update_summary(&self, playlist_id: &PlexId, summary: &str) -> Result<()> {
         let params = HashMap::from([("summary".to_string(), summary.to_string())]);
 
         let _: () = self
@@ -228,11 +228,7 @@ impl PlexClient {
         Ok(playlist.rating_key.to_string())
     }
 
-    pub async fn add_items_to_playlist(
-        &self,
-        playlist_id: &PlaylistId,
-        items: &[&str],
-    ) -> Result<()> {
+    pub async fn add_items_to_playlist(&self, playlist_id: &PlexId, items: &[&str]) -> Result<()> {
         if items.is_empty() {
             return Err(anyhow!("There are no items to add to the playlist"));
         }
@@ -286,7 +282,7 @@ impl PlexClient {
         Ok(resp.media_container.metadata)
     }
 
-    pub async fn clear_playlist(&self, playlist_id: &PlaylistId) -> Result<()> {
+    pub async fn clear_playlist(&self, playlist_id: &PlexId) -> Result<()> {
         self.client
             .delete(&format!("playlists/{playlist_id}/items"), None)
             .await?;
