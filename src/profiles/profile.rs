@@ -164,6 +164,10 @@ impl Profile {
             .add(TimeDelta::minutes(next_minute as i64))
     }
 
+    pub fn get_next_refresh_hour_minute(&self) -> String {
+        self.get_next_refresh_time().format("%R").to_string()
+    }
+
     fn get_next_refresh_str(&self) -> String {
         let next_refresh_time = self.get_next_refresh_time();
         format!(

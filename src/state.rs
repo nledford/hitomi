@@ -165,7 +165,7 @@ impl AppState {
             .get_enabled_profiles()
             .into_iter()
             .fold(HashMap::new(), |mut acc, profile| {
-                acc.entry(profile.get_next_refresh_time().format("%R").to_string())
+                acc.entry(profile.get_next_refresh_hour_minute())
                     .or_insert_with(Vec::new)
                     .push(profile.get_title().to_owned());
                 acc
