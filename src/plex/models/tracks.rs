@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 
+use crate::plex::types::Guid;
+use crate::types::Title;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 
@@ -10,20 +12,20 @@ pub struct Track {
     pub key: String,
     pub parent_rating_key: String,
     pub grandparent_rating_key: String,
-    pub guid: String,
-    pub parent_guid: String,
-    pub grandparent_guid: String,
+    pub guid: Guid,
+    pub parent_guid: Guid,
+    pub grandparent_guid: Guid,
     pub parent_studio: Option<String>,
     #[serde(alias = "type")]
     pub track_type: String,
-    title: String,
+    title: Title,
     pub parent_key: String,
     pub grandparent_key: String,
-    grandparent_title: String,
-    parent_title: String,
+    grandparent_title: Title,
+    parent_title: Title,
     pub summary: String,
-    pub index: Option<i32>,
-    pub parent_index: i32,
+    pub index: Option<u32>,
+    pub parent_index: u32,
     // rating_count: Option<i32>,
     user_rating: f32,
     view_count: Option<i32>,
@@ -40,7 +42,7 @@ pub struct Track {
     // updated_at: Option<i64>,
     skip_count: Option<i32>,
     // pub music_analysis_version: Option<String>,
-    original_title: Option<String>,
+    original_title: Option<Title>,
     #[serde(alias = "Media")]
     pub media: Vec<Media>,
 }
@@ -51,16 +53,16 @@ impl Track {
     }
 
     pub fn title(&self) -> &str {
-        self.title.trim()
+        self.title.as_ref()
     }
 
     pub fn album(&self) -> &str {
-        self.parent_title.trim()
+        self.parent_title.as_ref()
     }
 
     pub fn artist(&self) -> &str {
         match &self.original_title {
-            Some(artist) => artist,
+            Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
         .trim()

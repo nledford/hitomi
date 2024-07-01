@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Context, Result};
 use reqwest::{header, Url};
 use serde::Deserialize;
-use simplelog::{debug, error};
+use simplelog::debug;
 
 use crate::utils;
 
@@ -72,6 +72,7 @@ impl HttpClient {
 
         match req.send().await {
             Ok(resp) => {
+                let url = resp.url().to_owned();
                 let contents = resp.text().await?;
                 if contents.is_empty() {
                     return Ok(T::default());
@@ -79,7 +80,7 @@ impl HttpClient {
 
                 serde_json::from_str(&contents).with_context(|| {
                     format!(
-                        "Unable to deserialise response. Body was: \"{}\"",
+                        "Unable to deserialize GET response [{url}].\nBody was: \"{}\"",
                         utils::truncate_string(&contents, 2000)
                     )
                 })

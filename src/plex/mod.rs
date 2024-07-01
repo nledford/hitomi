@@ -172,7 +172,7 @@ impl PlexClient {
         match resp {
             Ok(resp) => Ok(resp.media_container.metadata),
             Err(err) => {
-                error!("An error occurred while attempting to fetch tracks: {err}");
+                error!("An error occurred while attempting to fetch tracks:\n{err}");
                 Err(err)
             }
         }

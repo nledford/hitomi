@@ -1,3 +1,4 @@
+use crate::types::Title;
 use nutype::nutype;
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +7,7 @@ pub struct Artist {
     rating_key: String,
     pub key: String,
     pub guid: String,
-    pub title: ArtistTitle,
+    pub title: Title,
     #[serde(alias = "titleSort")]
     pub title_sort: String,
 }
