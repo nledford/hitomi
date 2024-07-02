@@ -1,11 +1,16 @@
 [package]
 name = "hitomi"
 version = "0.4.2"
-description = "Builds and updates custom playlists on a Plex server"
+description = "A CLI application that builds and updates playlists on a Plex server using json-based profiles."
 authors = ["Nathaniel Ledford <nate@nateledford.com>"]
 homepage = "https://github.com/nledford/hitomi"
 repository = "https://github.com/nledford/hitomi"
+documentation = "https://docs.rs/hitomi"
+rust-version = "1.75.0"
 license = "GPL-3.0"
+readme = "README.md"
+keywords = ["plex", "plexamp", "playlists"]
+categories = ["command-line-interface"]
 edition = "2021"
 
 [dependencies]
