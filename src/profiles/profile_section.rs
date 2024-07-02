@@ -67,6 +67,10 @@ impl Display for ProfileSection {
 }
 
 impl ProfileSection {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn get_tracks(&self) -> &[Track] {
         &self.tracks
     }
