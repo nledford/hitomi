@@ -1,7 +1,7 @@
 //! Represents the application state
 //!
 //! Loads the application configuration file and profiles from disk, as well as building a
-//! [`PlexClient`](crate::plex::PlexClient) and loading playlists from the Plex server.
+//! [`PlexClient`] and loading playlists from the Plex server.
 
 use std::collections::HashMap;
 
@@ -26,9 +26,9 @@ pub struct AppState {
     config: Config,
     /// A wrapper for the Plex API
     plex_client: PlexClient,
-    /// [`playlist`](crate::plex::models::Playlist)s fetched from Plex
+    /// [`Playlist`]s fetched from Plex
     playlists: Vec<Playlist>,
-    /// [`profile`](crate::profiles::profile::Profile)s loaded from disk
+    /// [`Profile`]s loaded from disk
     profiles: Vec<Profile>,
     refresh_failures: HashMap<String, u32>,
 }
@@ -60,7 +60,7 @@ impl AppState {
 
 // Playlists
 impl AppState {
-    /// Searches for a [`Playlist`](crate::plex::models::Playlist) by its title from the
+    /// Searches for a [`Playlist`] by its title from the
     /// application state
     pub fn get_playlist_by_title(&self, title: &Title) -> Option<&Playlist> {
         self.playlists
@@ -79,7 +79,7 @@ impl AppState {
 
 // Plex
 impl AppState {
-    /// Returns a reference to the [`PlexClient`](crate::plex::PlexClient) from the application state
+    /// Returns a reference to the [`PlexClient`] from the application state
     pub fn get_plex_client(&self) -> &PlexClient {
         &self.plex_client
     }

@@ -1,7 +1,7 @@
 //! A custom [`Client`](reqwest::Client) used by the application for making requests
 //! to the user's Plex server
 //!
-//! The original source for this code is from: https://github.com/seanmonstar/reqwest/issues/988#issuecomment-1475364352
+//! The original source for this code is from: <https://github.com/seanmonstar/reqwest/issues/988#issuecomment-1475364352>
 
 use std::collections::HashMap;
 

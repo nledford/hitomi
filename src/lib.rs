@@ -1,5 +1,6 @@
-// TODO remove this declaration when certain debug functions are no longer needed
-// #![allow(dead_code)]
+/*!
+`hitomi` is a CLI application that generates custom playlists on [Plex](https://plex.tv) servers using `.json` profiles.
+ */
 
 pub mod cli;
 pub mod config;
