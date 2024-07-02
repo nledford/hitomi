@@ -228,10 +228,6 @@ impl ProfileSection {
         self.deduplicate_tracks_by_guid
     }
 
-    pub fn has_maximum_tracks_by_artist(&self) -> bool {
-        self.maximum_tracks_by_artist > 0
-    }
-
     pub fn get_maximum_tracks_by_artist(&self) -> u32 {
         self.maximum_tracks_by_artist
     }
@@ -247,28 +243,16 @@ impl ProfileSection {
         self.sorting.split(',').collect::<_>()
     }
 
-    pub fn get_section_type(&self) -> SectionType {
-        self.section_type
-    }
-
-    fn is_section_type(&self, section_type: SectionType) -> bool {
-        self.section_type == section_type
-    }
-
     pub fn is_unplayed(&self) -> bool {
-        self.is_section_type(SectionType::Unplayed)
+        self.section_type == SectionType::Unplayed
     }
 
     pub fn is_least_played(&self) -> bool {
-        self.is_section_type(SectionType::LeastPlayed)
+        self.section_type == SectionType::LeastPlayed
     }
 
     pub fn is_oldest(&self) -> bool {
-        self.is_section_type(SectionType::Oldest)
-    }
-
-    pub fn set_tracks(&mut self, tracks: Vec<Track>) {
-        self.tracks = tracks
+        self.section_type == SectionType::Oldest
     }
 
     pub fn num_tracks(&self) -> usize {
