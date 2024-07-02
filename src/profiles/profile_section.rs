@@ -5,9 +5,7 @@ use std::fmt::{Display, Formatter};
 use anyhow::Result;
 use chrono::TimeDelta;
 use derive_builder::Builder;
-use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
 use crate::plex::models::tracks::Track;
@@ -289,8 +287,7 @@ impl ProfileSection {
         }
 
         if self.randomize_tracks {
-            let mut rng = StdRng::from_entropy();
-            self.tracks.shuffle(&mut rng)
+            self.tracks.shuffle(&mut rand::thread_rng())
         }
     }
 
