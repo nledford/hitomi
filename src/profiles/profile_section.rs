@@ -2,170 +2,13 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use anyhow::Result;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
 use crate::plex::models::tracks::Track;
-use crate::profiles::profile::Profile;
-use crate::profiles::{ProfileSource, SectionType};
-use crate::state::AppState;
-
-#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-pub struct Sections {
-    unplayed_tracks: ProfileSection,
-    least_played_tracks: ProfileSection,
-    oldest_tracks: ProfileSection,
-}
-
-impl Sections {
-    pub fn has_unplayed_tracks(&self) -> bool {
-        self.unplayed_tracks.enabled
-    }
-
-    pub fn has_least_played_tracks(&self) -> bool {
-        self.least_played_tracks.enabled
-    }
-
-    pub fn has_oldest_tracks(&self) -> bool {
-        self.oldest_tracks.enabled
-    }
-
-    pub fn set_unplayed_tracks(&mut self, section: ProfileSection) {
-        self.unplayed_tracks = section
-    }
-
-    pub fn set_least_played_tracks(&mut self, section: ProfileSection) {
-        self.least_played_tracks = section
-    }
-
-    pub fn set_oldest_tracks(&mut self, section: ProfileSection) {
-        self.oldest_tracks = section
-    }
-
-    pub fn num_enabled(&self) -> i32 {
-        [
-            self.unplayed_tracks.enabled,
-            self.least_played_tracks.enabled,
-            self.oldest_tracks.enabled,
-        ]
-        .into_iter()
-        .filter(|x| *x)
-        .count() as i32
-    }
-
-    pub async fn fetch_tracks(
-        &mut self,
-        profile: &Profile,
-        app_state: &AppState,
-        limit: Option<i32>,
-    ) -> Result<()> {
-        fetch_section_tracks(&mut self.unplayed_tracks, profile, app_state, limit).await?;
-        fetch_section_tracks(&mut self.least_played_tracks, profile, app_state, limit).await?;
-        fetch_section_tracks(&mut self.oldest_tracks, profile, app_state, limit).await?;
-
-        Ok(())
-    }
-
-    pub fn get_unplayed_section(&self) -> &ProfileSection {
-        &self.unplayed_tracks
-    }
-
-    pub fn get_unplayed_tracks(&self) -> &[Track] {
-        &self.unplayed_tracks.tracks
-    }
-
-    fn num_unplayed_tracks(&self) -> usize {
-        self.unplayed_tracks.num_tracks()
-    }
-
-    pub fn get_least_played_section(&self) -> &ProfileSection {
-        &self.least_played_tracks
-    }
-
-    pub fn get_least_played_tracks(&self) -> &[Track] {
-        &self.least_played_tracks.tracks
-    }
-
-    fn num_least_played_tracks(&self) -> usize {
-        self.least_played_tracks.num_tracks()
-    }
-
-    pub fn get_oldest_section(&self) -> &ProfileSection {
-        &self.oldest_tracks
-    }
-
-    pub fn get_oldest_tracks(&self) -> &[Track] {
-        &self.oldest_tracks.tracks
-    }
-
-    fn num_oldest_tracks(&self) -> usize {
-        self.oldest_tracks.num_tracks()
-    }
-
-    pub fn global_track_total(&self) -> usize {
-        self.num_unplayed_tracks() + self.num_least_played_tracks() + self.num_oldest_tracks()
-    }
-}
-
-async fn fetch_section_tracks(
-    section: &mut ProfileSection,
-    profile: &Profile,
-    app_state: &AppState,
-    limit: Option<i32>,
-) -> Result<()> {
-    if !section.enabled {
-        return Ok(());
-    }
-
-    let plex = app_state.get_plex_client();
-    let profile_source = profile.get_profile_source();
-    let profile_source_id = profile.get_profile_source_id();
-    let time_limit = profile.get_section_time_limit();
-
-    let mut filters = HashMap::new();
-    if section.get_minimum_track_rating() != 0 {
-        filters.insert(
-            "userRating>>".to_string(),
-            section.get_minimum_track_rating().to_string(),
-        );
-    }
-
-    if section.is_unplayed() {
-        filters.insert("viewCount".to_string(), "0".to_string());
-    } else {
-        filters.insert("viewCount>>".to_string(), "0".to_string());
-    }
-
-    match profile_source {
-        // Nothing special needs to be done for a library source, so this branch is left blank
-        ProfileSource::Library => {}
-        ProfileSource::Collection => {
-            let artists = plex
-                .fetch_artists_from_collection(&profile_source_id.unwrap())
-                .await?;
-            let artists = artists.join(",");
-
-            filters.insert("artist.id".to_string(), artists);
-        }
-        ProfileSource::Playlist => {
-            todo!("Playlist option not yet implemented")
-        }
-        ProfileSource::SingleArtist => {
-            todo!("Single artist option not yet implemented")
-        }
-    }
-
-    section.tracks = plex
-        .fetch_music(filters, section.get_sorting(), limit)
-        .await?;
-
-    section.run_manual_filters(time_limit, None);
-
-    Ok(())
-}
+use crate::profiles::SectionType;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ProfileSection {
@@ -224,6 +67,14 @@ impl Display for ProfileSection {
 }
 
 impl ProfileSection {
+    pub fn get_tracks(&self) -> &[Track] {
+        &self.tracks
+    }
+
+    pub fn set_tracks(&mut self, tracks: Vec<Track>) {
+        self.tracks = tracks
+    }
+
     pub fn get_deduplicate_tracks_by_guid(&self) -> bool {
         self.deduplicate_tracks_by_guid
     }

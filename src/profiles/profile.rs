@@ -15,7 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
-use crate::profiles::profile_section::Sections;
+use crate::profiles::sections::Sections;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileAction, ProfileSource};
 use crate::state::AppState;

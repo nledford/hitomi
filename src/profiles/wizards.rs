@@ -1,16 +1,18 @@
 //! Profile wizards
 
-use crate::profiles::profile::{Profile, ProfileBuilder};
-use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder, Sections};
-use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
-use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
-use crate::state::AppState;
-use crate::types::Title;
 use anyhow::{anyhow, Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
+
+use crate::profiles::profile::{Profile, ProfileBuilder};
+use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
+use crate::profiles::sections::Sections;
+use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
+use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
+use crate::state::AppState;
+use crate::types::Title;
 
 /// The main entrypoint of the wizard
 pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {

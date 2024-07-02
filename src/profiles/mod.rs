@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -10,10 +11,12 @@ use strum::{Display, EnumString, FromRepr, VariantNames};
 use tokio::time::sleep;
 
 use crate::profiles::profile::Profile;
+use crate::profiles::profile_section::ProfileSection;
 use crate::state::AppState;
 
 pub mod profile;
 mod profile_section;
+mod sections;
 pub mod types;
 pub mod wizards;
 
@@ -119,6 +122,64 @@ async fn refresh_playlists_from_profiles(
             error!("Error occurred while attempting to refresh profiles: {err}")
         }
     }
+
+    Ok(())
+}
+
+async fn fetch_section_tracks(
+    section: &mut ProfileSection,
+    profile: &Profile,
+    app_state: &AppState,
+    limit: Option<i32>,
+) -> Result<()> {
+    if !section.enabled {
+        return Ok(());
+    }
+
+    let plex = app_state.get_plex_client();
+    let profile_source = profile.get_profile_source();
+    let profile_source_id = profile.get_profile_source_id();
+    let time_limit = profile.get_section_time_limit();
+
+    let mut filters = HashMap::new();
+    if section.get_minimum_track_rating() != 0 {
+        filters.insert(
+            "userRating>>".to_string(),
+            section.get_minimum_track_rating().to_string(),
+        );
+    }
+
+    if section.is_unplayed() {
+        filters.insert("viewCount".to_string(), "0".to_string());
+    } else {
+        filters.insert("viewCount>>".to_string(), "0".to_string());
+    }
+
+    match profile_source {
+        // Nothing special needs to be done for a library source, so this branch is left blank
+        ProfileSource::Library => {}
+        ProfileSource::Collection => {
+            let artists = plex
+                .fetch_artists_from_collection(&profile_source_id.unwrap())
+                .await?;
+            let artists = artists.join(",");
+
+            filters.insert("artist.id".to_string(), artists);
+        }
+        ProfileSource::Playlist => {
+            todo!("Playlist option not yet implemented")
+        }
+        ProfileSource::SingleArtist => {
+            todo!("Single artist option not yet implemented")
+        }
+    }
+
+    section.set_tracks(
+        plex.fetch_music(filters, section.get_sorting(), limit)
+            .await?,
+    );
+
+    section.run_manual_filters(time_limit, None);
 
     Ok(())
 }
