@@ -166,7 +166,7 @@ impl HttpClient {
             }
         }
 
-        debug!("FINAL URL: {url}");
+        // debug!("FINAL URL: {url}");
 
         Ok(url)
     }

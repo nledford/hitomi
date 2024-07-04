@@ -80,14 +80,21 @@ pub enum ProfileAction {
 }
 
 pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()> {
-    refresh_playlists_from_profiles(app_state, run_loop, false).await?;
+    refresh_playlists_from_profiles(app_state, run_loop).await?;
 
     if run_loop {
         loop {
             sleep(Duration::from_secs(1)).await;
 
             if Local::now().second() == 0 && app_state.any_profile_refresh() {
-                refresh_playlists_from_profiles(app_state, run_loop, true).await?;
+                match refresh_playlists_from_profiles(app_state, run_loop).await {
+                    Ok(num_refreshes) => {
+                        app_state.print_update(num_refreshes);
+                    }
+                    Err(err) => {
+                        error!("Error occurred while attempting to refresh profiles: {err}")
+                    }
+                }
             }
         }
     }
@@ -97,11 +104,10 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
 
 async fn refresh_playlists_from_profiles(
     app_state: &AppState,
-    run_loop: bool,
     ran_once: bool,
-) -> Result<()> {
+) -> Result<usize> {
     if ran_once && !app_state.any_profile_refresh() {
-        return Ok(());
+        return Ok(0);
     }
 
     let mut profiles = app_state.get_profiles_to_refresh(ran_once);
@@ -112,18 +118,9 @@ async fn refresh_playlists_from_profiles(
         .collect::<Vec<_>>();
     let num_tasks = tasks.len();
 
-    match future::try_join_all(tasks).await {
-        Ok(_) => {
-            if run_loop {
-                app_state.print_update(num_tasks);
-            }
-        }
-        Err(err) => {
-            error!("Error occurred while attempting to refresh profiles: {err}")
-        }
-    }
+    future::try_join_all(tasks).await?;
 
-    Ok(())
+    Ok(num_tasks)
 }
 
 async fn fetch_section_tracks(
