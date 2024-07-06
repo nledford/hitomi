@@ -132,7 +132,8 @@ impl ProfileSection {
 
     fn deduplicate_by_track_guid(&mut self) {
         if self.deduplicate_tracks_by_guid {
-            self.tracks.dedup_by_key(|track| track.guid.to_owned());
+            self.tracks
+                .dedup_by_key(|track| track.get_guid().to_owned());
         }
     }
 
@@ -160,7 +161,7 @@ impl ProfileSection {
 
         let mut artist_occurrences: HashMap<String, u32> = HashMap::new();
         self.tracks.retain(|track| {
-            let artist_guid = track.artist_guid().to_owned();
+            let artist_guid = track.get_artist_guid().to_owned();
             let occurrences = artist_occurrences.entry(artist_guid).or_insert(0);
             *occurrences += 1;
 

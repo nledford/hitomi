@@ -1,20 +1,21 @@
 use std::fmt::{Display, Formatter};
 
-use crate::plex::types::{Guid, PlexId, PlexKey};
-use crate::types::Title;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+
+use crate::plex::types::{Guid, PlexId, PlexKey};
+use crate::types::Title;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
     rating_key: PlexId,
-    pub key: PlexKey,
-    pub parent_rating_key: PlexId,
-    pub grandparent_rating_key: PlexId,
-    pub guid: Guid,
-    pub parent_guid: Guid,
-    pub grandparent_guid: Guid,
+    key: PlexKey,
+    parent_rating_key: PlexId,
+    grandparent_rating_key: PlexId,
+    guid: Guid,
+    parent_guid: Guid,
+    grandparent_guid: Guid,
     pub parent_studio: Option<String>,
     #[serde(alias = "type")]
     pub track_type: String,
@@ -27,7 +28,7 @@ pub struct Track {
     pub index: Option<u32>,
     pub parent_index: u32,
     // rating_count: Option<i32>,
-    user_rating: f32,
+    user_rating: Option<f32>,
     view_count: Option<i32>,
     last_viewed_at: Option<i64>,
     // pub last_rated_at: Option<i64>,
@@ -52,6 +53,10 @@ impl Track {
         &self.rating_key
     }
 
+    pub fn get_guid(&self) -> &str {
+        &self.guid.as_str()
+    }
+
     pub fn title(&self) -> &str {
         self.title.as_ref()
     }
@@ -68,8 +73,12 @@ impl Track {
         .trim()
     }
 
-    pub fn artist_guid(&self) -> &str {
-        &self.grandparent_guid
+    pub fn get_artist_id(&self) -> &str {
+        self.grandparent_rating_key.as_str()
+    }
+
+    pub fn get_artist_guid(&self) -> &str {
+        self.grandparent_guid.as_str()
     }
 
     pub fn duration(&self) -> i64 {
@@ -97,7 +106,9 @@ impl Track {
     }
 
     pub fn rating(&self) -> i32 {
-        (self.user_rating / 2_f32).floor() as i32
+        let rating = self.user_rating.unwrap_or_default();
+
+        (rating / 2_f32).floor() as i32
     }
 }
 

@@ -112,6 +112,10 @@ async fn refresh_playlists_from_profiles(
         .collect::<Vec<_>>();
     let num_tasks = tasks.len();
 
+    if num_tasks == 0 {
+        return Ok(());
+    }
+
     match future::try_join_all(tasks).await {
         Ok(_) => {
             if run_loop {
@@ -119,7 +123,8 @@ async fn refresh_playlists_from_profiles(
             }
         }
         Err(err) => {
-            error!("Error occurred while attempting to refresh profiles: {err}")
+            error!("Error occurred while attempting to refresh profiles: {err}");
+            panic!("ERROR")
         }
     }
 
@@ -159,9 +164,9 @@ async fn fetch_section_tracks(
         // Nothing special needs to be done for a library source, so this branch is left blank
         ProfileSource::Library => {}
         ProfileSource::Collection => {
-            let artists = plex
-                .fetch_artists_from_collection(&profile_source_id.unwrap())
-                .await?;
+            let collection = plex.fetch_collection(&profile_source_id.unwrap()).await?;
+
+            let artists = plex.fetch_artists_from_collection(&collection).await?;
             let artists = artists.join(",");
 
             filters.insert("artist.id".to_string(), artists);

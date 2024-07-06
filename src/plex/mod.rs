@@ -1,15 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
-use derive_builder::Builder;
-use log::{error, info};
-use serde::Deserialize;
-use simplelog::debug;
-
 use crate::config::Config;
 use crate::http_client::HttpClient;
 use crate::plex::models::artists::Artist;
-use crate::plex::models::collections::Collection;
+use crate::plex::models::collections::{Collection, SubType};
 use crate::plex::models::new_playlist::NewPlaylist;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::sections::Section;
@@ -17,6 +11,13 @@ use crate::plex::models::tracks::Track;
 use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
+use anyhow::{anyhow, Result};
+use derive_builder::Builder;
+use itertools;
+use itertools::Itertools;
+use log::{error, info};
+use serde::Deserialize;
+use simplelog::debug;
 
 pub mod models;
 pub mod types;
@@ -101,6 +102,16 @@ impl PlexClient {
         self.collections = resp.media_container.metadata;
 
         Ok(())
+    }
+
+    pub async fn fetch_collection(&self, collection_id: &str) -> Result<Collection> {
+        let resp: PlexResponse<Vec<Collection>> = self
+            .client
+            .get(&format!("library/collections/{collection_id}"), None, None)
+            .await?;
+
+        let collection = resp.media_container.metadata.first().unwrap().to_owned();
+        Ok(collection)
     }
 
     pub fn get_collections(&self) -> Vec<Collection> {
@@ -248,21 +259,48 @@ impl PlexClient {
         Ok(())
     }
 
-    pub async fn fetch_artists_from_collection(&self, collection_id: &str) -> Result<Vec<String>> {
-        let resp: PlexResponse<Vec<Collection>> = self
-            .client
-            .get(
-                &format!("library/collections/{collection_id}/children"),
-                None,
-                None,
-            )
-            .await?;
-        let artists = resp
-            .media_container
-            .metadata
-            .into_iter()
-            .map(|item| item.get_id().to_owned())
-            .collect::<_>();
+    pub async fn fetch_artists_from_collection(
+        &self,
+        collection: &Collection,
+    ) -> Result<Vec<String>> {
+        let artists = match collection.get_subtype() {
+            SubType::Artist => {
+                let resp: PlexResponse<Vec<Artist>> = self
+                    .client
+                    .get(
+                        &format!("library/collections/{}/children", collection.get_id()),
+                        None,
+                        None,
+                    )
+                    .await?;
+
+                resp.media_container
+                    .metadata
+                    .into_iter()
+                    .map(|item| item.get_id().to_owned())
+                    .collect::<_>()
+            }
+            SubType::Track => {
+                let resp: PlexResponse<Vec<Track>> = self
+                    .client
+                    .get(
+                        &format!("library/collections/{}/children", collection.get_id()),
+                        None,
+                        None,
+                    )
+                    .await?;
+
+                resp.media_container
+                    .metadata
+                    .into_iter()
+                    .map(|track| track.get_artist_id().to_owned())
+                    .collect::<Vec<String>>()
+                    .into_iter()
+                    .sorted()
+                    .dedup()
+                    .collect::<_>()
+            }
+        };
 
         Ok(artists)
     }
