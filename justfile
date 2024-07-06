@@ -22,7 +22,7 @@ build: format clippy
 test: build
     cargo test
 
-run-loop $RUST_BACKTRACE="1": test
+run-loop $RUST_BACKTRACE="full": test
     cargo run -- run -l
 
 install: build test

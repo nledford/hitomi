@@ -54,7 +54,7 @@ impl Track {
     }
 
     pub fn get_guid(&self) -> &str {
-        &self.guid.as_str()
+        self.guid.as_str()
     }
 
     pub fn title(&self) -> &str {

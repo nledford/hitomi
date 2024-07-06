@@ -81,7 +81,7 @@ impl HttpClient {
                 serde_json::from_str(&contents).with_context(|| {
                     format!(
                         "Unable to deserialize GET response [{url}].\nBody was:\n \"{}\"",
-                        utils::truncate_string(&contents, 2000)
+                        utils::truncate_string(&contents, 5000)
                     )
                 })
             }

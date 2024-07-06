@@ -1,5 +1,13 @@
 use std::collections::HashMap;
 
+use anyhow::{anyhow, Result};
+use derive_builder::Builder;
+use itertools;
+use itertools::Itertools;
+use log::{error, info};
+use serde::Deserialize;
+use simplelog::debug;
+
 use crate::config::Config;
 use crate::http_client::HttpClient;
 use crate::plex::models::artists::Artist;
@@ -11,13 +19,6 @@ use crate::plex::models::tracks::Track;
 use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
-use anyhow::{anyhow, Result};
-use derive_builder::Builder;
-use itertools;
-use itertools::Itertools;
-use log::{error, info};
-use serde::Deserialize;
-use simplelog::debug;
 
 pub mod models;
 pub mod types;
@@ -263,8 +264,21 @@ impl PlexClient {
         &self,
         collection: &Collection,
     ) -> Result<Vec<String>> {
+        debug!("SUBTYPE: {:?}", collection.get_subtype());
+
         let artists = match collection.get_subtype() {
             SubType::Artist => {
+                debug!("TITLE: {}", collection.get_title());
+
+                // let resp: PlexResponse<Vec<Artist>> = self
+                //     .client
+                //     .get(
+                //         &format!("library/collections/{}/children", collection.get_id()),
+                //         None,
+                //         None,
+                //     )
+                //     .await?;
+
                 let resp: PlexResponse<Vec<Artist>> = self
                     .client
                     .get(

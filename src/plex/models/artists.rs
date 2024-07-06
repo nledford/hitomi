@@ -5,13 +5,14 @@ use crate::plex::types::{PlexId, PlexKey};
 use crate::types::Title;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Artist {
     rating_key: PlexId,
     key: PlexKey,
     pub guid: String,
-    pub title: Title,
-    #[serde(alias = "titleSort")]
-    pub title_sort: String,
+    title: Title,
+    // #[serde(alias = "titleSort")]
+    // title_sort: Option<Title>,
 }
 
 impl Artist {
