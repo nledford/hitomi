@@ -189,17 +189,28 @@ impl ProfileSection {
     pub fn reduce_to_time_limit(&mut self, time_limit: f64) {
         let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
-        let mut total = TimeDelta::seconds(0);
+        let total_duration: i64 = self
+            .get_tracks()
+            .into_iter()
+            .map(|track| track.duration())
+            .sum();
+        let total_duration = TimeDelta::milliseconds(total_duration);
+
+        if total_duration <= limit {
+            return;
+        }
+
+        let mut accum_total = TimeDelta::seconds(0);
         let index = self
-            .tracks
-            .iter()
+            .get_tracks()
+            .into_iter()
             .position(|track| {
-                total += TimeDelta::milliseconds(track.duration());
-                total > limit
+                accum_total += TimeDelta::milliseconds(track.duration());
+                accum_total > limit
             })
             .unwrap_or(0);
 
-        self.tracks = self.tracks[..=index].to_vec()
+        self.set_tracks(self.tracks[..=index].to_vec())
     }
 }
 
