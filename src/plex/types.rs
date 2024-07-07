@@ -40,16 +40,25 @@ mod guid_tests {
         let valid_album = "plex://album/608bbd7b295725002cd9c7cc";
         let valid_artist = "plex://artist/5fb686acfb665dfcb10d25c9";
 
-        assert_eq!(valid_track, Guid::new(valid_track).unwrap().into_inner());
-        assert_eq!(valid_album, Guid::new(valid_album).unwrap().into_inner());
-        assert_eq!(valid_artist, Guid::new(valid_artist).unwrap().into_inner());
+        assert_eq!(
+            valid_track,
+            Guid::try_new(valid_track).unwrap().into_inner()
+        );
+        assert_eq!(
+            valid_album,
+            Guid::try_new(valid_album).unwrap().into_inner()
+        );
+        assert_eq!(
+            valid_artist,
+            Guid::try_new(valid_artist).unwrap().into_inner()
+        );
     }
 
     #[test]
     fn test_invalid_guid_empty() {
         let expected = Err(GuidError::NotEmptyViolated);
         let invalid = "";
-        let result = Guid::new(invalid);
+        let result = Guid::try_new(invalid);
         assert_eq!(expected, result)
     }
 }
@@ -70,41 +79,41 @@ mod plex_id_tests {
     #[test]
     fn test_valid_plex_id() {
         let valid_id = "1234";
-        let result = PlexId::new(valid_id).unwrap();
+        let result = PlexId::try_new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
 
         let valid_id = "12345";
-        let result = PlexId::new(valid_id).unwrap();
+        let result = PlexId::try_new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
 
         let valid_id = "123456";
-        let result = PlexId::new(valid_id).unwrap();
+        let result = PlexId::try_new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
 
         let valid_id = "666666";
-        let result = PlexId::new(valid_id).unwrap();
+        let result = PlexId::try_new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
 
         let valid_id = "999999";
-        let result = PlexId::new(valid_id).unwrap();
+        let result = PlexId::try_new(valid_id).unwrap();
         assert_eq!(valid_id, result.into_inner());
     }
 
     #[test]
     fn test_invalid_plex_id_empty() {
         let expected = Err(PlexIdError::NotEmptyViolated);
-        let result = PlexId::new("");
+        let result = PlexId::try_new("");
         assert_eq!(expected, result);
     }
 
     #[test]
     fn test_invalid_plex_id_length() {
         let expected = Err(PlexIdError::LenCharMaxViolated);
-        let result = PlexId::new("1234567");
+        let result = PlexId::try_new("1234567");
         assert_eq!(expected, result);
 
         let result =
-            PlexId::new("It's important to remember to be aware of rampaging grizzly bears.");
+            PlexId::try_new("It's important to remember to be aware of rampaging grizzly bears.");
         assert_eq!(expected, result);
     }
 
@@ -112,16 +121,16 @@ mod plex_id_tests {
     fn test_invalid_plex_id_regex() {
         let expected = Err(PlexIdError::RegexViolated);
 
-        let result = PlexId::new("0");
+        let result = PlexId::try_new("0");
         assert_eq!(expected, result);
 
-        let result = PlexId::new("123abc");
+        let result = PlexId::try_new("123abc");
         assert_eq!(expected, result);
 
-        let result = PlexId::new("abcdef");
+        let result = PlexId::try_new("abcdef");
         assert_eq!(expected, result);
 
-        let result = PlexId::new("a@7)bc");
+        let result = PlexId::try_new("a@7)bc");
         assert_eq!(expected, result);
     }
 }
@@ -152,14 +161,14 @@ mod plex_key_tests {
     #[test]
     fn test_valid_plex_key() {
         let valid = "/library/metadata/129843";
-        let plex_key = PlexKey::new(valid).unwrap();
+        let plex_key = PlexKey::try_new(valid).unwrap();
         assert_eq!(valid, plex_key.as_ref())
     }
 
     #[test]
     fn test_invalid_plex_key_empty() {
         let expected = Err(PlexKeyError::NotEmptyViolated);
-        let result = PlexKey::new("");
+        let result = PlexKey::try_new("");
         assert_eq!(expected, result)
     }
 }
@@ -180,14 +189,14 @@ mod plex_token_tests {
     #[test]
     fn test_valid_token() {
         let fake_plex_token = "NJlYINZmB-Hdy78xubjR";
-        let plex_token = PlexToken::new(fake_plex_token).unwrap();
+        let plex_token = PlexToken::try_new(fake_plex_token).unwrap();
         assert_eq!(fake_plex_token, plex_token.into_inner())
     }
 
     #[test]
     fn test_invalid_token_empty() {
         let expected = Err(PlexTokenError::NotEmptyViolated);
-        let result = PlexToken::new("");
+        let result = PlexToken::try_new("");
         assert_eq!(expected, result)
     }
 
@@ -195,16 +204,16 @@ mod plex_token_tests {
     fn text_invalid_token_regex() {
         let expected = Err(PlexTokenError::RegexViolated);
 
-        let result = PlexToken::new("Three years later, the coffin was still full of Jello.");
+        let result = PlexToken::try_new("Three years later, the coffin was still full of Jello.");
         assert_eq!(expected, result);
 
-        let result = PlexToken::new("COhwYWn9BjJpj8s54XbF");
+        let result = PlexToken::try_new("COhwYWn9BjJpj8s54XbF");
         assert_eq!(expected, result);
 
-        let result = PlexToken::new("^*!@GWObj-wZCeVg2lZ3");
+        let result = PlexToken::try_new("^*!@GWObj-wZCeVg2lZ3");
         assert_eq!(expected, result);
 
-        let result = PlexToken::new("s4MXW4pMzC-pxGIyBBdD");
+        let result = PlexToken::try_new("s4MXW4pMzC-pxGIyBBdD");
         assert_eq!(expected, result);
     }
 }
@@ -225,26 +234,26 @@ mod plex_url_tests {
     #[test]
     fn test_valid_plex_url() {
         let valid = "http://127.0.0.1:32400";
-        let result = PlexUrl::new(valid).unwrap();
+        let result = PlexUrl::try_new(valid).unwrap();
         assert_eq!(valid, result.into_inner());
 
         let valid = "http://127.0.0.1:2112";
-        let result = PlexUrl::new(valid).unwrap();
+        let result = PlexUrl::try_new(valid).unwrap();
         assert_eq!(valid, result.into_inner());
 
         let valid = "https://plex.domain.com";
-        let result = PlexUrl::new(valid).unwrap();
+        let result = PlexUrl::try_new(valid).unwrap();
         assert_eq!(valid, result.into_inner());
 
         let valid = "https://domain.com/plex";
-        let result = PlexUrl::new(valid).unwrap();
+        let result = PlexUrl::try_new(valid).unwrap();
         assert_eq!(valid, result.into_inner());
     }
 
     #[test]
     fn test_invalid_plex_url_empty() {
         let expected = Err(PlexUrlError::NotEmptyViolated);
-        let result = PlexUrl::new("");
+        let result = PlexUrl::try_new("");
         assert_eq!(expected, result);
     }
 
@@ -252,16 +261,16 @@ mod plex_url_tests {
     fn text_invalid_plex_url_regex() {
         let expected = Err(PlexUrlError::RegexViolated);
 
-        let result = PlexUrl::new("He swore he just saw his sushi move.");
+        let result = PlexUrl::try_new("He swore he just saw his sushi move.");
         assert_eq!(result, expected);
 
-        let result = PlexUrl::new("me@thegoogle.com");
+        let result = PlexUrl::try_new("me@thegoogle.com");
         assert_eq!(result, expected);
 
-        let result = PlexUrl::new("htt://127.0.0.1:32400");
+        let result = PlexUrl::try_new("htt://127.0.0.1:32400");
         assert_eq!(result, expected);
 
-        let result = PlexUrl::new("127.0.0.1:32400");
+        let result = PlexUrl::try_new("127.0.0.1:32400");
         assert_eq!(result, expected);
     }
 }

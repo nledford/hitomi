@@ -26,14 +26,14 @@ mod tests {
 
     #[test]
     fn test_build_refresh_minutes() {
-        let interval = RefreshInterval::new(VALID_INTERVAL).unwrap();
+        let interval = RefreshInterval::try_new(VALID_INTERVAL).unwrap();
         let minutes = build_refresh_minutes(&interval);
         assert_eq!(EXPECTED_MINUTES.to_vec(), minutes);
     }
 
     #[test]
     fn test_build_invalid_refresh_minutes() {
-        let interval = RefreshInterval::new(INVALID_INTERVAL).unwrap();
+        let interval = RefreshInterval::try_new(INVALID_INTERVAL).unwrap();
         let minutes = build_refresh_minutes(&interval);
         assert_ne!(EXPECTED_MINUTES.to_vec(), minutes);
     }

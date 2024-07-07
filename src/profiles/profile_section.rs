@@ -189,11 +189,7 @@ impl ProfileSection {
     pub fn reduce_to_time_limit(&mut self, time_limit: f64) {
         let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
-        let total_duration: i64 = self
-            .get_tracks()
-            .iter()
-            .map(|track| track.duration())
-            .sum();
+        let total_duration: i64 = self.get_tracks().iter().map(|track| track.duration()).sum();
         let total_duration = TimeDelta::milliseconds(total_duration);
 
         if total_duration <= limit {

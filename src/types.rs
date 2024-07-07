@@ -27,14 +27,14 @@ mod profile_title_tests {
     #[test]
     fn test_valid_title() {
         let valid_title = "Valid Title";
-        let title = Title::new(valid_title).unwrap();
+        let title = Title::try_new(valid_title).unwrap();
         assert_eq!(valid_title, title.into_inner())
     }
 
     #[test]
     fn test_invalid_title_blank() {
         let expected = Err(TitleError::NotEmptyViolated);
-        let result = Title::new("");
+        let result = Title::try_new("");
         assert_eq!(result, expected);
     }
 
@@ -59,7 +59,7 @@ mod profile_title_tests {
             @Xpex;3)w@<2PdW[<r}
 
         "#;
-        let result = Title::new(invalid_title);
+        let result = Title::try_new(invalid_title);
         assert_eq!(expected, result)
     }
 }

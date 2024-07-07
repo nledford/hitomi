@@ -24,7 +24,7 @@ mod profile_source_id_tests {
     #[test]
     fn test_valid_profile_source_id() {
         let valid_id = "5";
-        let profile_source_id = ProfileSourceId::new(valid_id).unwrap();
+        let profile_source_id = ProfileSourceId::try_new(valid_id).unwrap();
         assert_eq!(valid_id, profile_source_id.into_inner());
     }
 
@@ -33,7 +33,7 @@ mod profile_source_id_tests {
         let expected = Err(ProfileSourceIdError::NotEmptyViolated);
 
         let invalid_id = "";
-        let result = ProfileSourceId::new(invalid_id);
+        let result = ProfileSourceId::try_new(invalid_id);
         assert_eq!(expected, result);
     }
 
@@ -42,15 +42,15 @@ mod profile_source_id_tests {
         let expected = Err(ProfileSourceIdError::RegexViolated);
 
         let invalid_id = "123abc";
-        let result = ProfileSourceId::new(invalid_id);
+        let result = ProfileSourceId::try_new(invalid_id);
         assert_eq!(expected, result);
 
         let invalid_id = "abc123";
-        let result = ProfileSourceId::new(invalid_id);
+        let result = ProfileSourceId::try_new(invalid_id);
         assert_eq!(expected, result);
 
         let invalid_id = "abcdefg";
-        let result = ProfileSourceId::new(invalid_id);
+        let result = ProfileSourceId::try_new(invalid_id);
         assert_eq!(expected, result);
     }
 }
@@ -90,7 +90,7 @@ mod refresh_interval_tests {
     fn test_invalid_refresh_interval() {
         let expected = Err(RefreshIntervalError::LessOrEqualViolated);
         let invalid_refresh_interval = 72_u32;
-        let result = RefreshInterval::new(invalid_refresh_interval);
+        let result = RefreshInterval::try_new(invalid_refresh_interval);
         assert_eq!(expected, result);
     }
 }
