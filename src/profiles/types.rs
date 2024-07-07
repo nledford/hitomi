@@ -81,7 +81,7 @@ mod refresh_interval_tests {
     #[test]
     fn test_valid_refresh_interval() {
         let valid_refresh_interval = 5_u32;
-        let refresh_interval = RefreshInterval::new(5).unwrap();
+        let refresh_interval = RefreshInterval::try_new(5).unwrap();
 
         assert_eq!(valid_refresh_interval, refresh_interval.into_inner());
     }

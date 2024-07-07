@@ -48,7 +48,7 @@ mod test_artist_title {
     #[test]
     fn test_valid_artist_title() {
         let valid = "Rush";
-        let artist_title = ArtistTitle::new(valid).unwrap();
+        let artist_title = ArtistTitle::try_new(valid).unwrap();
         assert_eq!(valid, artist_title.as_str());
     }
 
@@ -56,7 +56,7 @@ mod test_artist_title {
     fn test_invalid_artist_title_empty() {
         let expected = Err(ArtistTitleError::NotEmptyViolated);
         let invalid = "";
-        let result = ArtistTitle::new(invalid);
+        let result = ArtistTitle::try_new(invalid);
         assert_eq!(expected, result)
     }
 }
