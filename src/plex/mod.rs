@@ -56,8 +56,8 @@ impl PlexClient {
             ));
         }
 
-        let plex_url = PlexUrl::new(config.get_plex_url())?;
-        let plex_token = PlexToken::new(config.get_plex_token())?;
+        let plex_url = PlexUrl::try_new(config.get_plex_url())?;
+        let plex_token = PlexToken::try_new(config.get_plex_token())?;
 
         let client = HttpClient::new(plex_url.as_str(), plex_token.as_str())?;
 

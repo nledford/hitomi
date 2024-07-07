@@ -191,7 +191,7 @@ impl ProfileSection {
 
         let total_duration: i64 = self
             .get_tracks()
-            .into_iter()
+            .iter()
             .map(|track| track.duration())
             .sum();
         let total_duration = TimeDelta::milliseconds(total_duration);
@@ -203,7 +203,7 @@ impl ProfileSection {
         let mut accum_total = TimeDelta::seconds(0);
         let index = self
             .get_tracks()
-            .into_iter()
+            .iter()
             .position(|track| {
                 accum_total += TimeDelta::milliseconds(track.duration());
                 accum_total > limit

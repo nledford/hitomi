@@ -44,7 +44,7 @@ async fn set_profile_name(app_state: &AppState) -> Result<Title> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
-    let title = Title::new(profile_name.clone())
+    let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
     if app_state.get_profile_by_title(&title).is_some() {
@@ -90,7 +90,7 @@ fn select_refresh_interval() -> Result<RefreshInterval> {
         .items(&VALID_INTERVALS.map(|i| format!("{i} minutes")))
         .interact()?;
 
-    Ok(RefreshInterval::new(VALID_INTERVALS[selection])?)
+    Ok(RefreshInterval::try_new(VALID_INTERVALS[selection])?)
 }
 
 fn set_time_limit() -> Result<u32> {
@@ -180,7 +180,7 @@ async fn select_profile_source_id(
     };
 
     Ok(match id {
-        Some(id) => Some(ProfileSourceId::new(id)?),
+        Some(id) => Some(ProfileSourceId::try_new(id)?),
         None => None,
     })
 }

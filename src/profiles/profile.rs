@@ -248,7 +248,7 @@ impl Profile {
                 if save {
                     info!("Creating playlist in plex...");
                     let playlist_id = plex_client.create_playlist(profile).await?;
-                    let playlist_id = PlexId::new(playlist_id)?;
+                    let playlist_id = PlexId::try_new(playlist_id)?;
                     profile.set_playlist_id(&playlist_id);
 
                     info!("Adding tracks to newly created playlist...");

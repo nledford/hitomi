@@ -119,6 +119,6 @@ impl ProfileSectionSort {
         }
         .join(",");
 
-        Self::new(sort).unwrap()
+        Self::try_new(sort).unwrap()
     }
 }

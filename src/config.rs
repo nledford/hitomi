@@ -156,7 +156,7 @@ pub async fn build_config_wizard() -> Result<Config> {
                 .interact_text()?
                 .to_string()
         };
-        let plex_url = PlexUrl::new(plex_url)?;
+        let plex_url = PlexUrl::try_new(plex_url)?;
 
         let plex_token = if let Ok(plex_token) = env::var("PLEX_TOKEN") {
             plex_token
@@ -166,7 +166,7 @@ pub async fn build_config_wizard() -> Result<Config> {
                 .interact_text()?
                 .to_string()
         };
-        let plex_token = PlexToken::new(plex_token)?;
+        let plex_token = PlexToken::try_new(plex_token)?;
 
         info!("Testing connection to plex. Please wait...");
         if PlexClient::new_for_config(&plex_url, &plex_token)
