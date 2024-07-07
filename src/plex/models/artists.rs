@@ -9,7 +9,7 @@ use crate::types::Title;
 pub struct Artist {
     rating_key: PlexId,
     key: PlexKey,
-    pub guid: String,
+    // guid: String,
     title: Title,
     // #[serde(alias = "titleSort")]
     // title_sort: Option<Title>,
@@ -23,6 +23,10 @@ impl Artist {
     pub fn get_key(&self) -> &str {
         &self.key
     }
+
+    // pub fn get_guid(&self) -> &str {
+    //     &self.guid
+    // }
 
     pub fn get_title(&self) -> &str {
         self.title.as_str()

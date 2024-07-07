@@ -63,12 +63,12 @@ impl Profile {
         &self.playlist_id
     }
 
-    pub fn get_profile_source(&self) -> ProfileSource {
-        self.profile_source
+    pub fn get_profile_source(&self) -> &ProfileSource {
+        &self.profile_source
     }
 
-    pub fn get_profile_source_id(&self) -> Option<ProfileSourceId> {
-        self.profile_source_id.to_owned()
+    pub fn get_profile_source_id(&self) -> Option<&ProfileSourceId> {
+        self.profile_source_id.as_ref()
     }
 
     pub fn get_title(&self) -> &str {
@@ -182,24 +182,24 @@ impl Profile {
         self.sections.has_unplayed_tracks()
     }
 
-    fn get_unplayed_track(&self, index: usize) -> Option<Track> {
-        self.sections.get_unplayed_tracks().get(index).cloned()
+    fn get_unplayed_track(&self, index: usize) -> Option<&Track> {
+        self.sections.get_unplayed_tracks().get(index)
     }
 
     fn has_least_played_tracks(&self) -> bool {
         self.sections.has_least_played_tracks()
     }
 
-    fn get_least_played_track(&self, index: usize) -> Option<Track> {
-        self.sections.get_least_played_tracks().get(index).cloned()
+    fn get_least_played_track(&self, index: usize) -> Option<&Track> {
+        self.sections.get_least_played_tracks().get(index)
     }
 
     fn has_oldest_tracks(&self) -> bool {
         self.sections.has_oldest_tracks()
     }
 
-    fn get_oldest_track(&self, index: usize) -> Option<Track> {
-        self.sections.get_oldest_tracks().get(index).cloned()
+    fn get_oldest_track(&self, index: usize) -> Option<&Track> {
+        self.sections.get_oldest_tracks().get(index)
     }
 
     fn get_largest_section_length(&self) -> usize {

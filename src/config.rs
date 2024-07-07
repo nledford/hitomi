@@ -187,7 +187,7 @@ pub async fn build_config_wizard() -> Result<Config> {
         let sections = plex.get_music_sections();
         let titles = sections
             .iter()
-            .map(|x| x.title.to_owned())
+            .map(|x| x.get_title().to_owned())
             .collect::<Vec<String>>();
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select your music library:")
