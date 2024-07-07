@@ -164,7 +164,7 @@ async fn fetch_section_tracks(
         // Nothing special needs to be done for a library source, so this branch is left blank
         ProfileSource::Library => {}
         ProfileSource::Collection => {
-            let collection = plex.fetch_collection(&profile_source_id.unwrap()).await?;
+            let collection = plex.fetch_collection(profile_source_id.unwrap()).await?;
 
             let artists = plex.fetch_artists_from_collection(&collection).await?;
             let artists = artists.join(",");
