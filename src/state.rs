@@ -3,13 +3,14 @@
 //! Loads the application configuration file and profiles from disk, as well as building a
 //! [`PlexClient`] and loading playlists from the Plex server.
 
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
 use chrono::Local;
 use derive_builder::Builder;
 use itertools::Itertools;
 use simplelog::info;
 use state::InitCell;
-use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::config;
@@ -206,7 +207,7 @@ impl AppState {
         }
     }
 
-    pub fn any_profile_refresh(&self) -> bool {
+    fn any_profile_refresh(&self) -> bool {
         self.get_enabled_profiles()
             .iter()
             .any(|profile| profile.check_for_refresh(false))

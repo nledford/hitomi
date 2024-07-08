@@ -86,7 +86,7 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
         loop {
             sleep(Duration::from_secs(1)).await;
 
-            if utils::second_is_zero() && state::get_any_profile_refresh().await {
+            if utils::perform_refresh().await {
                 refresh_playlists_from_profiles(run_loop, true).await?;
             }
         }
@@ -98,7 +98,7 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
 async fn refresh_playlists_from_profiles(run_loop: bool, ran_once: bool) -> Result<()> {
     let app_state = APP_STATE.get().read().await;
 
-    if ran_once && !app_state.any_profile_refresh() {
+    if ran_once && !state::get_any_profile_refresh().await {
         return Ok(());
     }
 

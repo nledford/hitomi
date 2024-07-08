@@ -1,6 +1,7 @@
 use chrono::{Timelike, Utc};
 
 use crate::profiles::types::RefreshInterval;
+use crate::state;
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
 pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
@@ -9,8 +10,8 @@ pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
     (1..=60).filter(|i| i % interval == 0).collect()
 }
 
-pub fn second_is_zero() -> bool {
-    Utc::now().second() == 0
+pub async fn perform_refresh() -> bool {
+    Utc::now().second() == 0 && state::get_any_profile_refresh().await
 }
 
 pub fn truncate_string(s: &str, max_chars: usize) -> &str {
