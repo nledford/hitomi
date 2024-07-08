@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Args;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
-use simplelog::info;
+use simplelog::{debug, info};
 
 use crate::profiles::profile::Profile;
 use crate::profiles::{wizards, ProfileAction};
@@ -60,6 +60,9 @@ async fn view_playlist() -> Result<()> {
 
     let profile = select_profile("Select which profile you would like to view:").await?;
     println!("{profile}");
+
+    // Print raw json of profile
+    debug!("{}\n", serde_json::to_string_pretty(&profile).unwrap());
     Ok(())
 }
 

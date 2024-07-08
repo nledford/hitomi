@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Subcommand;
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,7 @@ use simplelog::error;
 use strum::{Display, EnumString, FromRepr, VariantNames};
 use tokio::time::sleep;
 
+use crate::plex::models::tracks::Track;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::state::{self, APP_STATE};
@@ -129,19 +130,27 @@ async fn refresh_playlists_from_profiles(run_loop: bool, ran_once: bool) -> Resu
 }
 
 async fn fetch_section_tracks(
-    section: &mut ProfileSection,
-    profile: &Profile,
+    section: Option<&ProfileSection>,
+    profile_title: &str,
     limit: Option<i32>,
-) -> Result<()> {
-    if !section.enabled {
-        return Ok(());
-    }
+) -> Result<Vec<Track>> {
+    let section = if let Some(section) = section {
+        if !section.is_enabled() {
+            return Ok(vec![]);
+        }
+        section
+    } else {
+        return Ok(vec![]);
+    };
 
     let app_state = APP_STATE.get().read().await;
     let plex = app_state.get_plex_client()?;
+
+    let profile = app_state
+        .get_profile_by_title(profile_title)
+        .ok_or(anyhow!("Profile `{profile_title}` not found"))?;
     let profile_source = profile.get_profile_source();
     let profile_source_id = profile.get_profile_source_id();
-    let time_limit = profile.get_section_time_limit();
 
     let mut filters = HashMap::new();
     if section.get_minimum_track_rating() != 0 {
@@ -176,12 +185,9 @@ async fn fetch_section_tracks(
         }
     }
 
-    section.set_tracks(
-        plex.fetch_music(filters, section.get_sorting(), limit)
-            .await?,
-    );
+    let tracks = plex
+        .fetch_music(filters, section.get_sorting(), limit)
+        .await?;
 
-    section.run_manual_filters(time_limit, None);
-
-    Ok(())
+    Ok(tracks)
 }

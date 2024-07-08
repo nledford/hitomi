@@ -1,48 +1,97 @@
+use crate::plex::models::tracks::Track;
+use crate::profiles;
+use crate::profiles::profile_section::ProfileSection;
+use anyhow::Result;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-use crate::plex::models::tracks::Track;
-use crate::profiles;
-use crate::profiles::profile::Profile;
-use crate::profiles::profile_section::ProfileSection;
+#[derive(Debug)]
+pub struct SectionFetchResult {
+    unplayed: Vec<Track>,
+    least_played: Vec<Track>,
+    oldest: Vec<Track>,
+}
 
-#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[derive(Builder, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Sections {
-    unplayed_tracks: ProfileSection,
-    least_played_tracks: ProfileSection,
-    oldest_tracks: ProfileSection,
+    unplayed_section: Option<ProfileSection>,
+    least_played_section: Option<ProfileSection>,
+    oldest_section: Option<ProfileSection>,
+}
+
+impl Default for Sections {
+    fn default() -> Self {
+        Self {
+            unplayed_section: Some(ProfileSection::default()),
+            least_played_section: Some(ProfileSection::default()),
+            oldest_section: Some(ProfileSection::default()),
+        }
+    }
 }
 
 impl Sections {
-    pub fn has_unplayed_tracks(&self) -> bool {
-        self.unplayed_tracks.enabled
+    pub fn has_unplayed_section(&self) -> bool {
+        if let Some(section) = &self.unplayed_section {
+            section.is_enabled()
+        } else {
+            false
+        }
     }
 
-    pub fn has_least_played_tracks(&self) -> bool {
-        self.least_played_tracks.enabled
+    pub fn has_least_played_section(&self) -> bool {
+        if let Some(section) = &self.least_played_section {
+            section.is_enabled()
+        } else {
+            false
+        }
     }
 
-    pub fn has_oldest_tracks(&self) -> bool {
-        self.oldest_tracks.enabled
+    pub fn has_oldest_section(&self) -> bool {
+        if let Some(section) = &self.oldest_section {
+            section.is_enabled()
+        } else {
+            false
+        }
     }
 
-    pub fn set_unplayed_tracks(&mut self, section: ProfileSection) {
-        self.unplayed_tracks = section
+    pub fn set_unplayed_section(&mut self, section: Option<ProfileSection>) {
+        self.unplayed_section = section
     }
 
-    pub fn set_least_played_tracks(&mut self, section: ProfileSection) {
-        self.least_played_tracks = section
+    pub fn set_least_played_section(&mut self, section: Option<ProfileSection>) {
+        self.least_played_section = section
     }
 
-    pub fn set_oldest_tracks(&mut self, section: ProfileSection) {
-        self.oldest_tracks = section
+    pub fn set_oldest_section(&mut self, section: Option<ProfileSection>) {
+        self.oldest_section = section
+    }
+
+    fn set_unplayed_tracks(&mut self, tracks: Vec<Track>, time_limit: f64) {
+        if let Some(section) = &mut self.unplayed_section {
+            section.set_tracks(tracks);
+            section.run_manual_filters(time_limit, None);
+        }
+    }
+
+    fn set_least_played_tracks(&mut self, tracks: Vec<Track>, time_limit: f64) {
+        if let Some(section) = &mut self.least_played_section {
+            section.set_tracks(tracks);
+            section.run_manual_filters(time_limit, None)
+        }
+    }
+
+    fn set_oldest_tracks(&mut self, tracks: Vec<Track>, time_limit: f64) {
+        if let Some(section) = &mut self.oldest_section {
+            section.set_tracks(tracks);
+            section.run_manual_filters(time_limit, None);
+        }
     }
 
     pub fn num_enabled(&self) -> i32 {
         [
-            self.unplayed_tracks.enabled,
-            self.least_played_tracks.enabled,
-            self.oldest_tracks.enabled,
+            self.has_unplayed_section(),
+            self.has_least_played_section(),
+            self.has_oldest_section(),
         ]
         .into_iter()
         .filter(|x| *x)
@@ -50,51 +99,90 @@ impl Sections {
     }
 
     pub async fn fetch_tracks(
-        &mut self,
-        profile: &Profile,
+        &self,
+        profile_title: &str,
         limit: Option<i32>,
-    ) -> anyhow::Result<()> {
-        profiles::fetch_section_tracks(&mut self.unplayed_tracks, profile, limit).await?;
-        profiles::fetch_section_tracks(&mut self.least_played_tracks, profile, limit).await?;
-        profiles::fetch_section_tracks(&mut self.oldest_tracks, profile, limit).await?;
+    ) -> Result<SectionFetchResult> {
+        let unplayed =
+            profiles::fetch_section_tracks(self.get_unplayed_section(), profile_title, limit)
+                .await?;
+        let least_played =
+            profiles::fetch_section_tracks(self.get_least_played_section(), profile_title, limit)
+                .await?;
+        let oldest =
+            profiles::fetch_section_tracks(self.get_oldest_section(), profile_title, limit).await?;
 
-        Ok(())
+        Ok(SectionFetchResult {
+            unplayed,
+            least_played,
+            oldest,
+        })
     }
 
-    pub fn get_unplayed_section(&self) -> &ProfileSection {
-        &self.unplayed_tracks
+    pub async fn set_tracks(&mut self, tracks: SectionFetchResult, time_limit: f64) {
+        self.set_unplayed_tracks(tracks.unplayed, time_limit);
+        self.set_least_played_tracks(tracks.least_played, time_limit);
+        self.set_oldest_tracks(tracks.oldest, time_limit);
     }
 
-    pub fn get_unplayed_tracks(&self) -> &[Track] {
-        self.unplayed_tracks.get_tracks()
+    pub fn get_unplayed_section(&self) -> Option<&ProfileSection> {
+        self.unplayed_section.as_ref()
     }
 
-    fn num_unplayed_tracks(&self) -> usize {
-        self.unplayed_tracks.num_tracks()
+    pub fn get_unplayed_tracks(&self) -> Option<&[Track]> {
+        if let Some(section) = self.get_unplayed_section() {
+            Some(section.get_tracks())
+        } else {
+            None
+        }
     }
 
-    pub fn get_least_played_section(&self) -> &ProfileSection {
-        &self.least_played_tracks
+    pub fn num_unplayed_tracks(&self) -> usize {
+        if let Some(tracks) = self.get_unplayed_tracks() {
+            tracks.len()
+        } else {
+            0
+        }
     }
 
-    pub fn get_least_played_tracks(&self) -> &[Track] {
-        self.least_played_tracks.get_tracks()
+    pub fn get_least_played_section(&self) -> Option<&ProfileSection> {
+        self.least_played_section.as_ref()
     }
 
-    fn num_least_played_tracks(&self) -> usize {
-        self.least_played_tracks.num_tracks()
+    pub fn get_least_played_tracks(&self) -> Option<&[Track]> {
+        if let Some(section) = self.get_least_played_section() {
+            Some(section.get_tracks())
+        } else {
+            None
+        }
     }
 
-    pub fn get_oldest_section(&self) -> &ProfileSection {
-        &self.oldest_tracks
+    pub fn num_least_played_tracks(&self) -> usize {
+        if let Some(tracks) = self.get_least_played_tracks() {
+            tracks.len()
+        } else {
+            0
+        }
     }
 
-    pub fn get_oldest_tracks(&self) -> &[Track] {
-        self.oldest_tracks.get_tracks()
+    pub fn get_oldest_section(&self) -> Option<&ProfileSection> {
+        self.oldest_section.as_ref()
     }
 
-    fn num_oldest_tracks(&self) -> usize {
-        self.oldest_tracks.num_tracks()
+    pub fn get_oldest_tracks(&self) -> Option<&[Track]> {
+        if let Some(section) = self.get_oldest_section() {
+            Some(section.get_tracks())
+        } else {
+            None
+        }
+    }
+
+    pub fn num_oldest_tracks(&self) -> usize {
+        if let Some(tracks) = self.get_oldest_tracks() {
+            tracks.len()
+        } else {
+            0
+        }
     }
 
     pub fn global_track_total(&self) -> usize {

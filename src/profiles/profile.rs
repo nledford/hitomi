@@ -179,34 +179,46 @@ impl Profile {
     }
 
     fn has_unplayed_tracks(&self) -> bool {
-        self.sections.has_unplayed_tracks()
+        self.sections.has_unplayed_section()
     }
 
     fn get_unplayed_track(&self, index: usize) -> Option<&Track> {
-        self.sections.get_unplayed_tracks().get(index)
+        if let Some(tracks) = self.sections.get_unplayed_tracks() {
+            tracks.get(index)
+        } else {
+            None
+        }
     }
 
     fn has_least_played_tracks(&self) -> bool {
-        self.sections.has_least_played_tracks()
+        self.sections.has_least_played_section()
     }
 
     fn get_least_played_track(&self, index: usize) -> Option<&Track> {
-        self.sections.get_least_played_tracks().get(index)
+        if let Some(tracks) = self.sections.get_least_played_tracks() {
+            tracks.get(index)
+        } else {
+            None
+        }
     }
 
     fn has_oldest_tracks(&self) -> bool {
-        self.sections.has_oldest_tracks()
+        self.sections.has_oldest_section()
     }
 
     fn get_oldest_track(&self, index: usize) -> Option<&Track> {
-        self.sections.get_oldest_tracks().get(index)
+        if let Some(tracks) = self.sections.get_oldest_tracks() {
+            tracks.get(index)
+        } else {
+            None
+        }
     }
 
     fn get_largest_section_length(&self) -> usize {
         *[
-            self.sections.get_unplayed_tracks().len(),
-            self.sections.get_least_played_tracks().len(),
-            self.sections.get_oldest_tracks().len(),
+            self.sections.num_unplayed_tracks(),
+            self.sections.num_least_played_tracks(),
+            self.sections.num_oldest_tracks(),
         ]
         .iter()
         .max()
@@ -221,13 +233,18 @@ impl Profile {
         action: ProfileAction,
         limit: Option<i32>,
     ) -> Result<()> {
-        info!("Building `{}` playlist...", profile.title);
+        info!("Building `{}` playlist...", profile.get_title());
 
         info!("Fetching tracks for section(s)...");
+        let tracks = profile
+            .sections
+            .fetch_tracks(profile.get_title(), limit)
+            .await?;
+
         profile
             .sections
-            .fetch_tracks(&profile.clone(), limit)
-            .await?;
+            .set_tracks(tracks, profile.get_section_time_limit())
+            .await;
 
         info!("Combining sections into single playlist...");
         let combined = profile.combine_sections()?;
@@ -345,15 +362,15 @@ impl Display for Profile {
 
         str += "\n\nSections:";
         if self.has_unplayed_tracks() {
-            str += &format!("\n{}", self.sections.get_unplayed_section())
+            str += &format!("\n{}", self.sections.get_unplayed_section().unwrap())
         }
 
         if self.has_least_played_tracks() {
-            str += &format!("\n{}", self.sections.get_least_played_section())
+            str += &format!("\n{}", self.sections.get_least_played_section().unwrap())
         }
 
         if self.has_oldest_tracks() {
-            str += &format!("\n{}", self.sections.get_oldest_section())
+            str += &format!("\n{}", self.sections.get_oldest_section().unwrap())
         }
 
         write!(f, "{str}")

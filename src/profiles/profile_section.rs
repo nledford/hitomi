@@ -17,7 +17,7 @@ pub struct ProfileSection {
     /// the resulting playlist.
     deduplicate_tracks_by_guid: bool,
     deduplicate_tracks_by_title_and_artist: bool,
-    pub enabled: bool,
+    enabled: bool,
     /// Caps the number of tracks by an artist that can appear in a single playlist.
     /// A value of `0` allows for an unlimited number of tracks.
     maximum_tracks_by_artist: u32,
@@ -69,6 +69,10 @@ impl Display for ProfileSection {
 impl ProfileSection {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
     pub fn get_tracks(&self) -> &[Track] {

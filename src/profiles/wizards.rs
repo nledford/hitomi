@@ -203,15 +203,15 @@ fn select_profile_sections() -> Result<Sections> {
     let mut sections = Sections::default();
 
     if selections.contains(&0) {
-        sections.set_unplayed_tracks(build_profile_section(SectionType::Unplayed)?)
+        sections.set_unplayed_section(Some(build_profile_section(SectionType::Unplayed)?))
     }
 
     if selections.contains(&1) {
-        sections.set_least_played_tracks(build_profile_section(SectionType::LeastPlayed)?)
+        sections.set_least_played_section(Some(build_profile_section(SectionType::LeastPlayed)?))
     }
 
     if selections.contains(&2) {
-        sections.set_oldest_tracks(build_profile_section(SectionType::Oldest)?)
+        sections.set_oldest_section(Some(build_profile_section(SectionType::Oldest)?))
     }
 
     Ok(sections)
