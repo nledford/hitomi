@@ -5,7 +5,6 @@ use crate::plex::models::tracks::Track;
 use crate::profiles;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::state::AppState;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Sections {
@@ -53,14 +52,11 @@ impl Sections {
     pub async fn fetch_tracks(
         &mut self,
         profile: &Profile,
-        app_state: &AppState,
         limit: Option<i32>,
     ) -> anyhow::Result<()> {
-        profiles::fetch_section_tracks(&mut self.unplayed_tracks, profile, app_state, limit)
-            .await?;
-        profiles::fetch_section_tracks(&mut self.least_played_tracks, profile, app_state, limit)
-            .await?;
-        profiles::fetch_section_tracks(&mut self.oldest_tracks, profile, app_state, limit).await?;
+        profiles::fetch_section_tracks(&mut self.unplayed_tracks, profile, limit).await?;
+        profiles::fetch_section_tracks(&mut self.least_played_tracks, profile, limit).await?;
+        profiles::fetch_section_tracks(&mut self.oldest_tracks, profile, limit).await?;
 
         Ok(())
     }

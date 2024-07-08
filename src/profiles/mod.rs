@@ -12,7 +12,7 @@ use tokio::time::sleep;
 
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::state::AppState;
+use crate::state::APP_STATE;
 
 pub mod profile;
 mod profile_section;
@@ -79,15 +79,15 @@ pub enum ProfileAction {
     View,
 }
 
-pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()> {
-    refresh_playlists_from_profiles(app_state, run_loop, false).await?;
+pub async fn perform_refresh(run_loop: bool) -> Result<()> {
+    refresh_playlists_from_profiles(run_loop, false).await?;
 
     if run_loop {
         loop {
             sleep(Duration::from_secs(1)).await;
 
-            if Local::now().second() == 0 && app_state.any_profile_refresh() {
-                refresh_playlists_from_profiles(app_state, run_loop, true).await?;
+            if Local::now().second() == 0 && APP_STATE.read().await.any_profile_refresh() {
+                refresh_playlists_from_profiles(run_loop, true).await?;
             }
         }
     }
@@ -95,11 +95,9 @@ pub async fn perform_refresh(app_state: &AppState, run_loop: bool) -> Result<()>
     Ok(())
 }
 
-async fn refresh_playlists_from_profiles(
-    app_state: &AppState,
-    run_loop: bool,
-    ran_once: bool,
-) -> Result<()> {
+async fn refresh_playlists_from_profiles(run_loop: bool, ran_once: bool) -> Result<()> {
+    let app_state = APP_STATE.read().await;
+
     if ran_once && !app_state.any_profile_refresh() {
         return Ok(());
     }
@@ -108,7 +106,7 @@ async fn refresh_playlists_from_profiles(
 
     let tasks = profiles
         .iter_mut()
-        .map(|profile| Profile::build_playlist(profile, app_state, ProfileAction::Update, None))
+        .map(|profile| Profile::build_playlist(profile, ProfileAction::Update, None))
         .collect::<Vec<_>>();
     let num_tasks = tasks.len();
 
@@ -134,14 +132,14 @@ async fn refresh_playlists_from_profiles(
 async fn fetch_section_tracks(
     section: &mut ProfileSection,
     profile: &Profile,
-    app_state: &AppState,
     limit: Option<i32>,
 ) -> Result<()> {
     if !section.enabled {
         return Ok(());
     }
 
-    let plex = app_state.get_plex_client();
+    let app_state = APP_STATE.read().await;
+    let plex = app_state.get_plex_client()?;
     let profile_source = profile.get_profile_source();
     let profile_source_id = profile.get_profile_source_id();
     let time_limit = profile.get_section_time_limit();

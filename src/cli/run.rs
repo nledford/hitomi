@@ -3,7 +3,6 @@ use clap::Args;
 use simplelog::info;
 
 use crate::profiles;
-use crate::state::AppState;
 
 #[derive(Args, Debug, PartialEq)]
 pub struct RunCmds {
@@ -22,10 +21,10 @@ fn print_title(looping: bool) {
     }
 }
 
-pub async fn execute_run_cmd(cmd: RunCmds, app_state: &AppState) -> Result<()> {
+pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     print_title(cmd.run_loop);
 
-    profiles::perform_refresh(app_state, cmd.run_loop).await?;
+    profiles::perform_refresh(cmd.run_loop).await?;
 
     Ok(())
 }

@@ -11,19 +11,19 @@ use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
 use crate::profiles::sections::Sections;
 use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
-use crate::state::AppState;
+use crate::state::APP_STATE;
 use crate::types::Title;
 
 /// The main entrypoint of the wizard
-pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
-    let profile_name = set_profile_name(app_state).await?;
+pub async fn create_profile_wizard() -> Result<Profile> {
+    let profile_name = set_profile_name().await?;
 
     let summary = set_summary()?;
     let refresh_interval = select_refresh_interval()?;
     let time_limit = set_time_limit()?;
 
     let profile_source = select_profile_source()?;
-    let profile_source_id = select_profile_source_id(profile_source, app_state).await?;
+    let profile_source_id = select_profile_source_id(profile_source).await?;
 
     let sections = select_profile_sections()?;
 
@@ -40,13 +40,14 @@ pub async fn create_profile_wizard(app_state: &AppState) -> Result<Profile> {
     Ok(profile)
 }
 
-async fn set_profile_name(app_state: &AppState) -> Result<Title> {
+async fn set_profile_name() -> Result<Title> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
     let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
+    let app_state = APP_STATE.read().await;
     if app_state.get_profile_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
@@ -116,9 +117,9 @@ fn select_profile_source() -> Result<ProfileSource> {
 
 async fn select_profile_source_id(
     profile_source: ProfileSource,
-    app_state: &AppState,
 ) -> Result<Option<ProfileSourceId>> {
-    let plex = app_state.get_plex_client();
+    let app_state = APP_STATE.read().await;
+    let plex = app_state.get_plex_client()?;
 
     let id: Option<String> = match profile_source {
         ProfileSource::Library => None,

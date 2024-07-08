@@ -18,7 +18,7 @@ use crate::plex::types::PlexId;
 use crate::profiles::sections::Sections;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileAction, ProfileSource};
-use crate::state::AppState;
+use crate::state::APP_STATE;
 use crate::types::Title;
 use crate::utils;
 
@@ -218,7 +218,6 @@ impl Profile {
 impl Profile {
     pub async fn build_playlist(
         profile: &mut Profile,
-        app_state: &AppState,
         action: ProfileAction,
         limit: Option<i32>,
     ) -> Result<()> {
@@ -227,7 +226,7 @@ impl Profile {
         info!("Fetching tracks for section(s)...");
         profile
             .sections
-            .fetch_tracks(&profile.clone(), app_state, limit)
+            .fetch_tracks(&profile.clone(), limit)
             .await?;
 
         info!("Combining sections into single playlist...");
@@ -237,7 +236,8 @@ impl Profile {
             .map(|track| track.id())
             .collect::<Vec<&str>>();
 
-        let plex_client = app_state.get_plex_client();
+        let app_state = APP_STATE.read().await;
+        let plex_client = app_state.get_plex_client()?;
         match action {
             ProfileAction::Create => {
                 let save = Confirm::with_theme(&ColorfulTheme::default())

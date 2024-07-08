@@ -4,12 +4,15 @@
 //! [`PlexClient`] and loading playlists from the Plex server.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::Local;
 use derive_builder::Builder;
 use itertools::Itertools;
+use once_cell::sync::Lazy;
 use simplelog::info;
+use tokio::sync::RwLock;
 
 use crate::config;
 use crate::config::Config;
@@ -19,13 +22,16 @@ use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::types::Title;
 
+pub static APP_STATE: Lazy<Arc<RwLock<AppState>>> =
+    Lazy::new(|| Arc::new(RwLock::new(AppState::default())));
+
 /// Represents the application state
-#[derive(Builder, Clone, Debug, Default)]
+#[derive(Builder, Clone, Debug)]
 pub struct AppState {
     /// The application's configuration file
-    config: Config,
+    config: Option<Config>,
     /// A wrapper for the Plex API
-    plex_client: PlexClient,
+    plex_client: Option<PlexClient>,
     /// [`Playlist`]s fetched from Plex
     playlists: Vec<Playlist>,
     /// [`Profile`]s loaded from disk
@@ -33,12 +39,24 @@ pub struct AppState {
     refresh_failures: HashMap<String, u32>,
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            config: Some(Config::default()),
+            plex_client: None,
+            playlists: vec![],
+            profiles: vec![],
+            refresh_failures: HashMap::new(),
+        }
+    }
+}
+
 impl AppState {
     /// Initializes the application state by loading a configuration file from disk (or creating one
     /// if it does not exist) and loading existing profiles, if any, from the disk.
     /// A ['PlexClient'](crate::plex::PlexClient) is then created, which is used to load playlists
     /// from the Plex server.
-    pub async fn initialize() -> Result<Self> {
+    pub async fn initialize(&mut self) -> Result<()> {
         let config = config::load_config().await?;
 
         let dir = config.get_profiles_directory();
@@ -48,13 +66,43 @@ impl AppState {
         let playlists = plex_client.get_playlists().to_vec();
         let refresh_failures = HashMap::new();
 
-        Ok(AppStateBuilder::default()
-            .config(config)
-            .plex_client(plex_client)
+        let state = AppStateBuilder::default()
+            .config(Some(config))
+            .plex_client(Some(plex_client))
             .profiles(profiles)
             .playlists(playlists)
             .refresh_failures(refresh_failures)
-            .build()?)
+            .build()?;
+
+        *self = state;
+
+        Ok(())
+    }
+}
+
+// Config
+impl AppState {
+    pub fn have_config(&self) -> bool {
+        self.config.is_some()
+    }
+    pub fn get_config(&self) -> Result<&Config> {
+        let config = self
+            .config
+            .as_ref()
+            .ok_or(anyhow!("Configuration file not loaded"))?;
+        Ok(config)
+    }
+}
+
+// Plex
+impl AppState {
+    /// Returns a reference to the [`PlexClient`] from the application state
+    pub fn get_plex_client(&self) -> Result<&PlexClient> {
+        let client = self
+            .plex_client
+            .as_ref()
+            .ok_or(anyhow!("Plex client not found"))?;
+        Ok(client)
     }
 }
 
@@ -74,14 +122,6 @@ impl AppState {
 
     pub fn update_refresh_failures(&mut self, id: &PlexId) {
         *self.refresh_failures.entry(id.to_string()).or_default() += 1;
-    }
-}
-
-// Plex
-impl AppState {
-    /// Returns a reference to the [`PlexClient`] from the application state
-    pub fn get_plex_client(&self) -> &PlexClient {
-        &self.plex_client
     }
 }
 
@@ -133,8 +173,8 @@ impl AppState {
     }
 
     /// Returns the directory where ['profile'](crate::profiles::profile::Profile)s are stored on disk.
-    pub fn get_profiles_directory(&self) -> &str {
-        self.config.get_profiles_directory()
+    pub fn get_profiles_directory(&self) -> Result<&str> {
+        Ok(self.get_config()?.get_profiles_directory())
     }
 
     /// Checks if [`profile`](crate::profiles::profile::Profile)s have been loaded to the application state.

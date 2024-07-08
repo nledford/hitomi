@@ -1,5 +1,6 @@
 //! Configuration for `hitomi`
 
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -45,7 +46,9 @@ pub struct Config {
     #[arg(long, default_value_t = String::from("."))]
     profiles_directory: String,
     #[serde(skip)]
-    loaded: bool,
+    is_default: bool,
+    #[serde(skip)]
+    is_loaded: bool,
 }
 
 impl Default for Config {
@@ -55,12 +58,17 @@ impl Default for Config {
             plex_token: "PLEX_TOKEN".to_string(),
             primary_section_id: 0,
             profiles_directory: "./profiles".to_string(),
-            loaded: false,
+            is_default: true,
+            is_loaded: false,
         }
     }
 }
 
 impl Config {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn get_plex_url(&self) -> &str {
         &self.plex_url
     }
@@ -82,7 +90,7 @@ impl Config {
     }
 
     pub fn is_loaded(&self) -> bool {
-        self.loaded
+        self.is_loaded
     }
 
     pub async fn save_config(&self, config_path: Option<&str>) -> Result<()> {
@@ -122,7 +130,7 @@ pub async fn load_config() -> Result<Config> {
     file.read_to_string(&mut config)?;
 
     if let Ok(mut config) = serde_json::from_str::<Config>(&config) {
-        config.loaded = true;
+        config.is_loaded = true;
         Ok(config)
     } else {
         Ok(build_config_wizard().await?)
@@ -203,7 +211,8 @@ pub async fn build_config_wizard() -> Result<Config> {
         .plex_url(plex_url.to_string())
         .plex_token(plex_token.to_string())
         .primary_section_id(primary_section_id)
-        .loaded(true)
+        .is_default(false)
+        .is_loaded(true)
         .build()?;
     let data = serde_json::to_string_pretty(&config)?;
 
@@ -211,4 +220,14 @@ pub async fn build_config_wizard() -> Result<Config> {
     file.write_all(data.as_bytes())?;
 
     Ok(config)
+}
+
+impl Display for Config {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut output = String::default();
+        output += &format!("Plex URL:       {}\n", self.get_plex_url());
+        output += &format!("Default Config: {}\n", self.is_default);
+
+        write!(f, "{}", output)
+    }
 }
