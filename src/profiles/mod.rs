@@ -96,12 +96,11 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
 }
 
 async fn refresh_playlists_from_profiles(run_loop: bool, ran_once: bool) -> Result<()> {
-    let app_state = APP_STATE.get().read().await;
-
     if ran_once && !state::get_any_profile_refresh().await {
         return Ok(());
     }
 
+    let app_state = APP_STATE.get().read().await;
     let mut profiles = app_state.get_profiles_to_refresh(ran_once);
 
     let tasks = profiles
