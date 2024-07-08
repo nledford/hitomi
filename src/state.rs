@@ -28,6 +28,10 @@ pub async fn initialize_app_state() -> Result<()> {
     Ok(())
 }
 
+pub async fn get_any_profile_refresh() -> bool {
+    APP_STATE.get().read().await.any_profile_refresh()
+}
+
 /// Represents the application state
 #[derive(Builder, Clone, Debug)]
 pub struct AppState {

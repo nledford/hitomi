@@ -1,3 +1,5 @@
+use chrono::{Timelike, Utc};
+
 use crate::profiles::types::RefreshInterval;
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
@@ -5,6 +7,10 @@ pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
     let interval: u32 = refresh_interval.clone().into_inner();
 
     (1..=60).filter(|i| i % interval == 0).collect()
+}
+
+pub fn second_is_zero() -> bool {
+    Utc::now().second() == 0
 }
 
 pub fn truncate_string(s: &str, max_chars: usize) -> &str {

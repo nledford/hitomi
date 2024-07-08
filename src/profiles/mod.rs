@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Result;
-use chrono::{Local, Timelike};
 use clap::Subcommand;
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -12,7 +11,8 @@ use tokio::time::sleep;
 
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::state::APP_STATE;
+use crate::state::{self, APP_STATE};
+use crate::utils;
 
 pub mod profile;
 mod profile_section;
@@ -86,7 +86,7 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
         loop {
             sleep(Duration::from_secs(1)).await;
 
-            if Local::now().second() == 0 && APP_STATE.get().read().await.any_profile_refresh() {
+            if utils::second_is_zero() && state::get_any_profile_refresh().await {
                 refresh_playlists_from_profiles(run_loop, true).await?;
             }
         }
