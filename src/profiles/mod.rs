@@ -86,7 +86,7 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
         loop {
             sleep(Duration::from_secs(1)).await;
 
-            if Local::now().second() == 0 && APP_STATE.read().await.any_profile_refresh() {
+            if Local::now().second() == 0 && APP_STATE.get().read().await.any_profile_refresh() {
                 refresh_playlists_from_profiles(run_loop, true).await?;
             }
         }
@@ -96,7 +96,7 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
 }
 
 async fn refresh_playlists_from_profiles(run_loop: bool, ran_once: bool) -> Result<()> {
-    let app_state = APP_STATE.read().await;
+    let app_state = APP_STATE.get().read().await;
 
     if ran_once && !app_state.any_profile_refresh() {
         return Ok(());
@@ -138,7 +138,7 @@ async fn fetch_section_tracks(
         return Ok(());
     }
 
-    let app_state = APP_STATE.read().await;
+    let app_state = APP_STATE.get().read().await;
     let plex = app_state.get_plex_client()?;
     let profile_source = profile.get_profile_source();
     let profile_source_id = profile.get_profile_source_id();

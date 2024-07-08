@@ -236,7 +236,7 @@ impl Profile {
             .map(|track| track.id())
             .collect::<Vec<&str>>();
 
-        let app_state = APP_STATE.read().await;
+        let app_state = APP_STATE.get().read().await;
         let plex_client = app_state.get_plex_client()?;
         match action {
             ProfileAction::Create => {

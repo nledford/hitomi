@@ -3,15 +3,13 @@
 //! Loads the application configuration file and profiles from disk, as well as building a
 //! [`PlexClient`] and loading playlists from the Plex server.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use anyhow::{anyhow, Result};
 use chrono::Local;
 use derive_builder::Builder;
 use itertools::Itertools;
-use once_cell::sync::Lazy;
 use simplelog::info;
+use state::InitCell;
+use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::config;
@@ -22,8 +20,13 @@ use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::types::Title;
 
-pub static APP_STATE: Lazy<Arc<RwLock<AppState>>> =
-    Lazy::new(|| Arc::new(RwLock::new(AppState::default())));
+pub static APP_STATE: InitCell<RwLock<AppState>> = InitCell::new();
+
+pub async fn initialize_app_state() -> Result<()> {
+    let app_state = AppState::initialize().await?;
+    APP_STATE.set(RwLock::new(app_state));
+    Ok(())
+}
 
 /// Represents the application state
 #[derive(Builder, Clone, Debug)]
@@ -56,7 +59,7 @@ impl AppState {
     /// if it does not exist) and loading existing profiles, if any, from the disk.
     /// A ['PlexClient'](crate::plex::PlexClient) is then created, which is used to load playlists
     /// from the Plex server.
-    pub async fn initialize(&mut self) -> Result<()> {
+    pub async fn initialize() -> Result<Self> {
         let config = config::load_config().await?;
 
         let dir = config.get_profiles_directory();
@@ -74,9 +77,7 @@ impl AppState {
             .refresh_failures(refresh_failures)
             .build()?;
 
-        *self = state;
-
-        Ok(())
+        Ok(state)
     }
 }
 

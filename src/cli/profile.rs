@@ -20,14 +20,14 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
             let mut profile = wizards::create_profile_wizard().await?;
             Profile::build_playlist(&mut profile, ProfileAction::Create, None).await?;
             profile
-                .save_to_file(APP_STATE.read().await.get_profiles_directory()?)
+                .save_to_file(APP_STATE.get().read().await.get_profiles_directory()?)
                 .await?;
 
             info!("Profile created successfully!")
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
-        ProfileAction::List => APP_STATE.read().await.list_profiles(),
+        ProfileAction::List => APP_STATE.get().read().await.list_profiles(),
         ProfileAction::Preview => {
             preview_playlist().await?;
         }
@@ -39,7 +39,7 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
 }
 
 async fn preview_playlist() -> Result<()> {
-    let app_state = APP_STATE.read().await;
+    let app_state = APP_STATE.get().read().await;
 
     if !app_state.have_profiles() {
         println!("No profiles found.");
@@ -53,7 +53,7 @@ async fn preview_playlist() -> Result<()> {
 }
 
 async fn view_playlist() -> Result<()> {
-    if !APP_STATE.read().await.have_profiles() {
+    if !APP_STATE.get().read().await.have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
@@ -64,7 +64,7 @@ async fn view_playlist() -> Result<()> {
 }
 
 async fn select_profile(prompt: &str) -> Result<Profile> {
-    let app_state = APP_STATE.read().await;
+    let app_state = APP_STATE.get().read().await;
 
     let titles = app_state.get_profile_titles();
     let selection = Select::with_theme(&ColorfulTheme::default())

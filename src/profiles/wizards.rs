@@ -47,7 +47,7 @@ async fn set_profile_name() -> Result<Title> {
     let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
-    let app_state = APP_STATE.read().await;
+    let app_state = APP_STATE.get().read().await;
     if app_state.get_profile_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
@@ -118,7 +118,7 @@ fn select_profile_source() -> Result<ProfileSource> {
 async fn select_profile_source_id(
     profile_source: ProfileSource,
 ) -> Result<Option<ProfileSourceId>> {
-    let app_state = APP_STATE.read().await;
+    let app_state = APP_STATE.get().read().await;
     let plex = app_state.get_plex_client()?;
 
     let id: Option<String> = match profile_source {
