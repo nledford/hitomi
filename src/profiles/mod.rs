@@ -3,14 +3,11 @@ use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 use clap::Subcommand;
-use futures::future;
 use serde::{Deserialize, Serialize};
-use simplelog::error;
 use strum::{Display, EnumString, FromRepr, VariantNames};
 use tokio::time::sleep;
 
 use crate::plex::models::tracks::Track;
-use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::state::{self, APP_STATE};
 use crate::utils;
@@ -81,48 +78,15 @@ pub enum ProfileAction {
 }
 
 pub async fn perform_refresh(run_loop: bool) -> Result<()> {
-    refresh_playlists_from_profiles(run_loop, false).await?;
+    state::perform_refresh(run_loop, false).await?;
 
     if run_loop {
         loop {
             sleep(Duration::from_secs(1)).await;
 
             if utils::perform_refresh().await {
-                refresh_playlists_from_profiles(run_loop, true).await?;
+                state::perform_refresh(run_loop, true).await?;
             }
-        }
-    }
-
-    Ok(())
-}
-
-async fn refresh_playlists_from_profiles(run_loop: bool, ran_once: bool) -> Result<()> {
-    if ran_once && !state::get_any_profile_refresh().await {
-        return Ok(());
-    }
-
-    let app_state = APP_STATE.get().read().await;
-    let mut profiles = app_state.get_profiles_to_refresh(ran_once);
-
-    let tasks = profiles
-        .iter_mut()
-        .map(|profile| Profile::build_playlist(profile, ProfileAction::Update, None))
-        .collect::<Vec<_>>();
-    let num_tasks = tasks.len();
-
-    if num_tasks == 0 {
-        return Ok(());
-    }
-
-    match future::try_join_all(tasks).await {
-        Ok(_) => {
-            if run_loop {
-                app_state.print_update(num_tasks);
-            }
-        }
-        Err(err) => {
-            error!("Error occurred while attempting to refresh profiles: {err}");
-            panic!("ERROR")
         }
     }
 

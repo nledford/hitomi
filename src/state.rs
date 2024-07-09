@@ -9,9 +9,10 @@ use anyhow::{anyhow, Result};
 use chrono::Local;
 use derive_builder::Builder;
 use itertools::Itertools;
-use simplelog::info;
+use simplelog::{error, info};
 use state::InitCell;
 use tokio::sync::RwLock;
+use tokio::task::JoinSet;
 
 use crate::config;
 use crate::config::Config;
@@ -19,6 +20,7 @@ use crate::plex::models::playlists::Playlist;
 use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
+use crate::profiles::ProfileAction;
 use crate::types::Title;
 
 pub static APP_STATE: InitCell<RwLock<AppState>> = InitCell::new();
@@ -31,6 +33,16 @@ pub async fn initialize_app_state() -> Result<()> {
 
 pub async fn get_any_profile_refresh() -> bool {
     APP_STATE.get().read().await.any_profile_refresh()
+}
+
+pub async fn perform_refresh(run_loop: bool, ran_once: bool) -> Result<()> {
+    let app_state = APP_STATE.get().read().await;
+    let profiles = app_state.get_profiles_to_refresh(ran_once);
+    app_state
+        .refresh_playlists_from_profiles(profiles, run_loop, ran_once)
+        .await?;
+
+    Ok(())
 }
 
 /// Represents the application state
@@ -62,7 +74,7 @@ impl Default for AppState {
 impl AppState {
     /// Initializes the application state by loading a configuration file from disk (or creating one
     /// if it does not exist) and loading existing profiles, if any, from the disk.
-    /// A ['PlexClient'](crate::plex::PlexClient) is then created, which is used to load playlists
+    /// A ['PlexClient'](PlexClient) is then created, which is used to load playlists
     /// from the Plex server.
     pub async fn initialize() -> Result<Self> {
         let config = config::load_config().await?;
@@ -133,10 +145,17 @@ impl AppState {
 
 // Profiles
 impl AppState {
-    /// Returns a `vec` of enabled profiles loaded in the application state
-    pub fn get_enabled_profiles(&self) -> Vec<Profile> {
+    fn get_profiles(&self) -> Vec<&Profile> {
         self.profiles
             .iter()
+            .sorted_unstable_by_key(|p| p.get_title().to_owned())
+            .collect::<Vec<_>>()
+    }
+
+    /// Returns a `vec` of enabled profiles loaded in the application state
+    pub fn get_enabled_profiles(&self) -> Vec<Profile> {
+        self.get_profiles()
+            .into_iter()
             .sorted_unstable_by_key(|p| p.get_title().to_owned())
             .filter_map(move |p| {
                 if p.get_enabled() {
@@ -213,7 +232,7 @@ impl AppState {
             .any(|profile| profile.check_for_refresh(false))
     }
 
-    pub fn print_update(&self, playlists_updated: usize) {
+    fn print_update(&self, playlists_updated: usize) {
         info!(
             "Updated {playlists_updated} playlists at {}",
             Local::now().format("%F %T")
@@ -241,5 +260,41 @@ impl AppState {
                 acc
             });
         info!("Upcoming refreshes:\n{str}")
+    }
+
+    async fn refresh_playlists_from_profiles(
+        &self,
+        profiles: Vec<Profile>,
+        run_loop: bool,
+        ran_once: bool,
+    ) -> Result<()> {
+        if ran_once && !get_any_profile_refresh().await {
+            return Ok(());
+        }
+
+        let mut set = JoinSet::new();
+        for profile in profiles {
+            set.spawn(Profile::build_playlist(
+                profile,
+                ProfileAction::Update,
+                None,
+            ));
+        }
+
+        let mut refreshed = 0;
+        while let Some(res) = set.join_next().await {
+            if let Err(err) = res {
+                error!("Error occurred while attempting to refresh profile:\n{err}");
+                panic!("ERROR")
+            } else {
+                refreshed += 1;
+            }
+        }
+
+        if run_loop {
+            self.print_update(refreshed);
+        }
+
+        Ok(())
     }
 }

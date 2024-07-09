@@ -18,7 +18,7 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
             let mut profile = wizards::create_profile_wizard().await?;
-            Profile::build_playlist(&mut profile, ProfileAction::Create, None).await?;
+            profile = Profile::build_playlist(profile, ProfileAction::Create, None).await?;
             profile
                 .save_to_file(APP_STATE.get().read().await.get_profiles_directory()?)
                 .await?;
@@ -47,7 +47,7 @@ async fn preview_playlist() -> Result<()> {
     }
 
     let profile = select_profile("Select which profile you would like to preview:").await?;
-    Profile::build_playlist(&mut profile.clone(), ProfileAction::Preview, None).await?;
+    Profile::build_playlist(profile, ProfileAction::Preview, None).await?;
 
     Ok(())
 }

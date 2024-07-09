@@ -229,10 +229,11 @@ impl Profile {
 /// Plex functions
 impl Profile {
     pub async fn build_playlist(
-        profile: &mut Profile,
+        profile: Profile,
         action: ProfileAction,
         limit: Option<i32>,
-    ) -> Result<()> {
+    ) -> Result<Profile> {
+        let mut profile = profile.clone();
         info!("Building `{}` playlist...", profile.get_title());
 
         info!("Fetching tracks for section(s)...");
@@ -264,7 +265,7 @@ impl Profile {
 
                 if save {
                     info!("Creating playlist in plex...");
-                    let playlist_id = plex_client.create_playlist(profile).await?;
+                    let playlist_id = plex_client.create_playlist(&profile).await?;
                     let playlist_id = PlexId::try_new(playlist_id)?;
                     profile.set_playlist_id(&playlist_id);
 
@@ -303,7 +304,7 @@ impl Profile {
             show_results(&combined, profile.get_title(), action);
         }
 
-        Ok(())
+        Ok(profile)
     }
 
     fn combine_sections(&self) -> Result<Vec<Track>> {
