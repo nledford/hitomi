@@ -1,6 +1,6 @@
 [package]
 name = "hitomi"
-version = "0.4.2"
+version = "0.5.0"
 description = "A CLI application that builds and updates playlists on a Plex server using json-based profiles."
 authors = ["Nathaniel Ledford <nate@nateledford.com>"]
 homepage = "https://github.com/nledford/hitomi"
@@ -16,7 +16,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 chrono = { version = "0.4.38", features = ["serde"] }
-clap = { version = "4.5.8", features = ["env", "derive"] }
+clap = { version = "4.5.9", features = ["env", "derive"] }
 derive_builder = "0.20.0"
 dialoguer = "0.11.0"
 dirs = "5.0.1"
