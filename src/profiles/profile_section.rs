@@ -30,7 +30,7 @@ pub struct ProfileSection {
     tracks: Vec<Track>,
 }
 
-impl Display for ProfileSection {
+/*impl Display for ProfileSection {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut str = format!("  {}", self.section_type);
         str += &format!(
@@ -212,6 +212,6 @@ impl ProfileSection {
 
         self.set_tracks(self.tracks[..=index].to_vec())
     }
-}
+}*/
 
 // TESTS ######################################################################

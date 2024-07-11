@@ -8,7 +8,6 @@ use strum::VariantNames;
 
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
-use crate::profiles::sections::Sections;
 use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::state::APP_STATE;
@@ -25,14 +24,14 @@ pub async fn create_profile_wizard() -> Result<Profile> {
     let profile_source = select_profile_source()?;
     let profile_source_id = select_profile_source_id(profile_source).await?;
 
-    let sections = select_profile_sections()?;
+    // let sections = select_profile_sections()?;
 
     let profile = ProfileBuilder::default()
         .title(profile_name)
         .summary(summary)
         .profile_source(profile_source)
         .profile_source_id(profile_source_id)
-        .sections(sections)
+        // .sections(sections)
         .refresh_interval(refresh_interval)
         .time_limit(time_limit)
         .build()?;
@@ -186,7 +185,7 @@ async fn select_profile_source_id(
     })
 }
 
-fn select_profile_sections() -> Result<Sections> {
+/*fn select_profile_sections() -> Result<Sections> {
     let defaults = &[false, false, false];
     let selections = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Which sections do you want to include in your profile?")
@@ -273,4 +272,4 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
         .build()?;
 
     Ok(section)
-}
+}*/

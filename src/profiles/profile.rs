@@ -15,9 +15,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
-use crate::profiles::sections::Sections;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileAction, ProfileSource};
+use crate::profiles::profile_section::ProfileSection;
 use crate::state::APP_STATE;
 use crate::types::Title;
 use crate::utils;
@@ -47,10 +47,10 @@ pub struct Profile {
     /// The track limit of the playlist
     track_limit: u32,
     /// Profile sections
-    sections: Sections,
+    sections: Vec<ProfileSection>,
 }
 
-impl Profile {
+/*impl Profile {
     fn set_playlist_id(&mut self, playlist_id: &PlexId) {
         playlist_id.clone_into(&mut self.playlist_id)
     }
@@ -426,4 +426,4 @@ impl Profile {
 
         Ok(result)
     }
-}
+}*/

@@ -14,7 +14,7 @@ use crate::utils;
 
 pub mod profile;
 mod profile_section;
-mod sections;
+// mod sections;
 pub mod types;
 pub mod wizards;
 
