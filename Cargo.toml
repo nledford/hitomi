@@ -35,6 +35,7 @@ simplelog = { version = "0.12.2", features = ["paris", "termcolor"] }
 state = { version = "0.6.0", features = ["tls"] }
 strum = { version = "0.26", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["full"] }
+uuid = { version = "1.10.0", features = ["v4"] }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
