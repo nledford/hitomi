@@ -7,7 +7,7 @@ use itertools::Itertools;
 use log::{error, info};
 use serde::Deserialize;
 use simplelog::debug;
-
+use tokio::sync::OnceCell;
 use crate::config::Config;
 use crate::http_client::HttpClient;
 use crate::plex::models::artists::Artist;
@@ -18,10 +18,26 @@ use crate::plex::models::sections::Section;
 use crate::plex::models::tracks::Track;
 use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::types::{PlexId, PlexToken, PlexUrl};
+use crate::profiles::manager::ProfileKey;
 use crate::profiles::profile::Profile;
+use crate::state::APP_STATE;
 
 pub mod models;
 pub mod types;
+
+pub static PLEX_CLIENT: OnceCell<PlexClient> = OnceCell::const_new();
+
+pub async fn initialize_plex_client(config: &Config) -> Result<()> {
+    PLEX_CLIENT.get_or_init(|| async {
+        PlexClient::initialize(config).await.unwrap()
+    }).await;
+
+    Ok(())
+}
+
+pub async fn get_plex_client() -> &'static PlexClient {
+    PLEX_CLIENT.get().unwrap()
+}
 
 /// Plex API wrapper
 ///
@@ -221,7 +237,10 @@ impl PlexClient {
         Ok(())
     }
 
-    pub async fn create_playlist(&self, profile: &Profile) -> Result<String> {
+    pub async fn create_playlist(&self, profile_key: ProfileKey) -> Result<String> {
+        let app_state = APP_STATE.get().read().await;
+        let profile = app_state.get_profile_manager().get_profile_by_key(profile_key).unwrap();
+
         let params = HashMap::from([
             (
                 "uri".to_string(),

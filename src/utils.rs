@@ -1,7 +1,6 @@
-use chrono::{Timelike, Utc};
+use chrono::Timelike;
 
 use crate::profiles::types::RefreshInterval;
-use crate::state;
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
 pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {

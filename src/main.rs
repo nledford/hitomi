@@ -4,7 +4,7 @@ use log::*;
 use simplelog::*;
 
 use hitomi::cli;
-
+use hitomi::profiles::SectionType;
 use hitomi::state;
 use hitomi::state::APP_STATE;
 
@@ -24,10 +24,8 @@ async fn main() -> Result<()> {
     state::initialize_app_state().await?;
 
     let app_state = APP_STATE.get().read().await;
-    let profiles = app_state.get_profiles();
-    for profile in profiles {
-        println!("{:?}", &profile)
-    }
+
+    app_state.get_profile_manager().list_profiles_and_sections();
 
     // config::delete_config_file().await;
 

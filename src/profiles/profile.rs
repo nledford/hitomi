@@ -1,7 +1,9 @@
 use std::cmp::PartialEq;
 use std::fmt::Display;
+use std::ops::Add;
 use std::path::PathBuf;
 
+use chrono::{DateTime, Local, TimeDelta, Timelike};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncReadExt;
@@ -13,6 +15,7 @@ use crate::profiles::ProfileSource;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::state::APP_STATE;
 use crate::types::Title;
+use crate::utils;
 
 // PROFILE ####################################################################
 
@@ -45,6 +48,14 @@ pub struct Profile {
 }
 
 impl Profile {
+    pub fn get_playlist_id(&self) -> &PlexId {
+        &self.playlist_id
+    }
+
+    pub fn set_playlist_id(&mut self, playlist_id: PlexId) {
+        self.playlist_id = playlist_id
+    }
+
     pub fn get_profile_id(&self) -> Uuid {
         self.profile_id
     }
@@ -53,30 +64,12 @@ impl Profile {
         &self.title
     }
 
+    pub fn get_summary(&self) -> &str {
+        &self.summary
+    }
+
     pub fn get_enabled(&self) -> bool {
         self.enabled
-    }
-
-    fn file_name(&self) -> String {
-        format!("{}.json", self.title)
-    }
-
-    pub async fn get_profile_path(&self) -> PathBuf {
-        let app_state = APP_STATE.get().read().await;
-
-        PathBuf::new()
-            .join(app_state.get_profiles_directory().unwrap())
-            .join(self.file_name())
-    }
-}
-
-/*impl Profile {
-    fn set_playlist_id(&mut self, playlist_id: &PlexId) {
-        playlist_id.clone_into(&mut self.playlist_id)
-    }
-
-    pub fn get_playlist_id(&self) -> &str {
-        &self.playlist_id
     }
 
     pub fn get_profile_source(&self) -> &ProfileSource {
@@ -87,46 +80,20 @@ impl Profile {
         self.profile_source_id.as_ref()
     }
 
-    pub fn get_summary(&self) -> &str {
-        &self.summary
+    fn file_name(&self) -> String {
+        format!("{}.json", self.title)
     }
 
-    pub fn get_sections(&self) -> &Sections {
+    pub fn get_sections(&self) -> &[ProfileSection] {
         &self.sections
     }
 
+    pub async fn get_profile_path(&self) -> PathBuf {
+        let app_state = APP_STATE.get().read().await;
 
-
-    fn refresh_interval_str(&self) -> String {
-        format!(
-            "Every {} minutes ({} refreshes per hour)",
-            self.refresh_interval,
-            self.refreshes_per_hour()
-        )
-    }
-
-    fn refreshes_per_hour(&self) -> i32 {
-        60 / *self.refresh_interval.as_ref() as i32
-    }
-
-    fn time_limit_str(&self) -> String {
-        if self.time_limit == 0 {
-            "No Limit".to_string()
-        } else {
-            format!("{} hours", self.time_limit)
-        }
-    }
-
-    pub fn get_section_time_limit(&self) -> f64 {
-        self.time_limit as f64 / self.sections.num_enabled() as f64
-    }
-
-    fn get_track_limit_str(&self) -> String {
-        if self.track_limit == 0 {
-            "No Limit".to_string()
-        } else {
-            format!("{} tracks", self.track_limit)
-        }
+        PathBuf::new()
+            .join(app_state.get_config().unwrap().get_profiles_directory())
+            .join(self.file_name())
     }
 
     pub fn check_for_refresh(&self, force_refresh: bool) -> bool {
@@ -173,7 +140,7 @@ impl Profile {
         self.get_next_refresh_time().format("%R").to_string()
     }
 
-    fn get_next_refresh_str(&self) -> String {
+    pub fn get_next_refresh_str(&self) -> String {
         let next_refresh_time = self.get_next_refresh_time();
         format!(
             "LAST UPDATE: {}\nNEXT UPDATE: {}",
@@ -181,178 +148,40 @@ impl Profile {
             next_refresh_time.format("%R")
         )
     }
-
-    fn has_unplayed_tracks(&self) -> bool {
-        self.sections.has_unplayed_section()
-    }
-
-    fn get_unplayed_track(&self, index: usize) -> Option<&Track> {
-        if let Some(tracks) = self.sections.get_unplayed_tracks() {
-            tracks.get(index)
-        } else {
-            None
-        }
-    }
-
-    fn has_least_played_tracks(&self) -> bool {
-        self.sections.has_least_played_section()
-    }
-
-    fn get_least_played_track(&self, index: usize) -> Option<&Track> {
-        if let Some(tracks) = self.sections.get_least_played_tracks() {
-            tracks.get(index)
-        } else {
-            None
-        }
-    }
-
-    fn has_oldest_tracks(&self) -> bool {
-        self.sections.has_oldest_section()
-    }
-
-    fn get_oldest_track(&self, index: usize) -> Option<&Track> {
-        if let Some(tracks) = self.sections.get_oldest_tracks() {
-            tracks.get(index)
-        } else {
-            None
-        }
-    }
-
-    fn get_largest_section_length(&self) -> usize {
-        *[
-            self.sections.num_unplayed_tracks(),
-            self.sections.num_least_played_tracks(),
-            self.sections.num_oldest_tracks(),
-        ]
-        .iter()
-        .max()
-        .unwrap_or(&0)
-    }
 }
 
-/// Plex functions
-impl Profile {
-    pub async fn build_playlist(
-        profile: Profile,
-        action: ProfileAction,
-        limit: Option<i32>,
-    ) -> Result<Profile> {
-        let mut profile = profile.clone();
-        info!("Building `{}` playlist...", profile.get_title());
-
-        info!("Fetching tracks for section(s)...");
-        let tracks = profile
-            .sections
-            .fetch_tracks(profile.get_title(), limit)
-            .await?;
-
-        profile
-            .sections
-            .set_tracks(tracks, profile.get_section_time_limit())
-            .await;
-
-        info!("Combining sections into single playlist...");
-        let combined = profile.combine_sections()?;
-        let items = &combined
-            .iter()
-            .map(|track| track.id())
-            .collect::<Vec<&str>>();
-
-        let app_state = APP_STATE.get().read().await;
-        let plex_client = app_state.get_plex_client()?;
-        match action {
-            ProfileAction::Create => {
-                let save = Confirm::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Would you like to save this profile?")
-                    .default(true)
-                    .interact()?;
-
-                if save {
-                    info!("Creating playlist in plex...");
-                    let playlist_id = plex_client.create_playlist(&profile).await?;
-                    let playlist_id = PlexId::try_new(playlist_id)?;
-                    profile.set_playlist_id(&playlist_id);
-
-                    info!("Adding tracks to newly created playlist...");
-                    plex_client
-                        .add_items_to_playlist(&playlist_id, items)
-                        .await?;
-                } else {
-                    info!("Playlist not saved");
-                }
-            }
-            ProfileAction::Preview => {
-                for (i, track) in combined.iter().take(25).enumerate() {
-                    println!("{:2} {}", i + 1, track)
-                }
-            }
-            ProfileAction::Update => {
-                info!("Wiping destination playlist...");
-                plex_client.clear_playlist(&profile.playlist_id).await?;
-
-                info!("Updating destination playlist...");
-                plex_client
-                    .add_items_to_playlist(&profile.playlist_id, items)
-                    .await?;
-
-                let summary = format!("{}\n{}", profile.get_next_refresh_str(), profile.summary);
-                plex_client
-                    .update_summary(&profile.playlist_id, &summary)
-                    .await?;
-            }
-            // Other actions are not relevant to this function and are ignored
-            _ => {}
-        };
-
-        if action != ProfileAction::Preview {
-            show_results(&combined, profile.get_title(), action);
-        }
-
-        Ok(profile)
+/*impl Profile {
+    fn refresh_interval_str(&self) -> String {
+        format!(
+            "Every {} minutes ({} refreshes per hour)",
+            self.refresh_interval,
+            self.refreshes_per_hour()
+        )
     }
 
-    fn combine_sections(&self) -> Result<Vec<Track>> {
-        info!("Combing {} sections...", self.sections.num_enabled());
-        let mut combined = vec![];
-
-        for i in 0..self.get_largest_section_length() {
-            if let Some(track) = self.get_unplayed_track(i) {
-                combined.push(track.clone())
-            }
-
-            if let Some(track) = self.get_least_played_track(i) {
-                combined.push(track.clone())
-            }
-
-            if let Some(track) = self.get_oldest_track(i) {
-                combined.push(track.clone())
-            }
-        }
-
-        Ok(combined)
+    fn refreshes_per_hour(&self) -> i32 {
+        60 / *self.refresh_interval.as_ref() as i32
     }
-}
 
-fn show_results(tracks: &[Track], title: &str, action: ProfileAction) {
-    let size = tracks.len();
+    fn time_limit_str(&self) -> String {
+        if self.time_limit == 0 {
+            "No Limit".to_string()
+        } else {
+            format!("{} hours", self.time_limit)
+        }
+    }
 
-    let duration: i64 = tracks.iter().map(|t| t.duration()).sum();
-    let duration = Duration::from_millis(duration as u64);
-    let duration = humantime::format_duration(duration).to_string();
+    pub fn get_section_time_limit(&self) -> f64 {
+        self.time_limit as f64 / self.sections.num_enabled() as f64
+    }
 
-    let action = if action == ProfileAction::Create {
-        "created"
-    } else {
-        "updated"
-    };
-
-    log::info!(
-        "Successfully {} `{}` playlist!\n\tFinal size: {}\n\tFinal duration: {}",
-        action,
-        title,
-        size,
-        duration
-    );
+    fn get_track_limit_str(&self) -> String {
+        if self.track_limit == 0 {
+            "No Limit".to_string()
+        } else {
+            format!("{} tracks", self.track_limit)
+        }
+    }
 }
 
 impl Display for Profile {

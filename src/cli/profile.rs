@@ -1,11 +1,12 @@
 use anyhow::Result;
 use clap::Args;
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
+use dialoguer::theme::ColorfulTheme;
 use simplelog::{debug, info};
+
 use crate::files;
+use crate::profiles::{ProfileAction, wizards};
 use crate::profiles::profile::Profile;
-use crate::profiles::{wizards, ProfileAction};
 use crate::state::APP_STATE;
 
 #[derive(Args, Debug, PartialEq)]
@@ -28,7 +29,7 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
-        ProfileAction::List => APP_STATE.get().read().await.list_profiles(),
+        ProfileAction::List => APP_STATE.get().read().await.get_profile_manager().list_profiles(),
         ProfileAction::Preview => {
             preview_playlist().await?;
         }
@@ -42,7 +43,7 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
 async fn preview_playlist() -> Result<()> {
     let app_state = APP_STATE.get().read().await;
 
-    if !app_state.have_profiles() {
+    if !app_state.get_profile_manager().have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
@@ -54,7 +55,7 @@ async fn preview_playlist() -> Result<()> {
 }
 
 async fn view_playlist() -> Result<()> {
-    if !APP_STATE.get().read().await.have_profiles() {
+    if !APP_STATE.get().read().await.get_profile_manager().have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
@@ -70,15 +71,15 @@ async fn view_playlist() -> Result<()> {
 async fn select_profile(prompt: &str) -> Result<Profile> {
     let app_state = APP_STATE.get().read().await;
 
-    let titles = app_state.get_profile_titles();
+    let titles = app_state.get_profile_manager().get_profile_titles();
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(prompt)
         .items(&titles)
         .default(0)
         .interact()?;
 
-    let profile = app_state
-        .get_profile_by_title(titles[selection])
+    let profile = app_state.get_profile_manager()
+        .get_profile_by_title(&titles[selection])
         .unwrap()
         .to_owned();
 

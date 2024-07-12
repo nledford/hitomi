@@ -6,21 +6,18 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use chrono::Local;
 use derive_builder::Builder;
-use itertools::Itertools;
-use simplelog::{error, info};
 use state::InitCell;
 use tokio::sync::RwLock;
-use tokio::task::JoinSet;
 
-use crate::{config, files};
+use crate::{config, files, plex};
 use crate::config::Config;
 use crate::plex::models::playlists::Playlist;
+use crate::plex::{PLEX_CLIENT, PlexClient};
 use crate::plex::types::PlexId;
-use crate::plex::PlexClient;
+use crate::profiles::manager;
+use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::Profile;
-use crate::profiles::ProfileAction;
 use crate::types::Title;
 
 pub static APP_STATE: InitCell<RwLock<AppState>> = InitCell::new();
@@ -35,40 +32,22 @@ pub async fn initialize_app_state() -> Result<()> {
     APP_STATE.get().read().await.any_profile_refresh()
 }*/
 
-/*
-pub async fn perform_refresh(run_loop: bool, ran_once: bool) -> Result<()> {
-    let app_state = APP_STATE.get().read().await;
-    let profiles = app_state.get_profiles_to_refresh(ran_once);
-    app_state
-        .refresh_playlists_from_profiles(profiles, run_loop, ran_once)
-        .await?;
-
-    Ok(())
-}
- */
-
 /// Represents the application state
-#[derive(Builder, Clone, Debug)]
+#[derive(Builder, Debug)]
 pub struct AppState {
     /// The application's configuration file
     config: Option<Config>,
-    /// A wrapper for the Plex API
-    plex_client: Option<PlexClient>,
     /// [`Playlist`]s fetched from Plex
     playlists: Vec<Playlist>,
-    /// [`Profile`]s loaded from disk
-    profiles: Vec<Profile>,
-    refresh_failures: HashMap<String, u32>,
+    profile_manager: ProfileManager,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         Self {
             config: Some(Config::default()),
-            plex_client: None,
             playlists: vec![],
-            profiles: vec![],
-            refresh_failures: HashMap::new(),
+            profile_manager: ProfileManager::default(),
         }
     }
 }
@@ -80,20 +59,18 @@ impl AppState {
     /// from the Plex server.
     pub async fn initialize() -> Result<Self> {
         let config = config::load_config().await?;
+        plex::initialize_plex_client(&config).await?;
 
         let dir = config.get_profiles_directory();
-        let profiles = files::load_profiles_from_disk(dir).await?;
+        manager::initialize_profile_manager(dir).await?;
+        let manager = ProfileManager::new(dir).await?;
 
-        let plex_client = PlexClient::initialize(&config).await?;
-        let playlists = plex_client.get_playlists().to_vec();
-        let refresh_failures = HashMap::new();
+        let playlists = PLEX_CLIENT.get().unwrap().get_playlists().to_vec();
 
         let state = AppStateBuilder::default()
             .config(Some(config))
-            .plex_client(Some(plex_client))
-            .profiles(profiles)
             .playlists(playlists)
-            .refresh_failures(refresh_failures)
+            .profile_manager(manager)
             .build()?;
 
         Ok(state)
@@ -114,18 +91,6 @@ impl AppState {
     }
 }
 
-// Plex
-impl AppState {
-    /// Returns a reference to the [`PlexClient`] from the application state
-    pub fn get_plex_client(&self) -> Result<&PlexClient> {
-        let client = self
-            .plex_client
-            .as_ref()
-            .ok_or(anyhow!("Plex client not found"))?;
-        Ok(client)
-    }
-}
-
 // Playlists
 impl AppState {
     /// Searches for a [`Playlist`] by its title from the
@@ -139,166 +104,11 @@ impl AppState {
     pub fn get_playlist_by_id(&self, id: &PlexId) -> Option<&Playlist> {
         self.playlists.iter().find(|p| p.get_id() == id.as_ref())
     }
-
-    pub fn update_refresh_failures(&mut self, id: &PlexId) {
-        *self.refresh_failures.entry(id.to_string()).or_default() += 1;
-    }
 }
 
 // Profiles
 impl AppState {
-    pub fn get_profiles(&self) -> Vec<&Profile> {
-        self.profiles
-            .iter()
-            .sorted_unstable_by_key(|p| p.get_title().to_owned())
-            .collect::<Vec<_>>()
+    pub fn get_profile_manager(&self) -> &ProfileManager {
+        &self.profile_manager
     }
-
-    /*pub fn get_enabled_profiles(&self) -> Vec<Profile> {
-        self.get_profiles()
-            .into_iter()
-            .sorted_unstable_by_key(|p| p.get_title().to_owned())
-            .filter_map(move |p| {
-                if p.get_enabled() {
-                    Some(p.to_owned())
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>()
-    }*/
-
-    /*
-    pub fn get_profiles_to_refresh(&self, ran_once: bool) -> Vec<Profile> {
-        if ran_once && !self.any_profile_refresh() {
-            return vec![];
-        }
-
-        // If the application has run once, we DO NOT want to override refreshing profiles
-        self.get_enabled_profiles()
-            .into_iter()
-            .sorted_unstable_by_key(|p| p.get_title().to_owned())
-            .filter(|profile| profile.check_for_refresh(!ran_once))
-            .collect::<Vec<_>>()
-    }
-     */
-
-    /// Returns a `vec` of titles from all profiles loaded in the application state
-    pub fn get_profile_titles(&self) -> Vec<&str> {
-        let profiles = self
-            .profiles
-            .iter()
-            .sorted_unstable_by_key(|p| p.get_title().to_owned())
-            .map(|p| p.get_title())
-            .collect::<Vec<_>>();
-        profiles
-    }
-
-    /// Searches for a specific [`profile`](crate::profiles::profile::Profile) by its title.
-    /// Returns `None` if no profile can be found.
-    pub fn get_profile_by_title(&self, title: &str) -> Option<&Profile> {
-        self.profiles.iter().find(|p| p.get_title() == title)
-    }
-
-    /// Returns the directory where ['profile'](crate::profiles::profile::Profile)s are stored on disk.
-    pub fn get_profiles_directory(&self) -> Result<&str> {
-        Ok(self.get_config()?.get_profiles_directory())
-    }
-
-    /// Checks if [`profile`](crate::profiles::profile::Profile)s have been loaded to the application state.
-    pub fn have_profiles(&self) -> bool {
-        !self.profiles.is_empty()
-    }
-
-    /// Prints a list of all [`profile`](crate::profiles::profile::Profile)s loaded from disk
-    pub fn list_profiles(&self) {
-        let mut titles = self
-            .profiles
-            .iter()
-            .map(|p| p.get_title())
-            .collect::<Vec<&str>>();
-        titles.sort_unstable();
-
-        if titles.is_empty() {
-            println!("No profiles found.")
-        } else {
-            println!("Existing profiles found");
-            for title in titles {
-                println!("  - {}", title)
-            }
-        }
-    }
-
-    /*fn any_profile_refresh(&self) -> bool {
-        self.get_enabled_profiles()
-            .iter()
-            .any(|profile| profile.check_for_refresh(false))
-    }*/
-
-    /*fn print_update(&self, playlists_updated: usize) {
-        info!(
-            "Updated {playlists_updated} playlists at {}",
-            Local::now().format("%F %T")
-        );
-
-        let str = self
-            .get_enabled_profiles()
-            .into_iter()
-            .fold(
-                HashMap::new(),
-                |mut acc: HashMap<String, Vec<String>>, profile| {
-                    acc.entry(profile.get_next_refresh_hour_minute())
-                        .or_default()
-                        .push(profile.get_title().to_owned());
-                    acc
-                },
-            )
-            .into_iter()
-            .sorted()
-            .fold(String::default(), |mut acc, (k, v)| {
-                acc += &format!("  <b>Refreshing at {k}:</b>\n");
-                for title in v {
-                    acc += &format!("    - {title}\n");
-                }
-                acc
-            });
-        info!("Upcoming refreshes:\n{str}")
-    }*/
-
-    /*async fn refresh_playlists_from_profiles(
-        &self,
-        profiles: Vec<Profile>,
-        run_loop: bool,
-        ran_once: bool,
-    ) -> Result<()> {
-        if ran_once && !get_any_profile_refresh().await {
-            return Ok(());
-        }
-
-        /*let mut set = JoinSet::new();
-        for profile in profiles {
-            set.spawn(Profile::build_playlist(
-                profile,
-                ProfileAction::Update,
-                None,
-            ));
-        }
-
-        let mut refreshed = 0;
-        while let Some(res) = set.join_next().await {
-            if let Err(err) = res {
-                error!("Error occurred while attempting to refresh profile:\n{err}");
-                panic!("ERROR")
-            } else {
-                refreshed += 1;
-            }
-        }
-
-        if run_loop {
-            self.print_update(refreshed);
-        }
-        */
-
-        Ok(())
-    }*/
 }

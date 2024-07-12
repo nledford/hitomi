@@ -1,17 +1,41 @@
 use std::cmp::PartialEq;
+use std::collections::HashMap;
+use std::ops::Deref;
+use std::time::Duration;
 
-use itertools::Itertools;
+use anyhow::{anyhow, Result};
+use chrono::Local;
+use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
+use futures::future;
+use itertools::{fold, Itertools};
+use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
+use state::InitCell;
+use tokio::sync::{Mutex, OnceCell, RwLock};
+use tokio::task::JoinSet;
 use uuid::Uuid;
 
+use crate::{files, plex};
+use crate::plex::models::tracks::Track;
+use crate::plex::types::PlexId;
+use crate::profiles::{ProfileAction, ProfileSource, SectionType};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
+
+pub static PROFILE_MANAGER: InitCell<RwLock<ProfileManager>> = InitCell::new();
+
+pub async fn initialize_profile_manager(profiles_directory: &str) -> Result<()> {
+    let manager = ProfileManager::new(profiles_directory).await?;
+    PROFILE_MANAGER.set(RwLock::new(manager));
+    Ok(())
+}
 
 new_key_type! {
     pub struct ProfileKey;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
     /// Profiles that have been loaded from disk
     profiles: Vec<Profile>,
@@ -20,26 +44,18 @@ pub struct ProfileManager {
     managed_unplayed_sections: SecondaryMap<ProfileKey, ProfileSection>,
     managed_least_played_sections: SecondaryMap<ProfileKey, ProfileSection>,
     managed_oldest_sections: SecondaryMap<ProfileKey, ProfileSection>,
-}
+    unplayed_tracks: SecondaryMap<ProfileKey, Vec<Track>>,
+    least_played_tracks: SecondaryMap<ProfileKey, Vec<Track>>,
+    oldest_tracks: SecondaryMap<ProfileKey, Vec<Track>>,
 
-impl Default for ProfileManager {
-    fn default() -> Self {
-        Self {
-            profiles: vec![],
-            managed_profiles: SlotMap::default(),
-            managed_unplayed_sections: SecondaryMap::default(),
-            managed_least_played_sections: SecondaryMap::default(),
-            managed_oldest_sections: SecondaryMap::default(),
-        }
-    }
 }
 
 impl ProfileManager {
-    pub fn new(profiles: Vec<Profile>) -> Self {
+    pub async fn new(profiles_directory: &str) -> Result<Self> {
         let mut manager = ProfileManager::default();
-        manager.profiles = profiles;
+        manager.profiles = files::load_profiles_from_disk(profiles_directory).await?;
         manager.build_managed_profiles_and_sections();
-        manager
+        Ok(manager)
     }
 
     fn build_managed_profiles_and_sections(&mut self) {
@@ -72,6 +88,11 @@ impl ProfileManager {
         self.managed_oldest_sections = managed_oldest_sections;
     }
 
+    fn set_playlist_id(&mut self, profile_key: ProfileKey, id: &PlexId) {
+        let profile = self.managed_profiles.get_mut(profile_key).unwrap();
+        profile.set_playlist_id(id.clone())
+    }
+
     fn get_num_profiles(&self) -> usize {
         self.managed_profiles.len()
     }
@@ -80,60 +101,92 @@ impl ProfileManager {
         !self.managed_profiles.is_empty()
     }
 
-    pub fn get_profiles(&self) -> Vec<&Profile> {
+    pub fn get_profiles(&self) -> HashMap<ProfileKey, &Profile> {
         if !self.have_profiles() {
-            return vec![];
+            return HashMap::default();
         }
 
         self.managed_profiles
             .iter()
-            .map(|(k, v)| v)
-            .sorted_unstable_by_key(|profile| profile.get_title().to_owned())
-            .collect::<Vec<_>>()
+            .sorted_unstable_by_key(|(k, v)| v.get_title().to_owned())
+            .collect::<HashMap<ProfileKey, &Profile>>()
     }
 
-    pub fn get_enabled_profiles(&self) -> Vec<&Profile> {
+    pub fn get_enabled_profiles(&self) -> HashMap<ProfileKey, &Profile> {
         self.get_profiles()
             .into_iter()
-            .filter_map(|profile| {
-                if profile.get_enabled() {
-                    Some(profile)
+            .filter_map(|(k, v)| {
+                if v.get_enabled() {
+                    Some((k, v))
                 } else {
                     None
                 }
             })
-            .collect::<Vec<_>>()
+            .collect::<HashMap<ProfileKey, &Profile>>()
     }
 
-    pub fn get_profiles_to_refresh(&self, ran_once: bool) -> Vec<&Profile> {
+    pub fn get_profiles_to_refresh(&self, ran_once: bool) -> HashMap<ProfileKey, &Profile> {
         if ran_once && !self.get_any_profile_refresh() {
-            return vec![];
+            return HashMap::default();
         }
 
         // If the application has run once, we DO NOT want to override refreshing profiles
         self.get_enabled_profiles()
             .into_iter()
-            .filter(|profile| profile.check_for_refresh(!ran_once))
-            .collect::<Vec<_>>()
+            .filter(|(k, v)| v.check_for_refresh(!ran_once))
+            .collect::<HashMap<ProfileKey, &Profile>>()
     }
 
     pub fn get_profile_titles(&self) -> Vec<String> {
         self.get_profiles()
             .iter()
-            .map(|profile| profile.get_title().to_string())
+            .map(|(_, v)| v.get_title().to_string())
             .collect::<Vec<_>>()
+    }
+
+    pub fn get_profile_by_key(&self, profile_key: ProfileKey) -> Option<&Profile> {
+        let profile = self.managed_profiles
+            .iter()
+            .find(|(k, v)| *k == profile_key);
+
+        if let Some((k, v)) = profile {
+            Some(v)
+        } else {
+            None
+        }
     }
 
     pub fn get_profile_by_id(&self, id: Uuid) -> Option<&Profile> {
         self.get_profiles()
             .into_iter()
-            .find(|profile| profile.get_profile_id() == id)
+            .find_map(|(_, v)| {
+                if v.get_profile_id() == id {
+                    Some(v)
+                } else {
+                    None
+                }
+            })
     }
 
     pub fn get_profile_by_title(&self, title: &str) -> Option<&Profile> {
         self.get_profiles()
             .into_iter()
-            .find(|profile| profile.get_title() == title)
+            .find_map(|(_, v)| {
+                if v.get_title() == title {
+                    Some(v)
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn get_profile_key(&self, title: &str) -> Option<ProfileKey> {
+        let profile = self.managed_profiles.iter().find(|(k, v)| v.get_title() == title);
+        if let Some((k, v)) = profile {
+            Some(k)
+        } else {
+            None
+        }
     }
 
     pub fn list_profiles(&self) {
@@ -166,20 +219,330 @@ impl ProfileManager {
                 println!(" - Oldest")
             }
         }
+    }
 
-        // let sections = &self.managed_profile_sections;
-        // for (k, v) in profiles {
-        //     println!("{}", v.get_title());
-        //
-        //     for (_, section) in sections.iter().filter(|(sk, sv)| *sk == k) {
-        //         println!(" - {}", section.get_section_type())
-        //     }
-        // }
+    fn get_enabled_sections_count(&self, profile_key: ProfileKey) -> i32 {
+        let mut count = 0;
+
+        if let Some(section) = self.managed_unplayed_sections.get(profile_key) {
+            if section.is_enabled() {
+                count += 1;
+            }
+        }
+
+        if let Some(section) = self.managed_least_played_sections.get(profile_key) {
+            if section.is_enabled() {
+                count += 1;
+            }
+        }
+
+        if let Some(section) = self.managed_oldest_sections.get(profile_key) {
+            if section.is_enabled() {
+                count += 1;
+            }
+        }
+
+        count
+    }
+
+    fn get_largest_section_length(&self, profile_key: ProfileKey) -> usize {
+        let unplayed = if let Some(section) = self.unplayed_tracks.get(profile_key) {
+            section.len()
+        } else {
+            0
+        };
+
+        let least_played = if let Some(section) = self.least_played_tracks.get(profile_key) {
+            section.len()
+        } else {
+            0
+        };
+
+        let oldest = if let Some(section) = self.oldest_tracks.get(profile_key) {
+            section.len()
+        } else {
+            0
+        };
+
+        *vec![unplayed, least_played, oldest].iter().max().unwrap_or(&0_usize)
+    }
+
+    fn get_track(&self, profile_key: ProfileKey, section_type: SectionType, idx: usize) -> Option<&Track> {
+        match section_type {
+            SectionType::Unplayed => {
+                if let Some(tracks) = self.unplayed_tracks.get(profile_key) {
+                    tracks.get(idx)
+                } else {
+                    None
+                }
+            }
+            SectionType::LeastPlayed => {
+                if let Some(tracks) = self.least_played_tracks.get(profile_key) {
+                    tracks.get(idx)
+                } else {
+                    None
+                }
+            }
+            SectionType::Oldest => {
+                if let Some(tracks) = self.oldest_tracks.get(profile_key) {
+                    tracks.get(idx)
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     fn get_any_profile_refresh(&self) -> bool {
         self.get_enabled_profiles()
             .iter()
-            .any(|profile| profile.check_for_refresh(false))
+            .any(|(_, v)| v.check_for_refresh(false))
     }
+
+    fn print_update(&self, playlists_updated: usize) {
+        info!("Updated {playlists_updated} at {}", Local::now().format("%F %T"));
+
+        let str = self.get_enabled_profiles()
+            .into_iter()
+            .fold(
+                HashMap::new(),
+                |mut acc: HashMap<String, Vec<String>>, (_, profile)| {
+                    acc.entry(profile.get_next_refresh_hour_minute())
+                        .or_default()
+                        .push(profile.get_title().to_owned());
+                    acc
+                },
+            )
+            .into_iter()
+            .sorted()
+            .fold(String::default(), |mut acc, (k, v)| {
+                acc += &format!("  <b>Refreshing at {k}:</b>\n");
+                for title in v {
+                    acc += &format!("    - {title}\n");
+                }
+                acc
+            });
+        info!("Upcoming refreshes:\n{str}")
+    }
+
+    pub async fn perform_refresh(&mut self, run_loop: bool, ran_once: bool) -> Result<()> {
+        self.refresh_playlists_from_profiles(run_loop, ran_once).await?;
+        Ok(())
+    }
+
+    async fn refresh_playlists_from_profiles(&mut self, run_loop: bool, ran_once: bool) -> Result<()> {
+        if ran_once && !self.get_any_profile_refresh() {
+            return Ok(());
+        }
+
+        // let mut set = JoinSet::new();
+        // for (key, profile) in profiles {
+        //     info!("Building `{}` playlist...", profile.get_title());
+        //     set.spawn(self.build_playlist(ProfileAction::Update, key, None));
+        // }
+        // let set = profiles
+        //     .iter()
+        //     .fold(
+        //         JoinSet::new(),
+        //         |mut acc, (key, profile)| {
+        //             acc.spawn(async { self.build_playlist(ProfileAction::Update, *key, None).await });
+        //             acc
+        //         });
+        let mut refreshed = 0;
+        for (key, _) in self.get_profiles_to_refresh(ran_once) {
+            self.build_playlist(ProfileAction::Update, key, None).await?;
+            refreshed += 1;
+        }
+
+        if run_loop {
+            self.print_update(refreshed);
+        }
+
+        Ok(())
+    }
+
+    async fn build_playlist(&mut self, action: ProfileAction, profile_key: ProfileKey, limit: Option<i32>) -> Result<()> {
+        info!("Fetching tracks for section(s)...");
+        self.fetch_sections_tracks(profile_key, limit).await?;
+
+        let combined = self.combine_sections(profile_key).await;
+        let items = combined
+            .iter()
+            .map(|track| track.id())
+            .collect::<Vec<_>>();
+
+        let plex_client = plex::get_plex_client().await;
+        match action {
+            ProfileAction::Create => {
+                let save = Confirm::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Would you like to save this profile?")
+                    .default(true)
+                    .interact()?;
+
+                if save {
+                    info!("Creating playlist in plex...");
+                    let playlist_id = plex_client.create_playlist(profile_key).await?;
+                    let playlist_id = PlexId::try_new(playlist_id)?;
+                    self.set_playlist_id(profile_key, &playlist_id);
+
+                    info!("Adding tracks to newly created playlist...");
+                    plex_client
+                        .add_items_to_playlist(&playlist_id, &items)
+                        .await?;
+                } else {
+                    info!("Playlist not saved");
+                }
+            }
+            ProfileAction::Preview => {
+                for (i, track) in combined.iter().take(25).enumerate() {
+                    println!("{:2} {}", i + 1, track)
+                }
+            }
+            ProfileAction::Update => {
+                let profile = self.get_profile_by_key(profile_key).unwrap();
+
+                info!("Wiping destination playlist...");
+                plex_client.clear_playlist(&profile.get_playlist_id()).await?;
+
+                info!("Updating destination playlist...");
+                plex_client
+                    .add_items_to_playlist(&profile.get_playlist_id(), &items)
+                    .await?;
+
+                let summary = format!("{}\n{}", profile.get_next_refresh_str(), profile.get_summary());
+                plex_client
+                    .update_summary(&profile.get_playlist_id(), &summary)
+                    .await?;
+            }
+            // Other actions are not relevant to this function and are ignored
+            _ => {}
+        }
+
+        if action != ProfileAction::Preview {
+            let profile = self.get_profile_by_key(profile_key).unwrap();
+            show_results(&combined, profile.get_title(), action);
+        }
+
+        Ok(())
+    }
+
+    async fn fetch_sections_tracks(&mut self, profile_key: ProfileKey, limit: Option<i32>) -> Result<()> {
+        if let Some(_) = self.managed_unplayed_sections.get(profile_key) {
+            self.fetch_section_tracks(profile_key, SectionType::Unplayed, limit).await?;
+        }
+
+        if let Some(_) = self.managed_least_played_sections.get(profile_key) {
+            self.fetch_section_tracks(profile_key, SectionType::LeastPlayed, limit).await?;
+        }
+
+        if let Some(_) = self.managed_oldest_sections.get(profile_key) {
+            self.fetch_section_tracks(profile_key, SectionType::Oldest, limit).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn fetch_section_tracks(&mut self, profile_key: ProfileKey, section_type: SectionType, limit: Option<i32>) -> Result<()> {
+        let (section, tracks) = match section_type {
+            SectionType::Unplayed => {
+                (self.managed_unplayed_sections.get(profile_key), self.unplayed_tracks.get_mut(profile_key))
+            }
+            SectionType::LeastPlayed => {
+                (self.managed_least_played_sections.get(profile_key), self.least_played_tracks.get_mut(profile_key))
+            }
+            SectionType::Oldest => {
+                (self.managed_oldest_sections.get(profile_key), self.oldest_tracks.get_mut(profile_key))
+            }
+        };
+
+        let section = if let Some(section) = section {
+            if !section.is_enabled() {
+                return Ok(());
+            }
+            section
+        } else {
+            return Ok(());
+        };
+        let profile = self.managed_profiles.get(profile_key).unwrap();
+        let profile_source = profile.get_profile_source();
+        let profile_source_id = profile.get_profile_source_id();
+
+        let plex_client = plex::get_plex_client().await;
+
+        let mut filters = HashMap::new();
+        if section.get_minimum_track_rating() != 0 {
+            filters.insert("userRating>>".to_string(), section.get_minimum_track_rating().to_string());
+        }
+
+        if section.is_unplayed_section() {
+            filters.insert("viewCount".to_string(), "0".to_string());
+        } else {
+            filters.insert("viewCount>>".to_string(), "0".to_string());
+        }
+
+        match profile_source {
+            // Nothing special needs to be done for a library source, so this branch is left blank
+            ProfileSource::Library => {}
+            ProfileSource::Collection => {
+                let collection = plex_client.fetch_collection(profile_source_id.unwrap()).await?;
+                let artists = plex_client.fetch_artists_from_collection(&collection).await?;
+                let artists = artists.join(",");
+                filters.insert("artist.id".to_string(), artists);
+            }
+            ProfileSource::Playlist => {
+                todo!("Playlist option not yet implemented")
+            }
+            ProfileSource::SingleArtist => {
+                todo!("Single artist option not yet implemented")
+            }
+        }
+
+        let mut tracks = tracks.unwrap();
+        *tracks = plex_client.fetch_music(filters, section.get_sorting(), limit).await?;
+
+        Ok(())
+    }
+
+    async fn combine_sections(&self, profile_key: ProfileKey) -> Vec<Track> {
+        info!("Combing {} sections...", self.get_enabled_sections_count(profile_key));
+
+        let mut combined = vec![];
+        for i in 0..self.get_largest_section_length(profile_key) {
+            if let Some(track) = self.get_track(profile_key, SectionType::Unplayed, i) {
+                combined.push(track.clone())
+            }
+
+            if let Some(track) = self.get_track(profile_key, SectionType::LeastPlayed, i) {
+                combined.push(track.clone())
+            }
+
+            if let Some(track) = self.get_track(profile_key, SectionType::Oldest, i) {
+                combined.push(track.clone())
+            }
+        }
+
+        combined
+    }
+}
+
+fn show_results(tracks: &[Track], title: &str, action: ProfileAction) {
+    let size = tracks.len();
+
+    let duration: i64 = tracks.iter().map(|t| t.duration()).sum();
+    let duration = Duration::from_millis(duration as u64);
+    let duration = humantime::format_duration(duration).to_string();
+
+    let action = if action == ProfileAction::Create {
+        "created"
+    } else {
+        "updated"
+    };
+
+    log::info!(
+            "Successfully {} `{}` playlist!\n\tFinal size: {}\n\tFinal duration: {}",
+            action,
+            title,
+            size,
+            duration
+        );
 }

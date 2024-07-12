@@ -5,7 +5,7 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
-
+use crate::plex;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
 use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
@@ -47,7 +47,7 @@ async fn set_profile_name() -> Result<Title> {
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
     let app_state = APP_STATE.get().read().await;
-    if app_state.get_profile_by_title(&title).is_some() {
+    if app_state.get_profile_manager().get_profile_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"
@@ -117,8 +117,7 @@ fn select_profile_source() -> Result<ProfileSource> {
 async fn select_profile_source_id(
     profile_source: ProfileSource,
 ) -> Result<Option<ProfileSourceId>> {
-    let app_state = APP_STATE.get().read().await;
-    let plex = app_state.get_plex_client()?;
+    let plex = plex::get_plex_client().await;
 
     let id: Option<String> = match profile_source {
         ProfileSource::Library => None,

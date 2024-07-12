@@ -6,12 +6,16 @@ use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-
+use uuid::Uuid;
 use crate::plex::models::tracks::Track;
 use crate::profiles::SectionType;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ProfileSection {
+    #[serde(skip, default = "Uuid::new_v4")]
+    profile_id: Uuid,
+    #[serde(skip, default = "Uuid::new_v4")]
+    profile_section_id: Uuid,
     /// Deduplicate tracks by its `guid`, so that the exact same track that appears on
     /// multiple albums (e.g., a studio album and a Greatest Hits album) only appears once in
     /// the resulting playlist.
@@ -25,9 +29,47 @@ pub struct ProfileSection {
     randomize_tracks: bool,
     section_type: SectionType,
     sorting: String,
-    #[serde(skip)]
-    #[builder(default)]
-    tracks: Vec<Track>,
+}
+
+impl ProfileSection {
+    pub fn get_profile_section_id(&self) -> Uuid {
+        self.profile_section_id
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    pub fn get_section_type(&self) -> SectionType {
+        self.section_type
+    }
+
+    pub fn is_section_type(&self, section_type: SectionType) -> bool {
+        self.get_section_type() == section_type
+    }
+
+    pub fn is_unplayed_section(&self) -> bool {
+        self.is_section_type(SectionType::Unplayed)
+    }
+
+    pub fn is_least_played_section(&self) -> bool {
+        self.is_section_type(SectionType::LeastPlayed)
+    }
+
+    pub fn is_oldest_section(&self) -> bool {
+        self.is_section_type(SectionType::Oldest)
+    }
+
+    pub fn get_minimum_track_rating(&self) -> u32 {
+        if self.minimum_track_rating <= 1 {
+            return 0;
+        }
+        (self.minimum_track_rating - 1) * 2
+    }
+
+    pub fn get_sorting(&self) -> Vec<&str> {
+        self.sorting.split(',').collect::<_>()
+    }
 }
 
 /*impl Display for ProfileSection {
@@ -71,10 +113,6 @@ impl ProfileSection {
         Self::default()
     }
 
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     pub fn get_tracks(&self) -> &[Track] {
         &self.tracks
     }
@@ -91,16 +129,9 @@ impl ProfileSection {
         self.maximum_tracks_by_artist
     }
 
-    pub fn get_minimum_track_rating(&self) -> u32 {
-        if self.minimum_track_rating <= 1 {
-            return 0;
-        }
-        (self.minimum_track_rating - 1) * 2
-    }
 
-    pub fn get_sorting(&self) -> Vec<&str> {
-        self.sorting.split(',').collect::<_>()
-    }
+
+
 
     pub fn is_unplayed(&self) -> bool {
         self.section_type == SectionType::Unplayed

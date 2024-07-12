@@ -17,6 +17,7 @@ mod profile_section;
 // mod sections;
 pub mod types;
 pub mod wizards;
+pub mod manager;
 
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
@@ -92,70 +93,5 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
     }
 
     Ok(())
-}
- */
-
-/*
-async fn fetch_section_tracks(
-    section: Option<&ProfileSection>,
-    profile_title: &str,
-    limit: Option<i32>,
-) -> Result<Vec<Track>> {
-    let section = if let Some(section) = section {
-        if !section.is_enabled() {
-            return Ok(vec![]);
-        }
-        section
-    } else {
-        return Ok(vec![]);
-    };
-
-    let app_state = APP_STATE.get().read().await;
-    let plex = app_state.get_plex_client()?;
-
-    let profile = app_state
-        .get_profile_by_title(profile_title)
-        .ok_or(anyhow!("Profile `{profile_title}` not found"))?;
-    let profile_source = profile.get_profile_source();
-    let profile_source_id = profile.get_profile_source_id();
-
-    let mut filters = HashMap::new();
-    if section.get_minimum_track_rating() != 0 {
-        filters.insert(
-            "userRating>>".to_string(),
-            section.get_minimum_track_rating().to_string(),
-        );
-    }
-
-    if section.is_unplayed() {
-        filters.insert("viewCount".to_string(), "0".to_string());
-    } else {
-        filters.insert("viewCount>>".to_string(), "0".to_string());
-    }
-
-    match profile_source {
-        // Nothing special needs to be done for a library source, so this branch is left blank
-        ProfileSource::Library => {}
-        ProfileSource::Collection => {
-            let collection = plex.fetch_collection(profile_source_id.unwrap()).await?;
-
-            let artists = plex.fetch_artists_from_collection(&collection).await?;
-            let artists = artists.join(",");
-
-            filters.insert("artist.id".to_string(), artists);
-        }
-        ProfileSource::Playlist => {
-            todo!("Playlist option not yet implemented")
-        }
-        ProfileSource::SingleArtist => {
-            todo!("Single artist option not yet implemented")
-        }
-    }
-
-    let tracks = plex
-        .fetch_music(filters, section.get_sorting(), limit)
-        .await?;
-
-    Ok(tracks)
 }
  */
