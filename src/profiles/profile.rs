@@ -55,9 +55,9 @@ impl Profile {
         &self.title
     }
 
-    // pub fn get_enabled(&self) -> bool {
-    //     self.enabled
-    // }
+    pub fn get_enabled(&self) -> bool {
+        self.enabled
+    }
 
     fn file_name(&self) -> String {
         format!("{}.json", self.title)
@@ -77,8 +77,6 @@ impl Profile {
         playlist_id.clone_into(&mut self.playlist_id)
     }
 
-
-
     pub fn get_playlist_id(&self) -> &str {
         &self.playlist_id
     }
@@ -90,8 +88,6 @@ impl Profile {
     pub fn get_profile_source_id(&self) -> Option<&ProfileSourceId> {
         self.profile_source_id.as_ref()
     }
-
-
 
     pub fn get_summary(&self) -> &str {
         &self.summary

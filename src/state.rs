@@ -147,12 +147,12 @@ impl AppState {
 
 // Profiles
 impl AppState {
-    /*fn get_profiles(&self) -> Vec<&Profile> {
+    pub fn get_profiles(&self) -> Vec<&Profile> {
         self.profiles
             .iter()
             .sorted_unstable_by_key(|p| p.get_title().to_owned())
             .collect::<Vec<_>>()
-    }*/
+    }
 
     /*pub fn get_enabled_profiles(&self) -> Vec<Profile> {
         self.get_profiles()
