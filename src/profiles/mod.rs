@@ -77,6 +77,7 @@ pub enum ProfileAction {
     View,
 }
 
+/*
 pub async fn perform_refresh(run_loop: bool) -> Result<()> {
     state::perform_refresh(run_loop, false).await?;
 
@@ -92,7 +93,9 @@ pub async fn perform_refresh(run_loop: bool) -> Result<()> {
 
     Ok(())
 }
+ */
 
+/*
 async fn fetch_section_tracks(
     section: Option<&ProfileSection>,
     profile_title: &str,
@@ -155,3 +158,4 @@ async fn fetch_section_tracks(
 
     Ok(tracks)
 }
+ */

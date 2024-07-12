@@ -50,14 +50,34 @@ pub struct Profile {
     sections: Vec<ProfileSection>,
 }
 
+impl Profile {
+    pub fn get_title(&self) -> &str {
+        &self.title
+    }
+
+    // pub fn get_enabled(&self) -> bool {
+    //     self.enabled
+    // }
+
+    fn file_name(&self) -> String {
+        format!("{}.json", self.title)
+    }
+
+    pub async fn get_profile_path(&self) -> PathBuf {
+        let app_state = APP_STATE.get().read().await;
+
+        PathBuf::new()
+            .join(app_state.get_profiles_directory().unwrap())
+            .join(self.file_name())
+    }
+}
+
 /*impl Profile {
     fn set_playlist_id(&mut self, playlist_id: &PlexId) {
         playlist_id.clone_into(&mut self.playlist_id)
     }
 
-    pub fn get_enabled(&self) -> bool {
-        self.enabled
-    }
+
 
     pub fn get_playlist_id(&self) -> &str {
         &self.playlist_id
@@ -71,9 +91,7 @@ pub struct Profile {
         self.profile_source_id.as_ref()
     }
 
-    pub fn get_title(&self) -> &str {
-        &self.title
-    }
+
 
     pub fn get_summary(&self) -> &str {
         &self.summary
@@ -83,15 +101,7 @@ pub struct Profile {
         &self.sections
     }
 
-    fn file_name(&self) -> String {
-        format!("{}.json", self.title)
-    }
 
-    fn profile_path(&self, profiles_directory: &str) -> PathBuf {
-        PathBuf::new()
-            .join(profiles_directory)
-            .join(self.file_name())
-    }
 
     fn refresh_interval_str(&self) -> String {
         format!(
@@ -377,53 +387,4 @@ impl Display for Profile {
         write!(f, "{str}")
     }
 }
-
-impl Profile {
-    pub async fn save_to_file(&self, profiles_directory: &str) -> Result<()> {
-        tokio::fs::create_dir_all(profiles_directory).await?;
-
-        let json = serde_json::to_string_pretty(&self)?;
-
-        let mut file = tokio::fs::File::create(&self.profile_path(profiles_directory)).await?;
-        file.write_all(json.as_bytes()).await?;
-
-        Ok(())
-    }
-
-    pub async fn load_from_disk(path: &str) -> Result<Profile> {
-        let mut file = tokio::fs::File::open(path).await?;
-        let mut profile = String::default();
-        file.read_to_string(&mut profile).await?;
-        let profile: Self = serde_json::from_str(&profile)?;
-        Ok(profile)
-    }
-
-    pub async fn load_profiles(dir: &str) -> Result<Vec<Profile>> {
-        debug!("Loading profiles from disk...");
-        let dir = Path::new(dir);
-
-        if !dir.exists() {
-            panic!("Profiles directory `{}` could not be found.", dir.display())
-        }
-
-        if !dir.is_dir() {
-            panic!("Profiles directory `{}` is not a directory.", dir.display())
-        }
-
-        if dir.read_dir()?.next().is_none() {
-            error!("Profiles directory `{}` is empty.", dir.display());
-            return Ok(vec![]);
-        }
-
-        let mut result = vec![];
-        let mut reader = tokio::fs::read_dir(&dir).await?;
-        while let Some(entry) = reader.next_entry().await? {
-            let profile = Profile::load_from_disk(entry.path().to_str().unwrap()).await?;
-            result.push(profile)
-        }
-
-        info!("{} profile(s) loaded from disk", &result.len());
-
-        Ok(result)
-    }
-}*/
+*/

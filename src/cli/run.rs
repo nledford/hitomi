@@ -24,7 +24,7 @@ fn print_title(looping: bool) {
 pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     print_title(cmd.run_loop);
 
-    profiles::perform_refresh(cmd.run_loop).await?;
+    // profiles::perform_refresh(cmd.run_loop).await?;
 
     Ok(())
 }

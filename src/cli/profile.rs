@@ -3,7 +3,7 @@ use clap::Args;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
 use simplelog::{debug, info};
-
+use crate::files;
 use crate::profiles::profile::Profile;
 use crate::profiles::{wizards, ProfileAction};
 use crate::state::APP_STATE;
@@ -18,10 +18,11 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
             let mut profile = wizards::create_profile_wizard().await?;
-            profile = Profile::build_playlist(profile, ProfileAction::Create, None).await?;
-            profile
-                .save_to_file(APP_STATE.get().read().await.get_profiles_directory()?)
-                .await?;
+            // profile = Profile::build_playlist(profile, ProfileAction::Create, None).await?;
+            // profile
+            //     .save_to_file(APP_STATE.get().read().await.get_profiles_directory()?)
+            //     .await?;
+            files::save_profile_to_disk(&profile).await?;
 
             info!("Profile created successfully!")
         }
@@ -47,7 +48,7 @@ async fn preview_playlist() -> Result<()> {
     }
 
     let profile = select_profile("Select which profile you would like to preview:").await?;
-    Profile::build_playlist(profile, ProfileAction::Preview, None).await?;
+    // Profile::build_playlist(profile, ProfileAction::Preview, None).await?;
 
     Ok(())
 }
@@ -59,7 +60,7 @@ async fn view_playlist() -> Result<()> {
     }
 
     let profile = select_profile("Select which profile you would like to view:").await?;
-    println!("{profile}");
+    // println!("{profile}");
 
     // Print raw json of profile
     debug!("{}\n", serde_json::to_string_pretty(&profile).unwrap());
