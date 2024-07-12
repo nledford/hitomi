@@ -1,32 +1,26 @@
 use std::cmp::PartialEq;
-use std::fmt::{Display, Formatter};
-use std::ops::Add;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::fmt::Display;
+use std::path::PathBuf;
 
-use anyhow::Result;
-use chrono::{DateTime, Local, TimeDelta, Timelike};
 use derive_builder::Builder;
-use dialoguer::theme::ColorfulTheme;
-use dialoguer::Confirm;
 use serde::{Deserialize, Serialize};
-use simplelog::{debug, error, info};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncReadExt;
+use uuid::Uuid;
 
-use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
-use crate::profiles::types::{ProfileSourceId, RefreshInterval};
-use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::profile_section::ProfileSection;
+use crate::profiles::ProfileSource;
+use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::state::APP_STATE;
 use crate::types::Title;
-use crate::utils;
 
 // PROFILE ####################################################################
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 #[builder(default)]
 pub struct Profile {
+    #[serde(skip, default = "Uuid::new_v4")]
+    profile_id: Uuid,
     /// The plex ID for the playlist
     playlist_id: PlexId,
     /// The name of the profile and the resulting playlist
@@ -51,6 +45,10 @@ pub struct Profile {
 }
 
 impl Profile {
+    pub fn get_profile_id(&self) -> Uuid {
+        self.profile_id
+    }
+
     pub fn get_title(&self) -> &str {
         &self.title
     }
