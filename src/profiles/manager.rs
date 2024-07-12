@@ -1,5 +1,6 @@
 use std::cmp::PartialEq;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::ops::Deref;
 use std::time::Duration;
 
@@ -22,6 +23,7 @@ use crate::plex::types::PlexId;
 use crate::profiles::{ProfileAction, ProfileSource, SectionType};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
+use crate::state::APP_STATE;
 
 pub static PROFILE_MANAGER: InitCell<RwLock<ProfileManager>> = InitCell::new();
 
@@ -88,7 +90,7 @@ impl ProfileManager {
         self.managed_oldest_sections = managed_oldest_sections;
     }
 
-    fn set_playlist_id(&mut self, profile_key: ProfileKey, id: &PlexId) {
+    pub fn set_playlist_id(&mut self, profile_key: ProfileKey, id: &PlexId) {
         let profile = self.managed_profiles.get_mut(profile_key).unwrap();
         profile.set_playlist_id(id.clone())
     }
@@ -181,8 +183,8 @@ impl ProfileManager {
     }
 
     pub fn get_profile_key(&self, title: &str) -> Option<ProfileKey> {
-        let profile = self.managed_profiles.iter().find(|(k, v)| v.get_title() == title);
-        if let Some((k, v)) = profile {
+        let profile = self.managed_profiles.iter().find(|(_, v)| v.get_title() == title);
+        if let Some((k, _)) = profile {
             Some(k)
         } else {
             None
@@ -299,7 +301,7 @@ impl ProfileManager {
             .any(|(_, v)| v.check_for_refresh(false))
     }
 
-    fn print_update(&self, playlists_updated: usize) {
+    fn print_update(&self, playlists_updated: i32) {
         info!("Updated {playlists_updated} at {}", Local::now().format("%F %T"));
 
         let str = self.get_enabled_profiles()
@@ -325,104 +327,12 @@ impl ProfileManager {
         info!("Upcoming refreshes:\n{str}")
     }
 
-    pub async fn perform_refresh(&mut self, run_loop: bool, ran_once: bool) -> Result<()> {
-        self.refresh_playlists_from_profiles(run_loop, ran_once).await?;
-        Ok(())
-    }
-
-    async fn refresh_playlists_from_profiles(&mut self, run_loop: bool, ran_once: bool) -> Result<()> {
-        if ran_once && !self.get_any_profile_refresh() {
-            return Ok(());
-        }
-
-        // let mut set = JoinSet::new();
-        // for (key, profile) in profiles {
-        //     info!("Building `{}` playlist...", profile.get_title());
-        //     set.spawn(self.build_playlist(ProfileAction::Update, key, None));
-        // }
-        // let set = profiles
-        //     .iter()
-        //     .fold(
-        //         JoinSet::new(),
-        //         |mut acc, (key, profile)| {
-        //             acc.spawn(async { self.build_playlist(ProfileAction::Update, *key, None).await });
-        //             acc
-        //         });
-        let mut refreshed = 0;
-        for (key, _) in self.get_profiles_to_refresh(ran_once) {
-            self.build_playlist(ProfileAction::Update, key, None).await?;
-            refreshed += 1;
-        }
-
+    pub async fn perform_refresh(&self, run_loop: bool, ran_once: bool) -> Result<()> {
+        let profiles = self.get_profiles_to_refresh(ran_once);
+        let refreshed = refresh_playlists_from_profiles(profiles, ran_once).await?;
         if run_loop {
-            self.print_update(refreshed);
+            self.print_update(refreshed)
         }
-
-        Ok(())
-    }
-
-    async fn build_playlist(&mut self, action: ProfileAction, profile_key: ProfileKey, limit: Option<i32>) -> Result<()> {
-        info!("Fetching tracks for section(s)...");
-        self.fetch_sections_tracks(profile_key, limit).await?;
-
-        let combined = self.combine_sections(profile_key).await;
-        let items = combined
-            .iter()
-            .map(|track| track.id())
-            .collect::<Vec<_>>();
-
-        let plex_client = plex::get_plex_client().await;
-        match action {
-            ProfileAction::Create => {
-                let save = Confirm::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Would you like to save this profile?")
-                    .default(true)
-                    .interact()?;
-
-                if save {
-                    info!("Creating playlist in plex...");
-                    let playlist_id = plex_client.create_playlist(profile_key).await?;
-                    let playlist_id = PlexId::try_new(playlist_id)?;
-                    self.set_playlist_id(profile_key, &playlist_id);
-
-                    info!("Adding tracks to newly created playlist...");
-                    plex_client
-                        .add_items_to_playlist(&playlist_id, &items)
-                        .await?;
-                } else {
-                    info!("Playlist not saved");
-                }
-            }
-            ProfileAction::Preview => {
-                for (i, track) in combined.iter().take(25).enumerate() {
-                    println!("{:2} {}", i + 1, track)
-                }
-            }
-            ProfileAction::Update => {
-                let profile = self.get_profile_by_key(profile_key).unwrap();
-
-                info!("Wiping destination playlist...");
-                plex_client.clear_playlist(&profile.get_playlist_id()).await?;
-
-                info!("Updating destination playlist...");
-                plex_client
-                    .add_items_to_playlist(&profile.get_playlist_id(), &items)
-                    .await?;
-
-                let summary = format!("{}\n{}", profile.get_next_refresh_str(), profile.get_summary());
-                plex_client
-                    .update_summary(&profile.get_playlist_id(), &summary)
-                    .await?;
-            }
-            // Other actions are not relevant to this function and are ignored
-            _ => {}
-        }
-
-        if action != ProfileAction::Preview {
-            let profile = self.get_profile_by_key(profile_key).unwrap();
-            show_results(&combined, profile.get_title(), action);
-        }
-
         Ok(())
     }
 
@@ -545,4 +455,99 @@ fn show_results(tracks: &[Track], title: &str, action: ProfileAction) {
             size,
             duration
         );
+}
+
+async fn refresh_playlists_from_profiles(profiles: HashMap<ProfileKey, &Profile>, ran_once: bool) -> Result<i32> {
+    let manager = PROFILE_MANAGER.get().read().await;
+
+    if ran_once && !manager.get_any_profile_refresh() {
+        return Ok(0);
+    }
+
+    let mut set = JoinSet::new();
+    for (key, profile) in profiles {
+        info!("Building `{}` playlist...", profile.get_title());
+        set.spawn(build_playlist(ProfileAction::Update, key, None));
+    }
+
+    let mut refreshed = 0;
+    while let Some(res) = set.join_next().await {
+        let res = res?;
+        if let Err(err) = res {
+            error!("An error occurred while attempt to refresh profiles: {err}")
+        } else {
+            refreshed += 1;
+        }
+    }
+
+    Ok(refreshed)
+}
+
+async fn build_playlist(action: ProfileAction, profile_key: ProfileKey, limit: Option<i32>) -> Result<()> {
+    {
+        info!("Fetching tracks for section(s)...");
+        let mut manager = PROFILE_MANAGER.get().write().await;
+        manager.fetch_sections_tracks(profile_key, limit).await?;
+    }
+
+    let manager = PROFILE_MANAGER.get().read().await;
+    let combined = manager.combine_sections(profile_key).await;
+    let items = combined
+        .iter()
+        .map(|track| track.id())
+        .collect::<Vec<_>>();
+
+    let plex_client = plex::get_plex_client().await;
+
+    match action {
+        ProfileAction::Create => {
+            let save = Confirm::with_theme(&ColorfulTheme::default())
+                .with_prompt("Would you like to save this profile?")
+                .default(true)
+                .interact()?;
+
+            if save {
+                info!("Creating playlist in plex...");
+                let playlist_id = plex_client.create_playlist(profile_key).await?;
+                let playlist_id = PlexId::try_new(playlist_id)?;
+                {
+                    let mut manager = PROFILE_MANAGER.get().write().await;
+                    manager.set_playlist_id(profile_key, &playlist_id);
+                }
+
+                info!("Adding tracks to newly created playlist...");
+                plex_client
+                    .add_items_to_playlist(&playlist_id, &items)
+                    .await?;
+            } else {
+                info!("Playlist not saved");
+            }
+        }
+        ProfileAction::Preview => {
+            for (i, track) in combined.iter().take(25).enumerate() {
+                println!("{:2} {}", i + 1, track)
+            }
+        }
+        ProfileAction::Update => {
+            let manager = PROFILE_MANAGER.get().read().await;
+            let profile = manager.get_profile_by_key(profile_key).unwrap();
+
+            info!("Wiping destination playlist...");
+            plex_client.clear_playlist(&profile.get_playlist_id()).await?;
+
+            info!("Updating destination playlist...");
+            plex_client
+                .add_items_to_playlist(&profile.get_playlist_id(), &items)
+                .await?;
+
+            let summary = format!("{}\n{}", profile.get_next_refresh_str(), profile.get_summary());
+            plex_client
+                .update_summary(&profile.get_playlist_id(), &summary)
+                .await?;
+        }
+        // Other actions are not relevant to this function and are ignored
+        _ => {}
+    }
+
+    Ok(())
 }
