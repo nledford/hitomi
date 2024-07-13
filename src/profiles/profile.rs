@@ -1,5 +1,5 @@
 use std::cmp::PartialEq;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use std::ops::Add;
 use std::path::PathBuf;
 
@@ -11,8 +11,8 @@ use uuid::Uuid;
 
 use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::ProfileSource;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
+use crate::profiles::ProfileSource;
 use crate::state::APP_STATE;
 use crate::types::Title;
 use crate::utils;
@@ -148,9 +148,11 @@ impl Profile {
             next_refresh_time.format("%R")
         )
     }
-}
 
-/*impl Profile {
+    pub fn get_profile_source_and_id(&self) -> (&ProfileSource, Option<&ProfileSourceId>) {
+        (self.get_profile_source(), self.get_profile_source_id())
+    }
+
     fn refresh_interval_str(&self) -> String {
         format!(
             "Every {} minutes ({} refreshes per hour)",
@@ -172,7 +174,10 @@ impl Profile {
     }
 
     pub fn get_section_time_limit(&self) -> f64 {
-        self.time_limit as f64 / self.sections.num_enabled() as f64
+        self.time_limit as f64 / self.sections
+            .iter()
+            .map(|section| section.is_enabled())
+            .count() as f64
     }
 
     fn get_track_limit_str(&self) -> String {
@@ -194,20 +199,20 @@ impl Display for Profile {
         str += &format!("\nTime Limit:       {}", self.time_limit_str());
         str += &format!("\nTrack Limit:      {}", self.get_track_limit_str());
 
+        // TODO fix sections info
         str += "\n\nSections:";
-        if self.has_unplayed_tracks() {
-            str += &format!("\n{}", self.sections.get_unplayed_section().unwrap())
-        }
-
-        if self.has_least_played_tracks() {
-            str += &format!("\n{}", self.sections.get_least_played_section().unwrap())
-        }
-
-        if self.has_oldest_tracks() {
-            str += &format!("\n{}", self.sections.get_oldest_section().unwrap())
-        }
+        // if self.has_unplayed_tracks() {
+        //     str += &format!("\n{}", self.sections.iter().find())
+        // }
+        //
+        // if self.has_least_played_tracks() {
+        //     str += &format!("\n{}", self.sections.get_least_played_section().unwrap())
+        // }
+        //
+        // if self.has_oldest_tracks() {
+        //     str += &format!("\n{}", self.sections.get_oldest_section().unwrap())
+        // }
 
         write!(f, "{str}")
     }
 }
-*/
