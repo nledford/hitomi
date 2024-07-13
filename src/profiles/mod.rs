@@ -1,23 +1,12 @@
-use std::collections::HashMap;
-use std::time::Duration;
-
-use anyhow::{anyhow, Result};
 use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, FromRepr, VariantNames};
-use tokio::time::sleep;
-
-use crate::plex::models::tracks::Track;
-use crate::profiles::profile_section::ProfileSection;
-use crate::state::{self, APP_STATE};
-use crate::utils;
 
 pub mod profile;
 mod profile_section;
-// mod sections;
+pub mod manager;
 pub mod types;
 pub mod wizards;
-pub mod manager;
 
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
@@ -77,21 +66,3 @@ pub enum ProfileAction {
     /// View profiles
     View,
 }
-
-/*
-pub async fn perform_refresh(run_loop: bool) -> Result<()> {
-    state::perform_refresh(run_loop, false).await?;
-
-    if run_loop {
-        loop {
-            sleep(Duration::from_secs(1)).await;
-
-            if utils::perform_refresh().await {
-                state::perform_refresh(run_loop, true).await?;
-            }
-        }
-    }
-
-    Ok(())
-}
- */
