@@ -108,7 +108,6 @@ impl Display for ProfileSection {
     }
 }
 
-
 impl ProfileSection {
     pub fn new() -> Self {
         Self::default()
@@ -134,7 +133,12 @@ impl ProfileSection {
         self.section_type == SectionType::Oldest
     }
 
-    pub fn run_manual_filters(&self, tracks: &mut Vec<Track>, time_limit: f64, list_to_dedup: Option<&mut Vec<Track>>) {
+    pub fn run_manual_filters(
+        &self,
+        tracks: &mut Vec<Track>,
+        time_limit: f64,
+        list_to_dedup: Option<&mut Vec<Track>>,
+    ) {
         self.deduplicate_by_track_guid(tracks);
         self.run_deduplicate_by_title_and_artist(tracks);
         self.limit_tracks_by_artist(tracks);
@@ -152,17 +156,14 @@ impl ProfileSection {
 
     fn deduplicate_by_track_guid(&self, tracks: &mut Vec<Track>) {
         if self.deduplicate_tracks_by_guid {
-            tracks
-                .dedup_by_key(|track| track.get_guid().to_owned());
+            tracks.dedup_by_key(|track| track.get_guid().to_owned());
         }
     }
 
     fn run_deduplicate_by_title_and_artist(&self, tracks: &mut Vec<Track>) {
         if self.deduplicate_tracks_by_title_and_artist {
-            tracks
-                .sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
-            tracks
-                .dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
+            tracks.sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
+            tracks.dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
         }
     }
 
@@ -172,11 +173,9 @@ impl ProfileSection {
         }
 
         if self.is_unplayed() || self.is_least_played() {
-            tracks
-                .sort_by_key(|track| (track.plays(), track.last_played()))
+            tracks.sort_by_key(|track| (track.plays(), track.last_played()))
         } else {
-            tracks
-                .sort_by_key(|track| (track.last_played(), track.plays()))
+            tracks.sort_by_key(|track| (track.last_played(), track.plays()))
         }
 
         let mut artist_occurrences: HashMap<String, u32> = HashMap::new();
@@ -191,8 +190,7 @@ impl ProfileSection {
 
     fn sort_tracks(&self, tracks: &mut [Track]) {
         if self.is_unplayed() {
-            tracks
-                .sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
+            tracks.sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
         }
         if self.is_least_played() {
             tracks.sort_by_key(|t| (t.plays(), t.last_played()))

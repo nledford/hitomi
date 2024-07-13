@@ -11,13 +11,13 @@ use tokio::sync::OnceCell;
 
 use crate::config::Config;
 use crate::http_client::HttpClient;
-use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::models::artists::Artist;
 use crate::plex::models::collections::{Collection, SubType};
 use crate::plex::models::new_playlist::NewPlaylist;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::sections::Section;
 use crate::plex::models::tracks::Track;
+use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
 
@@ -215,7 +215,10 @@ impl PlexClient {
         self.clear_playlist(playlist_id).await?;
 
         info!("Updating destination playlist...");
-        let ids = tracks.iter().map(|t| t.id().to_string()).collect::<Vec<_>>();
+        let ids = tracks
+            .iter()
+            .map(|t| t.id().to_string())
+            .collect::<Vec<_>>();
         for chunk in ids.chunks(200) {
             self.add_items_to_playlist(playlist_id, chunk).await?;
         }
@@ -255,7 +258,11 @@ impl PlexClient {
         Ok(playlist.rating_key.to_string())
     }
 
-    pub async fn add_items_to_playlist(&self, playlist_id: &PlexId, items: &[String]) -> Result<()> {
+    pub async fn add_items_to_playlist(
+        &self,
+        playlist_id: &PlexId,
+        items: &[String],
+    ) -> Result<()> {
         if items.is_empty() {
             return Err(anyhow!("There are no items to add to the playlist"));
         }

@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::Args;
-use dialoguer::Select;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Select;
 use simplelog::{debug, info};
 
 use crate::files;
-use crate::profiles::{ProfileAction, wizards};
 use crate::profiles::manager::PROFILE_MANAGER;
 use crate::profiles::profile::Profile;
+use crate::profiles::{wizards, ProfileAction};
 use crate::state::APP_STATE;
 
 #[derive(Args, Debug, PartialEq)]
@@ -24,7 +24,9 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
                 let mut manager = PROFILE_MANAGER.get().unwrap().write().await;
                 let new_profile_key = manager.add_new_profile(&profile);
                 let items = manager.fetch_profile_tracks(new_profile_key, None).await?;
-                manager.create_playlist(&profile, new_profile_key, items).await?;
+                manager
+                    .create_playlist(&profile, new_profile_key, items)
+                    .await?;
             }
             files::save_profile_to_disk(&profile).await?;
 
@@ -58,7 +60,10 @@ async fn preview_playlist() -> Result<()> {
     }
 
     let profile = select_profile("Select which profile you would like to preview:").await?;
-    app_state.get_profile_manager().preview_playlist(&profile).await?;
+    app_state
+        .get_profile_manager()
+        .preview_playlist(&profile)
+        .await?;
 
     Ok(())
 }

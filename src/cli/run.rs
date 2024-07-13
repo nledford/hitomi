@@ -30,14 +30,18 @@ pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     let manager = PROFILE_MANAGER.get().unwrap().read().await;
     let manager = manager.clone();
 
-    manager.refresh_playlists_from_profiles(cmd.run_loop, false).await?;
+    manager
+        .refresh_playlists_from_profiles(cmd.run_loop, false)
+        .await?;
 
     if cmd.run_loop {
         loop {
             sleep(Duration::from_secs(1)).await;
 
             if manager.get_any_profile_refresh() {
-                manager.refresh_playlists_from_profiles(cmd.run_loop, true).await?;
+                manager
+                    .refresh_playlists_from_profiles(cmd.run_loop, true)
+                    .await?;
             }
         }
     }

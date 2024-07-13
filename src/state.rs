@@ -7,14 +7,14 @@ use anyhow::{anyhow, Result};
 use derive_builder::Builder;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::{config, plex};
 use crate::config::Config;
 use crate::plex::models::playlists::Playlist;
-use crate::plex::PLEX_CLIENT;
 use crate::plex::types::PlexId;
+use crate::plex::PLEX_CLIENT;
 use crate::profiles::manager;
 use crate::profiles::manager::ProfileManager;
 use crate::types::Title;
+use crate::{config, plex};
 
 pub static APP_STATE: OnceCell<RwLock<AppState>> = OnceCell::const_new();
 

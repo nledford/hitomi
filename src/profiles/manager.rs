@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::Local;
-use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
@@ -14,13 +14,13 @@ use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 use uuid::Uuid;
 
-use crate::{files, plex};
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
+use crate::profiles::{ProfileAction, ProfileSource};
+use crate::{files, plex};
 
 pub static PROFILE_MANAGER: OnceCell<Arc<RwLock<ProfileManager>>> = OnceCell::const_new();
 
@@ -259,7 +259,8 @@ impl ProfileManager {
     }
 
     pub async fn run_refreshes(&self, run_loop: bool) -> Result<()> {
-        self.refresh_playlists_from_profiles(run_loop, false).await?;
+        self.refresh_playlists_from_profiles(run_loop, false)
+            .await?;
 
         if run_loop {
             loop {
@@ -284,9 +285,7 @@ impl ProfileManager {
         let profiles = self.get_profiles_to_refresh(ran_once);
         let tasks = profiles
             .into_keys()
-            .map(|key| {
-                self.update_playlist(key, None)
-            })
+            .map(|key| self.update_playlist(key, None))
             .collect::<Vec<_>>();
         let refreshed = tasks.len();
 
@@ -304,10 +303,12 @@ impl ProfileManager {
         Ok(())
     }
 
-    pub async fn create_playlist(&mut self,
-                                 profile: &Profile,
-                                 profile_key: ProfileKey,
-                                 tracks: FetchSectionTracksResult) -> Result<()> {
+    pub async fn create_playlist(
+        &mut self,
+        profile: &Profile,
+        profile_key: ProfileKey,
+        tracks: FetchSectionTracksResult,
+    ) -> Result<()> {
         let plex_client = plex::get_plex_client().await;
         let save = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Would you like to save this profile?")
@@ -329,7 +330,6 @@ impl ProfileManager {
         } else {
             info!("Playlist not saved");
         }
-
 
         Ok(())
     }
@@ -372,7 +372,11 @@ impl ProfileManager {
         Ok(())
     }
 
-    pub async fn fetch_profile_tracks(&self, profile_key: ProfileKey, limit: Option<i32>) -> Result<FetchSectionTracksResult> {
+    pub async fn fetch_profile_tracks(
+        &self,
+        profile_key: ProfileKey,
+        limit: Option<i32>,
+    ) -> Result<FetchSectionTracksResult> {
         let mut tracks = self.fetch_sections_tracks(profile_key, limit).await?;
         let time_limit = self.get_profile_time_limit(profile_key).unwrap();
 
@@ -569,10 +573,7 @@ impl FetchSectionTracksResult {
             return;
         }
 
-        let preview = self.combined
-            .iter()
-            .take(25)
-            .collect::<Vec<_>>();
+        let preview = self.combined.iter().take(25).collect::<Vec<_>>();
 
         for (i, track) in preview.iter().enumerate() {
             println!("{:2} {}", i + 1, track)

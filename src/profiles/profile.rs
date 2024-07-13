@@ -173,7 +173,9 @@ impl Profile {
     }
 
     pub fn get_section_time_limit(&self) -> f64 {
-        self.time_limit as f64 / self.sections
+        self.time_limit as f64
+            / self
+            .sections
             .iter()
             .filter(|section| section.is_enabled())
             .count() as f64

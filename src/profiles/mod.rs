@@ -2,9 +2,9 @@ use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, FromRepr, VariantNames};
 
+pub mod manager;
 pub mod profile;
 mod profile_section;
-pub mod manager;
 pub mod types;
 pub mod wizards;
 
