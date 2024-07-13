@@ -4,7 +4,6 @@ use log::*;
 use simplelog::*;
 
 use hitomi::cli;
-use hitomi::profiles::SectionType;
 use hitomi::state;
 use hitomi::state::APP_STATE;
 
@@ -21,16 +20,10 @@ async fn main() -> Result<()> {
         ColorChoice::Auto,
     )?;
 
-    state::initialize_app_state().await?;
-
-    let app_state = APP_STATE.get().read().await;
-
-    app_state.get_profile_manager().list_profiles_and_sections();
-
     // config::delete_config_file().await;
 
-    // let cli = cli::Cli::parse();
-    // cli::run_cli_command(cli).await?;
+    let cli = cli::Cli::parse();
+    cli::run_cli_command(cli).await?;
 
     Ok(())
 }
