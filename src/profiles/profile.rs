@@ -13,15 +13,12 @@ use crate::utils;
 use chrono::{DateTime, Local, TimeDelta, Timelike};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 // PROFILE ####################################################################
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 #[builder(default)]
 pub struct Profile {
-    #[serde(skip, default = "Uuid::new_v4")]
-    profile_id: Uuid,
     /// The plex ID for the playlist
     playlist_id: PlexId,
     /// The name of the profile and the resulting playlist
@@ -52,10 +49,6 @@ impl Profile {
 
     pub fn set_playlist_id(&mut self, playlist_id: PlexId) {
         self.playlist_id = playlist_id
-    }
-
-    pub fn get_profile_id(&self) -> Uuid {
-        self.profile_id
     }
 
     pub fn get_title(&self) -> &str {

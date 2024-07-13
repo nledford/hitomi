@@ -12,7 +12,6 @@ use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
-use uuid::Uuid;
 
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
@@ -156,16 +155,6 @@ impl ProfileManager {
         } else {
             None
         }
-    }
-
-    pub fn get_profile_by_id(&self, id: Uuid) -> Option<&Profile> {
-        self.get_profiles().into_iter().find_map(|(_, v)| {
-            if v.get_profile_id() == id {
-                Some(v)
-            } else {
-                None
-            }
-        })
     }
 
     pub fn get_profile_by_title(&self, title: &str) -> Option<&Profile> {

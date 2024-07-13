@@ -8,14 +8,9 @@ use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ProfileSection {
-    #[serde(skip, default = "Uuid::new_v4")]
-    profile_id: Uuid,
-    #[serde(skip, default = "Uuid::new_v4")]
-    profile_section_id: Uuid,
     /// Deduplicate tracks by its `guid`, so that the exact same track that appears on
     /// multiple albums (e.g., a studio album and a Greatest Hits album) only appears once in
     /// the resulting playlist.
@@ -32,10 +27,6 @@ pub struct ProfileSection {
 }
 
 impl ProfileSection {
-    pub fn get_profile_section_id(&self) -> Uuid {
-        self.profile_section_id
-    }
-
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
