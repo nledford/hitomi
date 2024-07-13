@@ -1,13 +1,5 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
-use derive_builder::Builder;
-use itertools;
-use itertools::Itertools;
-use log::{error, info};
-use serde::Deserialize;
-use simplelog::debug;
-use tokio::sync::OnceCell;
 use crate::config::Config;
 use crate::http_client::HttpClient;
 use crate::plex::models::artists::Artist;
@@ -21,6 +13,14 @@ use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::manager::ProfileKey;
 use crate::profiles::profile::Profile;
 use crate::state::APP_STATE;
+use anyhow::{anyhow, Result};
+use derive_builder::Builder;
+use itertools;
+use itertools::Itertools;
+use log::{error, info};
+use serde::Deserialize;
+use simplelog::debug;
+use tokio::sync::OnceCell;
 
 pub mod models;
 pub mod types;
@@ -28,9 +28,9 @@ pub mod types;
 pub static PLEX_CLIENT: OnceCell<PlexClient> = OnceCell::const_new();
 
 pub async fn initialize_plex_client(config: &Config) -> Result<()> {
-    PLEX_CLIENT.get_or_init(|| async {
-        PlexClient::initialize(config).await.unwrap()
-    }).await;
+    PLEX_CLIENT
+        .get_or_init(|| async { PlexClient::initialize(config).await.unwrap() })
+        .await;
 
     Ok(())
 }
@@ -216,9 +216,9 @@ impl PlexClient {
         self.clear_playlist(playlist_id).await?;
 
         info!("Updating destination playlist...");
-        let ids = tracks.iter().map(|t| t.id()).collect::<Vec<&str>>();
+        let ids = tracks.iter().map(|t| t.id().to_string()).collect::<Vec<_>>();
         for chunk in ids.chunks(200) {
-            self.add_items_to_playlist(playlist_id, chunk).await?;
+            self.add_items_to_playlist(playlist_id, &chunk.to_vec()).await?;
         }
 
         self.update_summary(playlist_id, summary).await?;
@@ -237,10 +237,7 @@ impl PlexClient {
         Ok(())
     }
 
-    pub async fn create_playlist(&self, profile_key: ProfileKey) -> Result<String> {
-        let app_state = APP_STATE.get().read().await;
-        let profile = app_state.get_profile_manager().get_profile_by_key(profile_key).unwrap();
-
+    pub async fn create_playlist(&self, profile: &Profile) -> Result<String> {
         let params = HashMap::from([
             (
                 "uri".to_string(),
@@ -259,7 +256,7 @@ impl PlexClient {
         Ok(playlist.rating_key.to_string())
     }
 
-    pub async fn add_items_to_playlist(&self, playlist_id: &PlexId, items: &[&str]) -> Result<()> {
+    pub async fn add_items_to_playlist(&self, playlist_id: &PlexId, items: &Vec<String>) -> Result<()> {
         if items.is_empty() {
             return Err(anyhow!("There are no items to add to the playlist"));
         }
