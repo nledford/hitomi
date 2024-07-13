@@ -2,13 +2,13 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
+use crate::plex::models::tracks::Track;
+use crate::profiles::SectionType;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::plex::models::tracks::Track;
-use crate::profiles::SectionType;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ProfileSection {
@@ -72,7 +72,7 @@ impl ProfileSection {
     }
 }
 
-/*impl Display for ProfileSection {
+impl Display for ProfileSection {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut str = format!("  {}", self.section_type);
         str += &format!(
@@ -108,17 +108,10 @@ impl ProfileSection {
     }
 }
 
+
 impl ProfileSection {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    pub fn get_tracks(&self) -> &[Track] {
-        &self.tracks
-    }
-
-    pub fn set_tracks(&mut self, tracks: Vec<Track>) {
-        self.tracks = tracks
     }
 
     pub fn get_deduplicate_tracks_by_guid(&self) -> bool {
@@ -128,10 +121,6 @@ impl ProfileSection {
     pub fn get_maximum_tracks_by_artist(&self) -> u32 {
         self.maximum_tracks_by_artist
     }
-
-
-
-
 
     pub fn is_unplayed(&self) -> bool {
         self.section_type == SectionType::Unplayed
@@ -145,57 +134,53 @@ impl ProfileSection {
         self.section_type == SectionType::Oldest
     }
 
-    pub fn num_tracks(&self) -> usize {
-        self.tracks.len()
-    }
-
-    pub fn run_manual_filters(&mut self, time_limit: f64, list_to_dedup: Option<&mut Vec<Track>>) {
-        self.deduplicate_by_track_guid();
-        self.run_deduplicate_by_title_and_artist();
-        self.limit_tracks_by_artist();
-        self.sort_tracks();
-        self.reduce_to_time_limit(time_limit);
+    pub fn run_manual_filters(&self, tracks: &mut Vec<Track>, time_limit: f64, list_to_dedup: Option<&mut Vec<Track>>) {
+        self.deduplicate_by_track_guid(tracks);
+        self.run_deduplicate_by_title_and_artist(tracks);
+        self.limit_tracks_by_artist(tracks);
+        self.sort_tracks(tracks);
+        self.reduce_to_time_limit(tracks, time_limit);
 
         if let Some(lst) = list_to_dedup {
-            self.dedup_tracks_by_list(lst)
+            self.dedup_tracks_by_list(tracks, lst)
         }
 
         if self.randomize_tracks {
-            self.tracks.shuffle(&mut rand::thread_rng())
+            tracks.shuffle(&mut rand::thread_rng())
         }
     }
 
-    fn deduplicate_by_track_guid(&mut self) {
+    fn deduplicate_by_track_guid(&self, tracks: &mut Vec<Track>) {
         if self.deduplicate_tracks_by_guid {
-            self.tracks
+            tracks
                 .dedup_by_key(|track| track.get_guid().to_owned());
         }
     }
 
-    fn run_deduplicate_by_title_and_artist(&mut self) {
+    fn run_deduplicate_by_title_and_artist(&self, tracks: &mut Vec<Track>) {
         if self.deduplicate_tracks_by_title_and_artist {
-            self.tracks
+            tracks
                 .sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
-            self.tracks
+            tracks
                 .dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
         }
     }
 
-    fn limit_tracks_by_artist(&mut self) {
+    fn limit_tracks_by_artist(&self, tracks: &mut Vec<Track>) {
         if self.maximum_tracks_by_artist == 0 {
             return;
         }
 
         if self.is_unplayed() || self.is_least_played() {
-            self.tracks
+            tracks
                 .sort_by_key(|track| (track.plays(), track.last_played()))
         } else {
-            self.tracks
+            tracks
                 .sort_by_key(|track| (track.last_played(), track.plays()))
         }
 
         let mut artist_occurrences: HashMap<String, u32> = HashMap::new();
-        self.tracks.retain(|track| {
+        tracks.retain(|track| {
             let artist_guid = track.get_artist_guid().to_owned();
             let occurrences = artist_occurrences.entry(artist_guid).or_insert(0);
             *occurrences += 1;
@@ -204,27 +189,27 @@ impl ProfileSection {
         })
     }
 
-    fn sort_tracks(&mut self) {
+    fn sort_tracks(&self, tracks: &mut Vec<Track>) {
         if self.is_unplayed() {
-            self.tracks
+            tracks
                 .sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
         }
         if self.is_least_played() {
-            self.tracks.sort_by_key(|t| (t.plays(), t.last_played()))
+            tracks.sort_by_key(|t| (t.plays(), t.last_played()))
         }
         if self.is_oldest() {
-            self.tracks.sort_by_key(|t| (t.last_played(), t.plays()))
+            tracks.sort_by_key(|t| (t.last_played(), t.plays()))
         }
     }
 
-    fn dedup_tracks_by_list(&mut self, comp: &[Track]) {
-        self.tracks.retain(|t| !comp.contains(t))
+    fn dedup_tracks_by_list(&self, tracks: &mut Vec<Track>, comp: &[Track]) {
+        tracks.retain(|t| !comp.contains(t))
     }
 
-    pub fn reduce_to_time_limit(&mut self, time_limit: f64) {
+    pub fn reduce_to_time_limit(&self, tracks: &mut Vec<Track>, time_limit: f64) {
         let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
-        let total_duration: i64 = self.get_tracks().iter().map(|track| track.duration()).sum();
+        let total_duration: i64 = tracks.iter().map(|track| track.duration()).sum();
         let total_duration = TimeDelta::milliseconds(total_duration);
 
         if total_duration <= limit {
@@ -232,8 +217,7 @@ impl ProfileSection {
         }
 
         let mut accum_total = TimeDelta::seconds(0);
-        let index = self
-            .get_tracks()
+        let index = tracks
             .iter()
             .position(|track| {
                 accum_total += TimeDelta::milliseconds(track.duration());
@@ -241,8 +225,8 @@ impl ProfileSection {
             })
             .unwrap_or(0);
 
-        self.set_tracks(self.tracks[..=index].to_vec())
+        *tracks = tracks[..=index].to_vec();
     }
-}*/
+}
 
 // TESTS ######################################################################
