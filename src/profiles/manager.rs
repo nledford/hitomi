@@ -46,9 +46,6 @@ pub struct ProfileManager {
     managed_unplayed_sections: SecondaryMap<ProfileKey, ProfileSection>,
     managed_least_played_sections: SecondaryMap<ProfileKey, ProfileSection>,
     managed_oldest_sections: SecondaryMap<ProfileKey, ProfileSection>,
-    unplayed_tracks: SecondaryMap<ProfileKey, Vec<Track>>,
-    least_played_tracks: SecondaryMap<ProfileKey, Vec<Track>>,
-    oldest_tracks: SecondaryMap<ProfileKey, Vec<Track>>,
 }
 
 impl ProfileManager {
@@ -254,62 +251,6 @@ impl ProfileManager {
         }
 
         count
-    }
-
-    fn get_largest_section_length(&self, profile_key: ProfileKey) -> usize {
-        let unplayed = if let Some(section) = self.unplayed_tracks.get(profile_key) {
-            section.len()
-        } else {
-            0
-        };
-
-        let least_played = if let Some(section) = self.least_played_tracks.get(profile_key) {
-            section.len()
-        } else {
-            0
-        };
-
-        let oldest = if let Some(section) = self.oldest_tracks.get(profile_key) {
-            section.len()
-        } else {
-            0
-        };
-
-        *vec![unplayed, least_played, oldest]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
-    }
-
-    fn get_track(
-        &self,
-        profile_key: ProfileKey,
-        section_type: SectionType,
-        idx: usize,
-    ) -> Option<&Track> {
-        match section_type {
-            SectionType::Unplayed => {
-                if let Some(tracks) = self.unplayed_tracks.get(profile_key) {
-                    tracks.get(idx)
-                } else {
-                    None
-                }
-            }
-            SectionType::LeastPlayed => {
-                if let Some(tracks) = self.least_played_tracks.get(profile_key) {
-                    tracks.get(idx)
-                } else {
-                    None
-                }
-            }
-            SectionType::Oldest => {
-                if let Some(tracks) = self.oldest_tracks.get(profile_key) {
-                    tracks.get(idx)
-                } else {
-                    None
-                }
-            }
-        }
     }
 
     pub fn get_any_profile_refresh(&self) -> bool {
