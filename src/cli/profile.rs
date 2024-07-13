@@ -6,6 +6,7 @@ use simplelog::{debug, info};
 
 use crate::files;
 use crate::profiles::{ProfileAction, wizards};
+use crate::profiles::manager::PROFILE_MANAGER;
 use crate::profiles::profile::Profile;
 use crate::state::APP_STATE;
 
@@ -18,18 +19,25 @@ pub struct CliProfile {
 pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
-            let mut profile = wizards::create_profile_wizard().await?;
-            // profile = Profile::build_playlist(profile, ProfileAction::Create, None).await?;
-            // profile
-            //     .save_to_file(APP_STATE.get().read().await.get_profiles_directory()?)
-            //     .await?;
+            let profile = wizards::create_profile_wizard().await?;
+            {
+                let mut manager = PROFILE_MANAGER.get().write().await;
+                let new_profile_key = manager.add_new_profile(&profile);
+                let items = manager.fetch_profile_tracks(new_profile_key, None).await?;
+                manager.create_playlist(&profile, new_profile_key, items).await?;
+            }
             files::save_profile_to_disk(&profile).await?;
 
             info!("Profile created successfully!")
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
-        ProfileAction::List => APP_STATE.get().read().await.get_profile_manager().list_profiles(),
+        ProfileAction::List => APP_STATE
+            .get()
+            .read()
+            .await
+            .get_profile_manager()
+            .list_profiles(),
         ProfileAction::Preview => {
             preview_playlist().await?;
         }
@@ -55,7 +63,13 @@ async fn preview_playlist() -> Result<()> {
 }
 
 async fn view_playlist() -> Result<()> {
-    if !APP_STATE.get().read().await.get_profile_manager().have_profiles() {
+    if !APP_STATE
+        .get()
+        .read()
+        .await
+        .get_profile_manager()
+        .have_profiles()
+    {
         println!("No profiles found.");
         return Ok(());
     }
@@ -78,7 +92,8 @@ async fn select_profile(prompt: &str) -> Result<Profile> {
         .default(0)
         .interact()?;
 
-    let profile = app_state.get_profile_manager()
+    let profile = app_state
+        .get_profile_manager()
         .get_profile_by_title(&titles[selection])
         .unwrap()
         .to_owned();
