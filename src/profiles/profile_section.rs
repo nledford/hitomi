@@ -189,7 +189,7 @@ impl ProfileSection {
         })
     }
 
-    fn sort_tracks(&self, tracks: &mut Vec<Track>) {
+    fn sort_tracks(&self, tracks: &mut [Track]) {
         if self.is_unplayed() {
             tracks
                 .sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))

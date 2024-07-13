@@ -47,8 +47,10 @@ pub struct ProfileManager {
 
 impl ProfileManager {
     pub async fn new(profiles_directory: &str) -> Result<Self> {
-        let mut manager = ProfileManager::default();
-        manager.profiles = files::load_profiles_from_disk(profiles_directory).await?;
+        let mut manager = ProfileManager {
+            profiles: files::load_profiles_from_disk(profiles_directory).await?,
+            ..Default::default()
+        };
         manager.build_managed_profiles_and_sections();
         Ok(manager)
     }
@@ -132,8 +134,8 @@ impl ProfileManager {
 
     pub fn get_profile_titles(&self) -> Vec<String> {
         self.get_profiles()
-            .iter()
-            .map(|(_, v)| v.get_title().to_string())
+            .values()
+            .map(|profile| profile.get_title().to_string())
             .collect::<Vec<_>>()
     }
 
@@ -183,11 +185,9 @@ impl ProfileManager {
     }
 
     fn get_profile_time_limit(&self, profile_key: ProfileKey) -> Option<f64> {
-        if let Some(profile) = self.managed_profiles.get(profile_key) {
-            Some(profile.get_section_time_limit())
-        } else {
-            None
-        }
+        self.managed_profiles
+            .get(profile_key)
+            .map(|profile| profile.get_section_time_limit())
     }
 
     pub fn list_profiles(&self) {
@@ -283,8 +283,8 @@ impl ProfileManager {
 
         let profiles = self.get_profiles_to_refresh(ran_once);
         let tasks = profiles
-            .into_iter()
-            .map(|(key, _)| {
+            .into_keys()
+            .map(|key| {
                 self.update_playlist(key, None)
             })
             .collect::<Vec<_>>();
@@ -350,12 +350,12 @@ impl ProfileManager {
 
         info!("Wiping destination playlist...");
         plex_client
-            .clear_playlist(&profile.get_playlist_id())
+            .clear_playlist(profile.get_playlist_id())
             .await?;
 
         info!("Updating destination playlist...");
         plex_client
-            .add_items_to_playlist(&profile.get_playlist_id(), &tracks.get_track_ids())
+            .add_items_to_playlist(profile.get_playlist_id(), &tracks.get_track_ids())
             .await?;
 
         let summary = format!(
@@ -364,7 +364,7 @@ impl ProfileManager {
             profile.get_summary()
         );
         plex_client
-            .update_summary(&profile.get_playlist_id(), &summary)
+            .update_summary(profile.get_playlist_id(), &summary)
             .await?;
 
         show_results(&tracks.combined, profile.get_title(), ProfileAction::Update);
@@ -529,22 +529,22 @@ pub struct FetchSectionTracksResult {
 
 impl FetchSectionTracksResult {
     fn are_none_valid(&self) -> bool {
-        self.get_num_valid() <= 0
+        self.get_num_valid() == 0
     }
 
     fn get_num_valid(&self) -> usize {
-        vec![
+        [
             self.unplayed.is_empty(),
             self.least_played.is_empty(),
             self.oldest.is_empty(),
         ]
-            .iter()
-            .filter(|x| **x == false)
+            .into_iter()
+            .filter(|x| !(*x))
             .count()
     }
 
     fn get_largest_section_length(&self) -> usize {
-        *vec![
+        *[
             self.unplayed.len(),
             self.least_played.len(),
             self.oldest.len(),

@@ -217,7 +217,7 @@ impl PlexClient {
         info!("Updating destination playlist...");
         let ids = tracks.iter().map(|t| t.id().to_string()).collect::<Vec<_>>();
         for chunk in ids.chunks(200) {
-            self.add_items_to_playlist(playlist_id, &chunk.to_vec()).await?;
+            self.add_items_to_playlist(playlist_id, chunk).await?;
         }
 
         self.update_summary(playlist_id, summary).await?;
@@ -255,7 +255,7 @@ impl PlexClient {
         Ok(playlist.rating_key.to_string())
     }
 
-    pub async fn add_items_to_playlist(&self, playlist_id: &PlexId, items: &Vec<String>) -> Result<()> {
+    pub async fn add_items_to_playlist(&self, playlist_id: &PlexId, items: &[String]) -> Result<()> {
         if items.is_empty() {
             return Err(anyhow!("There are no items to add to the playlist"));
         }
