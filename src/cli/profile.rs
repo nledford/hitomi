@@ -8,7 +8,6 @@ use crate::files;
 use crate::profiles::manager::PROFILE_MANAGER;
 use crate::profiles::profile::Profile;
 use crate::profiles::{wizards, ProfileAction};
-use crate::state::APP_STATE;
 
 #[derive(Args, Debug, PartialEq)]
 pub struct CliProfile {
@@ -34,13 +33,10 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
-        ProfileAction::List => APP_STATE
-            .get()
-            .unwrap()
-            .read()
-            .await
-            .get_profile_manager()
-            .list_profiles(),
+        ProfileAction::List => {
+            let manager = PROFILE_MANAGER.get().unwrap().read().await;
+            manager.list_profiles()
+        }
         ProfileAction::Preview => {
             preview_playlist().await?;
         }
@@ -52,37 +48,29 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
 }
 
 async fn preview_playlist() -> Result<()> {
-    let app_state = APP_STATE.get().unwrap().read().await;
+    let manager = PROFILE_MANAGER.get().unwrap().read().await;
 
-    if !app_state.get_profile_manager().have_profiles() {
+    if !manager.have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
 
     let profile = select_profile("Select which profile you would like to preview:").await?;
-    app_state
-        .get_profile_manager()
-        .preview_playlist(&profile)
-        .await?;
+    manager.preview_playlist(&profile).await?;
 
     Ok(())
 }
 
 async fn view_playlist() -> Result<()> {
-    if !APP_STATE
-        .get()
-        .unwrap()
-        .read()
-        .await
-        .get_profile_manager()
-        .have_profiles()
-    {
+    let manager = PROFILE_MANAGER.get().unwrap().read().await;
+
+    if !manager.have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
 
     let profile = select_profile("Select which profile you would like to view:").await?;
-    // println!("{profile}");
+    println!("{profile}");
 
     // Print raw json of profile
     debug!("{}\n", serde_json::to_string_pretty(&profile).unwrap());
@@ -90,17 +78,16 @@ async fn view_playlist() -> Result<()> {
 }
 
 async fn select_profile(prompt: &str) -> Result<Profile> {
-    let app_state = APP_STATE.get().unwrap().read().await;
+    let manager = PROFILE_MANAGER.get().unwrap().read().await;
 
-    let titles = app_state.get_profile_manager().get_profile_titles();
+    let titles = manager.get_profile_titles();
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(prompt)
         .items(&titles)
         .default(0)
         .interact()?;
 
-    let profile = app_state
-        .get_profile_manager()
+    let profile = manager
         .get_profile_by_title(&titles[selection])
         .unwrap()
         .to_owned();

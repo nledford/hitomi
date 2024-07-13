@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use chrono::Local;
+use chrono::{Local, Timelike, Utc};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
@@ -14,8 +14,10 @@ use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 use uuid::Uuid;
 
+use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
+use crate::plex::PLEX_CLIENT;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
@@ -36,6 +38,7 @@ new_key_type! {
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
+    playlists: Vec<Playlist>,
     /// Profiles that have been loaded from disk
     profiles: Vec<Profile>,
     /// Profiles being managed by the application
@@ -47,7 +50,10 @@ pub struct ProfileManager {
 
 impl ProfileManager {
     pub async fn new(profiles_directory: &str) -> Result<Self> {
+        let plex_client = PLEX_CLIENT.get().unwrap();
+
         let mut manager = ProfileManager {
+            playlists: plex_client.get_playlists().to_vec(),
             profiles: files::load_profiles_from_disk(profiles_directory).await?,
             ..Default::default()
         };
@@ -223,7 +229,9 @@ impl ProfileManager {
     }
 
     pub fn get_any_profile_refresh(&self) -> bool {
-        self.get_enabled_profiles()
+        Utc::now().second() == 0
+            && self
+            .get_enabled_profiles()
             .iter()
             .any(|(_, v)| v.check_for_refresh(false))
     }
@@ -415,6 +423,10 @@ impl ProfileManager {
             fetch_sections_tracks(source, source_id, unplayed, least_played, oldest, limit).await?;
 
         Ok(tracks)
+    }
+
+    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
+        self.playlists.iter().find(|p| p.get_title() == title)
     }
 }
 

@@ -3,18 +3,17 @@ use std::fmt::{Display, Formatter};
 use std::ops::Add;
 use std::path::PathBuf;
 
-use chrono::{DateTime, Local, TimeDelta, Timelike};
-use derive_builder::Builder;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
+use crate::config::CONFIG;
 use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::ProfileSource;
-use crate::state::APP_STATE;
 use crate::types::Title;
 use crate::utils;
+use chrono::{DateTime, Local, TimeDelta, Timelike};
+use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 // PROFILE ####################################################################
 
@@ -88,10 +87,8 @@ impl Profile {
     }
 
     pub async fn get_profile_path(&self) -> PathBuf {
-        let app_state = APP_STATE.get().unwrap().read().await;
-
         PathBuf::new()
-            .join(app_state.get_config().unwrap().get_profiles_directory())
+            .join(CONFIG.get().unwrap().get_profiles_directory())
             .join(self.file_name())
     }
 

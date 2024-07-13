@@ -1,11 +1,11 @@
 //! Profile wizards
 
 use crate::plex;
+use crate::profiles::manager::PROFILE_MANAGER;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
 use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
-use crate::state::APP_STATE;
 use crate::types::Title;
 use anyhow::{anyhow, Context, Result};
 use dialoguer::theme::ColorfulTheme;
@@ -46,12 +46,8 @@ async fn set_profile_name() -> Result<Title> {
     let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
-    let app_state = APP_STATE.get().unwrap().read().await;
-    if app_state
-        .get_profile_manager()
-        .get_profile_by_title(&title)
-        .is_some()
-    {
+    let manager = PROFILE_MANAGER.get().unwrap().read().await;
+    if manager.get_profile_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"
@@ -64,7 +60,7 @@ async fn set_profile_name() -> Result<Title> {
         }
     }
 
-    if app_state.get_playlist_by_title(&title).is_some() {
+    if manager.get_playlist_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!("Playlist `{profile_name}` already exists in plex. Do you want to overwrite this playlist?"))
             .default(false)

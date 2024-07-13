@@ -4,7 +4,6 @@ use clap::{Parser, Subcommand};
 use crate::cli::config::CliConfig;
 use crate::cli::profile::CliProfile;
 use crate::cli::run::RunCmds;
-use crate::state;
 
 mod config;
 mod profile;
@@ -28,11 +27,11 @@ pub enum Commands {
 pub async fn run_cli_command(cli: Cli) -> Result<()> {
     match cli.commands {
         Commands::Run(run) => {
-            state::initialize_app_state().await?;
+            crate::config::initialize_app().await?;
             run::execute_run_cmd(run).await?;
         }
         Commands::Profile(profile) => {
-            state::initialize_app_state().await?;
+            crate::config::initialize_app().await?;
             profile::run_profile_command(profile).await?
         }
         Commands::Config(cfg) => config::run_config_cmd(cfg).await?,
