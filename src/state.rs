@@ -9,8 +9,8 @@ use tokio::sync::{OnceCell, RwLock};
 
 use crate::{config, plex};
 use crate::config::Config;
-use crate::plex::{PLEX_CLIENT, PlexClient};
 use crate::plex::models::playlists::Playlist;
+use crate::plex::PLEX_CLIENT;
 use crate::plex::types::PlexId;
 use crate::profiles::manager;
 use crate::profiles::manager::ProfileManager;

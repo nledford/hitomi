@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use chrono::{DateTime, Local, TimeDelta, Timelike};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use tokio::io::AsyncReadExt;
 use uuid::Uuid;
 
 use crate::plex::types::PlexId;

@@ -1,26 +1,23 @@
-use std::cmp::{PartialEq, Reverse};
+use std::cmp::PartialEq;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
-use chrono::{Local, TimeDelta};
+use anyhow::Result;
+use chrono::Local;
 use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
-use futures::prelude::*;
-use itertools::{fold, Itertools};
-use simplelog::{debug, error, info};
+use itertools::Itertools;
+use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
-use tokio::sync::{Mutex, OnceCell, RwLock};
-use tokio::task::JoinSet;
+use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 use uuid::Uuid;
 
 use crate::{files, plex};
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileAction, ProfileSource, SectionType};
+use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
@@ -99,10 +96,6 @@ impl ProfileManager {
         profile.set_playlist_id(id.clone())
     }
 
-    fn get_num_profiles(&self) -> usize {
-        self.managed_profiles.len()
-    }
-
     pub fn have_profiles(&self) -> bool {
         !self.managed_profiles.is_empty()
     }
@@ -114,7 +107,7 @@ impl ProfileManager {
 
         self.managed_profiles
             .iter()
-            .sorted_unstable_by_key(|(k, v)| v.get_title().to_owned())
+            .sorted_unstable_by_key(|(_, v)| v.get_title().to_owned())
             .collect::<HashMap<ProfileKey, &Profile>>()
     }
 
@@ -133,7 +126,7 @@ impl ProfileManager {
         // If the application has run once, we DO NOT want to override refreshing profiles
         self.get_enabled_profiles()
             .into_iter()
-            .filter(|(k, v)| v.check_for_refresh(!ran_once))
+            .filter(|(_, v)| v.check_for_refresh(!ran_once))
             .collect::<HashMap<ProfileKey, &Profile>>()
     }
 
@@ -148,9 +141,9 @@ impl ProfileManager {
         let profile = self
             .managed_profiles
             .iter()
-            .find(|(k, v)| *k == profile_key);
+            .find(|(k, _)| *k == profile_key);
 
-        if let Some((k, v)) = profile {
+        if let Some((_, v)) = profile {
             Some(v)
         } else {
             None
@@ -181,8 +174,8 @@ impl ProfileManager {
         let profile = self
             .managed_profiles
             .iter()
-            .find(|(k, v)| v.get_title() == title);
-        if let Some((k, v)) = profile {
+            .find(|(_, v)| v.get_title() == title);
+        if let Some((k, _)) = profile {
             Some(k)
         } else {
             None
@@ -227,30 +220,6 @@ impl ProfileManager {
                 println!(" - Oldest")
             }
         }
-    }
-
-    fn get_enabled_sections_count(&self, profile_key: ProfileKey) -> i32 {
-        let mut count = 0;
-
-        if let Some(section) = self.managed_unplayed_sections.get(profile_key) {
-            if section.is_enabled() {
-                count += 1;
-            }
-        }
-
-        if let Some(section) = self.managed_least_played_sections.get(profile_key) {
-            if section.is_enabled() {
-                count += 1;
-            }
-        }
-
-        if let Some(section) = self.managed_oldest_sections.get(profile_key) {
-            if section.is_enabled() {
-                count += 1;
-            }
-        }
-
-        count
     }
 
     pub fn get_any_profile_refresh(&self) -> bool {
@@ -315,7 +284,7 @@ impl ProfileManager {
         let profiles = self.get_profiles_to_refresh(ran_once);
         let tasks = profiles
             .into_iter()
-            .map(|(key, profile)| {
+            .map(|(key, _)| {
                 self.update_playlist(key, None)
             })
             .collect::<Vec<_>>();
@@ -365,7 +334,8 @@ impl ProfileManager {
         Ok(())
     }
 
-    pub async fn preview_playlist(&self, profile_key: ProfileKey) -> Result<()> {
+    pub async fn preview_playlist(&self, profile: &Profile) -> Result<()> {
+        let profile_key = self.get_profile_key(profile.get_title()).unwrap();
         let tracks = self.fetch_sections_tracks(profile_key, None).await?;
         tracks.print_preview();
 

@@ -5,7 +5,6 @@ use clap::Args;
 use simplelog::info;
 use tokio::time::sleep;
 
-use crate::profiles;
 use crate::profiles::manager::PROFILE_MANAGER;
 
 #[derive(Args, Debug, PartialEq)]

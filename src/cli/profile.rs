@@ -58,7 +58,7 @@ async fn preview_playlist() -> Result<()> {
     }
 
     let profile = select_profile("Select which profile you would like to preview:").await?;
-    // Profile::build_playlist(profile, ProfileAction::Preview, None).await?;
+    app_state.get_profile_manager().preview_playlist(&profile).await?;
 
     Ok(())
 }
