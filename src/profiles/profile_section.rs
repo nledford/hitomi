@@ -2,12 +2,13 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use crate::plex::models::tracks::Track;
-use crate::profiles::SectionType;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
+
+use crate::plex::models::tracks::Track;
+use crate::profiles::SectionType;
 
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ProfileSection {
@@ -27,6 +28,10 @@ pub struct ProfileSection {
 }
 
 impl ProfileSection {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
@@ -60,48 +65,6 @@ impl ProfileSection {
 
     pub fn get_sorting(&self) -> Vec<&str> {
         self.sorting.split(',').collect::<_>()
-    }
-}
-
-impl Display for ProfileSection {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut str = format!("  {}", self.section_type);
-        str += &format!(
-            "\n    Enabled:                                {}",
-            self.enabled
-        );
-        str += &format!(
-            "\n    Deduplicate tracks by GUID:             {}",
-            self.deduplicate_tracks_by_guid
-        );
-        str += &format!(
-            "\n    Deduplicate tracks by title and artist: {}",
-            self.deduplicate_tracks_by_title_and_artist
-        );
-        str += &format!(
-            "\n    Maximum tracks by artist:               {}",
-            if self.maximum_tracks_by_artist == 0 {
-                "Unlimited".to_string()
-            } else {
-                format!("{} track(s)", self.maximum_tracks_by_artist)
-            }
-        );
-        str += &format!(
-            "\n    Minimum track rating:                   {} stars",
-            self.minimum_track_rating
-        );
-        str += &format!(
-            "\n    Sorting:                                {}",
-            self.sorting
-        );
-
-        writeln!(f, "{str}")
-    }
-}
-
-impl ProfileSection {
-    pub fn new() -> Self {
-        Self::default()
     }
 
     pub fn get_deduplicate_tracks_by_guid(&self) -> bool {
@@ -218,4 +181,38 @@ impl ProfileSection {
     }
 }
 
-// TESTS ######################################################################
+impl Display for ProfileSection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut str = format!("  {}", self.section_type);
+        str += &format!(
+            "\n    Enabled:                                {}",
+            self.enabled
+        );
+        str += &format!(
+            "\n    Deduplicate tracks by GUID:             {}",
+            self.deduplicate_tracks_by_guid
+        );
+        str += &format!(
+            "\n    Deduplicate tracks by title and artist: {}",
+            self.deduplicate_tracks_by_title_and_artist
+        );
+        str += &format!(
+            "\n    Maximum tracks by artist:               {}",
+            if self.maximum_tracks_by_artist == 0 {
+                "Unlimited".to_string()
+            } else {
+                format!("{} track(s)", self.maximum_tracks_by_artist)
+            }
+        );
+        str += &format!(
+            "\n    Minimum track rating:                   {} stars",
+            self.minimum_track_rating
+        );
+        str += &format!(
+            "\n    Sorting:                                {}",
+            self.sorting
+        );
+
+        writeln!(f, "{str}")
+    }
+}
