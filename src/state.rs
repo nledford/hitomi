@@ -3,21 +3,18 @@
 //! Loads the application configuration file and profiles from disk, as well as building a
 //! [`PlexClient`] and loading playlists from the Plex server.
 
-use std::collections::HashMap;
-
 use anyhow::{anyhow, Result};
 use derive_builder::Builder;
 use state::InitCell;
 use tokio::sync::RwLock;
 
-use crate::{config, files, plex};
+use crate::{config, plex};
 use crate::config::Config;
-use crate::plex::models::playlists::Playlist;
 use crate::plex::{PLEX_CLIENT, PlexClient};
+use crate::plex::models::playlists::Playlist;
 use crate::plex::types::PlexId;
 use crate::profiles::manager;
 use crate::profiles::manager::ProfileManager;
-use crate::profiles::profile::Profile;
 use crate::types::Title;
 
 pub static APP_STATE: InitCell<RwLock<AppState>> = InitCell::new();
@@ -27,10 +24,6 @@ pub async fn initialize_app_state() -> Result<()> {
     APP_STATE.set(RwLock::new(app_state));
     Ok(())
 }
-
-/*pub async fn get_any_profile_refresh() -> bool {
-    APP_STATE.get().read().await.any_profile_refresh()
-}*/
 
 /// Represents the application state
 #[derive(Builder, Debug)]
