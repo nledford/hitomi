@@ -5,8 +5,7 @@
 
 use anyhow::{anyhow, Result};
 use derive_builder::Builder;
-use state::InitCell;
-use tokio::sync::RwLock;
+use tokio::sync::{OnceCell, RwLock};
 
 use crate::{config, plex};
 use crate::config::Config;
@@ -17,11 +16,11 @@ use crate::profiles::manager;
 use crate::profiles::manager::ProfileManager;
 use crate::types::Title;
 
-pub static APP_STATE: InitCell<RwLock<AppState>> = InitCell::new();
+pub static APP_STATE: OnceCell<RwLock<AppState>> = OnceCell::const_new();
 
 pub async fn initialize_app_state() -> Result<()> {
     let app_state = AppState::initialize().await?;
-    APP_STATE.set(RwLock::new(app_state));
+    APP_STATE.set(RwLock::new(app_state))?;
     Ok(())
 }
 

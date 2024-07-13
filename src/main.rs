@@ -4,8 +4,6 @@ use log::*;
 use simplelog::*;
 
 use hitomi::cli;
-use hitomi::state;
-use hitomi::state::APP_STATE;
 
 #[tokio::main]
 async fn main() -> Result<()> {

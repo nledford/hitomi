@@ -89,7 +89,7 @@ impl Profile {
     }
 
     pub async fn get_profile_path(&self) -> PathBuf {
-        let app_state = APP_STATE.get().read().await;
+        let app_state = APP_STATE.get().unwrap().read().await;
 
         PathBuf::new()
             .join(app_state.get_config().unwrap().get_profiles_directory())

@@ -8,7 +8,7 @@ use crate::profiles::profile::Profile;
 use crate::state::APP_STATE;
 
 async fn get_profiles_directory() -> Result<String> {
-    let app_state = APP_STATE.get().read().await;
+    let app_state = APP_STATE.get().unwrap().read().await;
     let profiles_directory = app_state.get_config()?.get_profiles_directory();
     Ok(profiles_directory.to_owned())
 }

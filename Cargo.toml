@@ -33,7 +33,6 @@ serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.120"
 simplelog = { version = "0.12.2", features = ["paris", "termcolor"] }
 slotmap = "1.0.7"
-state = { version = "0.6.0", features = ["tls"] }
 strum = { version = "0.26", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4"] }

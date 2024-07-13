@@ -46,7 +46,7 @@ async fn set_profile_name() -> Result<Title> {
     let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
-    let app_state = APP_STATE.get().read().await;
+    let app_state = APP_STATE.get().unwrap().read().await;
     if app_state
         .get_profile_manager()
         .get_profile_by_title(&title)
