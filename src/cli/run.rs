@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Args;
 use simplelog::info;
 use tokio::time::sleep;
@@ -27,9 +27,13 @@ fn print_title(looping: bool) {
 pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     print_title(cmd.run_loop);
 
-    let manager = PROFILE_MANAGER.get().unwrap().read().await;
-    let manager = manager.clone();
+    let manager = PROFILE_MANAGER
+        .get()
+        .ok_or_else(|| anyhow!("Cannot get lock on profile manager"))?
+        .read()
+        .await;
 
+    // Initial refresh is performed irrespective of `run_loop` flag
     manager
         .refresh_playlists_from_profiles(cmd.run_loop, false)
         .await?;
