@@ -1,10 +1,5 @@
 //! Profile wizards
 
-use anyhow::{anyhow, Context, Result};
-use dialoguer::theme::ColorfulTheme;
-use dialoguer::{Confirm, Input, MultiSelect, Select};
-use simplelog::info;
-use strum::VariantNames;
 use crate::plex;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
@@ -12,6 +7,11 @@ use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterva
 use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::state::APP_STATE;
 use crate::types::Title;
+use anyhow::{anyhow, Context, Result};
+use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Confirm, Input, MultiSelect, Select};
+use simplelog::info;
+use strum::VariantNames;
 
 /// The main entrypoint of the wizard
 pub async fn create_profile_wizard() -> Result<Profile> {
@@ -24,14 +24,14 @@ pub async fn create_profile_wizard() -> Result<Profile> {
     let profile_source = select_profile_source()?;
     let profile_source_id = select_profile_source_id(profile_source).await?;
 
-    // let sections = select_profile_sections()?;
+    let sections = select_profile_sections()?;
 
     let profile = ProfileBuilder::default()
         .title(profile_name)
         .summary(summary)
         .profile_source(profile_source)
         .profile_source_id(profile_source_id)
-        // .sections(sections)
+        .sections(sections)
         .refresh_interval(refresh_interval)
         .time_limit(time_limit)
         .build()?;
@@ -47,7 +47,11 @@ async fn set_profile_name() -> Result<Title> {
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
     let app_state = APP_STATE.get().read().await;
-    if app_state.get_profile_manager().get_profile_by_title(&title).is_some() {
+    if app_state
+        .get_profile_manager()
+        .get_profile_by_title(&title)
+        .is_some()
+    {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"
@@ -184,7 +188,7 @@ async fn select_profile_source_id(
     })
 }
 
-/*fn select_profile_sections() -> Result<Sections> {
+fn select_profile_sections() -> Result<Vec<ProfileSection>> {
     let defaults = &[false, false, false];
     let selections = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Which sections do you want to include in your profile?")
@@ -198,18 +202,18 @@ async fn select_profile_source_id(
         selections
     };
 
-    let mut sections = Sections::default();
+    let mut sections = vec![];
 
     if selections.contains(&0) {
-        sections.set_unplayed_section(Some(build_profile_section(SectionType::Unplayed)?))
+        sections.push(build_profile_section(SectionType::Unplayed)?)
     }
 
     if selections.contains(&1) {
-        sections.set_least_played_section(Some(build_profile_section(SectionType::LeastPlayed)?))
+        sections.push(build_profile_section(SectionType::LeastPlayed)?)
     }
 
     if selections.contains(&2) {
-        sections.set_oldest_section(Some(build_profile_section(SectionType::Oldest)?))
+        sections.push(build_profile_section(SectionType::Oldest)?)
     }
 
     Ok(sections)
@@ -271,4 +275,4 @@ fn build_profile_section(section_type: SectionType) -> Result<ProfileSection> {
         .build()?;
 
     Ok(section)
-}*/
+}
