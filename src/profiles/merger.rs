@@ -57,9 +57,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-            .iter()
-            .filter(|x| **x)
-            .count()
+        .iter()
+        .filter(|x| **x)
+        .count()
     }
 
     fn get_largest_section_length(&self) -> usize {
@@ -68,9 +68,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
+        .iter()
+        .max()
+        .unwrap_or(&0_usize)
     }
 
     pub fn get_track_ids(&self) -> Vec<String> {

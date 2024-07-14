@@ -245,9 +245,9 @@ impl ProfileManager {
     pub fn get_any_profile_refresh(&self) -> bool {
         Utc::now().second() == 0
             && self
-            .get_enabled_profiles()
-            .iter()
-            .any(|(_, v)| v.check_for_refresh(false))
+                .get_enabled_profiles()
+                .iter()
+                .any(|(_, v)| v.check_for_refresh(false))
     }
 
     fn print_update(&self, playlists_updated: usize) {
@@ -448,7 +448,7 @@ impl ProfileManager {
             oldest,
             limit,
         )
-            .await?;
+        .await?;
 
         Ok(tracks)
     }
@@ -497,7 +497,7 @@ async fn fetch_sections_tracks(
             profile_source_id,
             limit,
         )
-            .await?;
+        .await?;
         result.set_unplayed_tracks(tracks);
     }
 
@@ -509,7 +509,7 @@ async fn fetch_sections_tracks(
             profile_source_id,
             limit,
         )
-            .await?;
+        .await?;
         result.set_least_played_tracks(tracks)
     }
 
@@ -521,7 +521,7 @@ async fn fetch_sections_tracks(
             profile_source_id,
             limit,
         )
-            .await?;
+        .await?;
         result.set_oldest_tracks(tracks)
     }
 
