@@ -20,7 +20,7 @@ build: format clippy
     cargo build
 
 test: build
-    cargo test
+    cargo nextest run
 
 run-loop $RUST_BACKTRACE="full": test
     cargo run -- run -l
