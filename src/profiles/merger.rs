@@ -1,5 +1,6 @@
-use crate::plex::models::tracks::Track;
 use simplelog::info;
+
+use crate::plex::models::tracks::Track;
 use crate::profiles::profile_section::ProfileSection;
 
 #[derive(Debug, Default)]
@@ -7,7 +8,7 @@ pub struct SectionTracksMerger {
     unplayed: Vec<Track>,
     least_played: Vec<Track>,
     oldest: Vec<Track>,
-    combined: Vec<Track>,
+    merged: Vec<Track>,
 }
 
 impl SectionTracksMerger {
@@ -33,7 +34,8 @@ impl SectionTracksMerger {
         }
 
         if profile_section.is_least_played_section() {
-            self.least_played = profile_section.run_manual_filters(&self.least_played, time_limit, None)
+            self.least_played =
+                profile_section.run_manual_filters(&self.least_played, time_limit, None)
         }
 
         if profile_section.is_oldest_section() {
@@ -42,7 +44,7 @@ impl SectionTracksMerger {
     }
 
     pub fn get_combined_tracks(&self) -> &[Track] {
-        &self.combined
+        &self.merged
     }
 
     fn none_are_valid(&self) -> bool {
@@ -72,21 +74,22 @@ impl SectionTracksMerger {
     }
 
     pub fn get_track_ids(&self) -> Vec<String> {
-        if self.combined.is_empty() {
+        if self.merged.is_empty() {
             vec![]
         } else {
-            self.combined
+            self.merged
                 .iter()
                 .map(|track| track.id().to_string())
                 .collect::<Vec<_>>()
         }
     }
+
     pub fn print_preview(&self) {
-        if self.combined.is_empty() {
+        if self.merged.is_empty() {
             return;
         }
 
-        let preview = self.combined.iter().take(25).collect::<Vec<_>>();
+        let preview = self.merged.iter().take(25).collect::<Vec<_>>();
 
         for (i, track) in preview.iter().enumerate() {
             println!("{:2} {}", i + 1, track)
@@ -103,18 +106,18 @@ impl SectionTracksMerger {
             if self.get_num_valid() == 1 { "" } else { "s" }
         );
 
-        self.combined = Vec::new();
+        self.merged = Vec::new();
         for i in 0..self.get_largest_section_length() {
             if let Some(track) = self.unplayed.get(i) {
-                self.combined.push(track.clone())
+                self.merged.push(track.clone())
             }
 
             if let Some(track) = self.least_played.get(i) {
-                self.combined.push(track.clone())
+                self.merged.push(track.clone())
             }
 
             if let Some(track) = self.oldest.get(i) {
-                self.combined.push(track.clone())
+                self.merged.push(track.clone())
             }
         }
     }
