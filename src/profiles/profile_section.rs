@@ -89,23 +89,27 @@ impl ProfileSection {
 
     pub fn run_manual_filters(
         &self,
-        tracks: &mut Vec<Track>,
+        tracks: &[Track],
         time_limit: f64,
         list_to_dedup: Option<&mut Vec<Track>>,
-    ) {
-        self.deduplicate_by_track_guid(tracks);
-        self.run_deduplicate_by_title_and_artist(tracks);
-        self.limit_tracks_by_artist(tracks);
-        self.sort_tracks(tracks);
-        self.reduce_to_time_limit(tracks, time_limit);
+    ) -> Vec<Track> {
+        let mut tracks = tracks.to_vec();
+
+        self.deduplicate_by_track_guid(&mut tracks);
+        self.run_deduplicate_by_title_and_artist(&mut tracks);
+        self.limit_tracks_by_artist(&mut tracks);
+        self.sort_tracks(&mut tracks);
+        self.reduce_to_time_limit(&mut tracks, time_limit);
 
         if let Some(lst) = list_to_dedup {
-            self.dedup_tracks_by_list(tracks, lst)
+            self.dedup_tracks_by_list(&mut tracks, lst)
         }
 
         if self.randomize_tracks {
             tracks.shuffle(&mut rand::thread_rng())
         }
+
+        tracks
     }
 
     fn deduplicate_by_track_guid(&self, tracks: &mut Vec<Track>) {

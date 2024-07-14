@@ -22,9 +22,9 @@ pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
             {
                 let mut manager = PROFILE_MANAGER.get().unwrap().write().await;
                 let new_profile_key = manager.add_new_profile(&profile);
-                let items = manager.fetch_profile_tracks(new_profile_key, None).await?;
+                let merger = manager.fetch_profile_tracks(new_profile_key, None).await?;
                 manager
-                    .create_playlist(&profile, new_profile_key, items)
+                    .create_playlist(&profile, new_profile_key, &merger)
                     .await?;
             }
             files::save_profile_to_disk(&profile).await?;

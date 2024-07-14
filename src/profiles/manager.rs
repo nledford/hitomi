@@ -1,3 +1,5 @@
+//! Manages profiles
+
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -5,23 +7,24 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 
+use crate::{files, plex};
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::types::PlexId;
 use crate::plex::PLEX_CLIENT;
+use crate::plex::types::PlexId;
+use crate::profiles::{ProfileAction, ProfileSource};
+use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
-use crate::profiles::{ProfileAction, ProfileSource};
-use crate::{files, plex};
 
 pub static PROFILE_MANAGER: OnceCell<Arc<RwLock<ProfileManager>>> = OnceCell::const_new();
 
@@ -45,6 +48,13 @@ pub struct ProfileManager {
     managed_unplayed_sections: SecondaryMap<ProfileKey, ProfileSection>,
     managed_least_played_sections: SecondaryMap<ProfileKey, ProfileSection>,
     managed_oldest_sections: SecondaryMap<ProfileKey, ProfileSection>,
+}
+
+// PLAYLISTS
+impl ProfileManager {
+    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
+        self.playlists.iter().find(|p| p.get_title() == title)
+    }
 }
 
 impl ProfileManager {
@@ -304,7 +314,7 @@ impl ProfileManager {
         &mut self,
         profile: &Profile,
         profile_key: ProfileKey,
-        tracks: FetchSectionTracksResult,
+        merger: &SectionTracksMerger,
     ) -> Result<()> {
         let plex_client = plex::get_plex_client().await;
         let save = Confirm::with_theme(&ColorfulTheme::default())
@@ -320,10 +330,10 @@ impl ProfileManager {
 
             info!("Adding tracks to newly created playlist...");
             plex_client
-                .add_items_to_playlist(&playlist_id, &tracks.get_track_ids())
+                .add_items_to_playlist(&playlist_id, &merger.get_track_ids())
                 .await?;
 
-            show_results(&tracks.combined, profile.get_title(), ProfileAction::Create);
+            print_refresh_results(merger.get_combined_tracks(), profile.get_title(), ProfileAction::Create);
         } else {
             info!("Playlist not saved");
         }
@@ -333,8 +343,8 @@ impl ProfileManager {
 
     pub async fn preview_playlist(&self, profile: &Profile) -> Result<()> {
         let profile_key = self.get_profile_key(profile.get_title()).unwrap();
-        let tracks = self.fetch_sections_tracks(profile_key, None).await?;
-        tracks.print_preview();
+        let merger = self.fetch_sections_tracks(profile_key, None).await?;
+        merger.print_preview();
 
         Ok(())
     }
@@ -342,7 +352,7 @@ impl ProfileManager {
     pub async fn update_playlist(&self, profile_key: ProfileKey, limit: Option<i32>) -> Result<()> {
         let plex_client = plex::get_plex_client().await;
         let profile = self.get_profile_by_key(profile_key).unwrap();
-        let tracks = self.fetch_profile_tracks(profile_key, limit).await?;
+        let merger = self.fetch_profile_tracks(profile_key, limit).await?;
         info!("Updating `{}` playlist...", profile.get_title());
 
         info!("Wiping destination playlist...");
@@ -352,7 +362,7 @@ impl ProfileManager {
 
         info!("Updating destination playlist...");
         plex_client
-            .add_items_to_playlist(profile.get_playlist_id(), &tracks.get_track_ids())
+            .add_items_to_playlist(profile.get_playlist_id(), &merger.get_track_ids())
             .await?;
 
         let summary = format!(
@@ -364,7 +374,7 @@ impl ProfileManager {
             .update_summary(profile.get_playlist_id(), &summary)
             .await?;
 
-        show_results(&tracks.combined, profile.get_title(), ProfileAction::Update);
+        print_refresh_results(&merger.get_combined_tracks(), profile.get_title(), ProfileAction::Update);
 
         Ok(())
     }
@@ -373,32 +383,35 @@ impl ProfileManager {
         &self,
         profile_key: ProfileKey,
         limit: Option<i32>,
-    ) -> Result<FetchSectionTracksResult> {
-        let mut tracks = self.fetch_sections_tracks(profile_key, limit).await?;
+    ) -> Result<SectionTracksMerger> {
+        let mut merger = self.fetch_sections_tracks(profile_key, limit).await?;
         let time_limit = self.get_profile_time_limit(profile_key).unwrap();
 
         if let Some(section) = self.managed_unplayed_sections.get(profile_key) {
-            section.run_manual_filters(&mut tracks.unplayed, time_limit, None);
+            let tracks = section.run_manual_filters(merger.get_unplayed_tracks(), time_limit, None);
+            merger.set_unplayed_tracks(tracks)
         }
 
         if let Some(section) = self.managed_least_played_sections.get(profile_key) {
-            section.run_manual_filters(&mut tracks.least_played, time_limit, None);
+            let tracks = section.run_manual_filters(merger.get_least_played_tracks(), time_limit, None);
+            merger.set_least_played_tracks(tracks)
         }
 
         if let Some(section) = self.managed_oldest_sections.get(profile_key) {
-            section.run_manual_filters(&mut tracks.oldest, time_limit, None);
+            let tracks = section.run_manual_filters(merger.get_oldest_tracks(), time_limit, None);
+            merger.set_oldest_tracks(tracks)
         }
 
-        tracks.combine();
+        merger.merge();
 
-        Ok(tracks)
+        Ok(merger)
     }
 
     async fn fetch_sections_tracks(
         &self,
         profile_key: ProfileKey,
         limit: Option<i32>,
-    ) -> Result<FetchSectionTracksResult> {
+    ) -> Result<SectionTracksMerger> {
         let unplayed = self.managed_unplayed_sections.get(profile_key);
         let least_played = self.managed_least_played_sections.get(profile_key);
         let oldest = self.managed_oldest_sections.get(profile_key);
@@ -413,13 +426,11 @@ impl ProfileManager {
 
         Ok(tracks)
     }
-
-    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
-        self.playlists.iter().find(|p| p.get_title() == title)
-    }
 }
 
-fn show_results(tracks: &[Track], title: &str, action: ProfileAction) {
+// UTILITY FUNCTIONS #############################################################
+
+fn print_refresh_results(tracks: &[Track], playlist_title: &str, action: ProfileAction) {
     let size = tracks.len();
 
     let duration: i64 = tracks.iter().map(|t| t.duration()).sum();
@@ -435,7 +446,7 @@ fn show_results(tracks: &[Track], title: &str, action: ProfileAction) {
     log::info!(
         "Successfully {} `{}` playlist!\n\tFinal size: {}\n\tFinal duration: {}",
         action,
-        title,
+        playlist_title,
         size,
         duration
     );
@@ -448,22 +459,22 @@ async fn fetch_sections_tracks(
     least_played: Option<&ProfileSection>,
     oldest: Option<&ProfileSection>,
     limit: Option<i32>,
-) -> Result<FetchSectionTracksResult> {
-    let mut result = FetchSectionTracksResult::default();
+) -> Result<SectionTracksMerger> {
+    let mut result = SectionTracksMerger::default();
 
     if let Some(section) = unplayed {
-        result.unplayed =
-            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks = fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        result.set_unplayed_tracks(tracks);
     }
 
     if let Some(section) = least_played {
-        result.least_played =
-            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks = fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        result.set_least_played_tracks(tracks)
     }
 
     if let Some(section) = oldest {
-        result.oldest =
-            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks = fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        result.set_oldest_tracks(tracks)
     }
 
     Ok(result)
@@ -522,87 +533,4 @@ async fn fetch_section_tracks(
         .await?;
 
     Ok(tracks)
-}
-
-#[derive(Debug, Default)]
-pub struct FetchSectionTracksResult {
-    unplayed: Vec<Track>,
-    least_played: Vec<Track>,
-    oldest: Vec<Track>,
-    combined: Vec<Track>,
-}
-
-impl FetchSectionTracksResult {
-    fn are_none_valid(&self) -> bool {
-        self.get_num_valid() == 0
-    }
-
-    fn get_num_valid(&self) -> usize {
-        [
-            !self.unplayed.is_empty(),
-            !self.least_played.is_empty(),
-            !self.oldest.is_empty(),
-        ]
-            .iter()
-            .filter(|x| **x)
-            .count()
-    }
-
-    fn get_largest_section_length(&self) -> usize {
-        *[
-            self.unplayed.len(),
-            self.least_played.len(),
-            self.oldest.len(),
-        ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
-    }
-
-    fn get_track_ids(&self) -> Vec<String> {
-        if self.combined.is_empty() {
-            vec![]
-        } else {
-            self.combined
-                .iter()
-                .map(|track| track.id().to_string())
-                .collect::<Vec<_>>()
-        }
-    }
-    fn print_preview(&self) {
-        if self.combined.is_empty() {
-            return;
-        }
-
-        let preview = self.combined.iter().take(25).collect::<Vec<_>>();
-
-        for (i, track) in preview.iter().enumerate() {
-            println!("{:2} {}", i + 1, track)
-        }
-    }
-
-    fn combine(&mut self) {
-        if self.are_none_valid() {
-            return;
-        }
-        info!("Combining playlists...");
-
-        self.combined = Vec::new();
-
-        info!("Combing {} sections...", self.get_num_valid());
-
-        for i in 0..self.get_largest_section_length() {
-            if let Some(track) = self.unplayed.get(i) {
-                self.combined.push(track.clone())
-            }
-
-            if let Some(track) = self.least_played.get(i) {
-                self.combined.push(track.clone())
-            }
-
-            if let Some(track) = self.oldest.get(i) {
-                self.combined.push(track.clone())
-            }
-        }
-    }
 }
