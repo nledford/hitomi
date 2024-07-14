@@ -539,12 +539,12 @@ impl FetchSectionTracksResult {
 
     fn get_num_valid(&self) -> usize {
         [
-            self.unplayed.is_empty(),
-            self.least_played.is_empty(),
-            self.oldest.is_empty(),
+            !self.unplayed.is_empty(),
+            !self.least_played.is_empty(),
+            !self.oldest.is_empty(),
         ]
-            .into_iter()
-            .filter(|x| !(*x))
+            .iter()
+            .filter(|x| **x)
             .count()
     }
 
