@@ -1,5 +1,6 @@
 use crate::plex::models::tracks::Track;
 use simplelog::info;
+use crate::profiles::profile_section::ProfileSection;
 
 #[derive(Debug, Default)]
 pub struct SectionTracksMerger {
@@ -14,35 +15,37 @@ impl SectionTracksMerger {
         Self::default()
     }
 
-    pub fn get_unplayed_tracks(&self) -> &[Track] {
-        &self.unplayed
-    }
-
     pub fn set_unplayed_tracks(&mut self, tracks: Vec<Track>) {
         self.unplayed = tracks
-    }
-
-    pub fn get_least_played_tracks(&self) -> &[Track] {
-        &self.least_played
     }
 
     pub fn set_least_played_tracks(&mut self, tracks: Vec<Track>) {
         self.least_played = tracks
     }
 
-    pub fn get_oldest_tracks(&self) -> &[Track] {
-        &self.oldest
-    }
-
     pub fn set_oldest_tracks(&mut self, tracks: Vec<Track>) {
         self.oldest = tracks
+    }
+
+    pub fn run_manual_filters(&mut self, profile_section: &ProfileSection, time_limit: f64) {
+        if profile_section.is_unplayed_section() {
+            self.unplayed = profile_section.run_manual_filters(&self.unplayed, time_limit, None)
+        }
+
+        if profile_section.is_least_played_section() {
+            self.least_played = profile_section.run_manual_filters(&self.least_played, time_limit, None)
+        }
+
+        if profile_section.is_oldest_section() {
+            self.oldest = profile_section.run_manual_filters(&self.oldest, time_limit, None)
+        }
     }
 
     pub fn get_combined_tracks(&self) -> &[Track] {
         &self.combined
     }
 
-    fn are_none_valid(&self) -> bool {
+    fn none_are_valid(&self) -> bool {
         self.get_num_valid() == 0
     }
 
@@ -91,15 +94,16 @@ impl SectionTracksMerger {
     }
 
     pub fn merge(&mut self) {
-        if self.are_none_valid() {
+        if self.none_are_valid() {
             return;
         }
-        info!("Combining playlists...");
+        info!(
+            "Merging {} section{}...",
+            self.get_num_valid(),
+            if self.get_num_valid() == 1 { "" } else { "s" }
+        );
 
         self.combined = Vec::new();
-
-        info!("Combing {} sections...", self.get_num_valid());
-
         for i in 0..self.get_largest_section_length() {
             if let Some(track) = self.unplayed.get(i) {
                 self.combined.push(track.clone())

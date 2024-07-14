@@ -7,24 +7,24 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 
+use crate::{files, plex};
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::types::PlexId;
 use crate::plex::PLEX_CLIENT;
+use crate::plex::types::PlexId;
+use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
-use crate::profiles::{ProfileAction, ProfileSource};
-use crate::{files, plex};
 
 pub static PROFILE_MANAGER: OnceCell<Arc<RwLock<ProfileManager>>> = OnceCell::const_new();
 
@@ -396,19 +396,15 @@ impl ProfileManager {
         let time_limit = self.get_profile_time_limit(profile_key).unwrap();
 
         if let Some(section) = self.managed_unplayed_sections.get(profile_key) {
-            let tracks = section.run_manual_filters(merger.get_unplayed_tracks(), time_limit, None);
-            merger.set_unplayed_tracks(tracks)
+            merger.run_manual_filters(section, time_limit)
         }
 
         if let Some(section) = self.managed_least_played_sections.get(profile_key) {
-            let tracks =
-                section.run_manual_filters(merger.get_least_played_tracks(), time_limit, None);
-            merger.set_least_played_tracks(tracks)
+            merger.run_manual_filters(section, time_limit)
         }
 
         if let Some(section) = self.managed_oldest_sections.get(profile_key) {
-            let tracks = section.run_manual_filters(merger.get_oldest_tracks(), time_limit, None);
-            merger.set_oldest_tracks(tracks)
+            merger.run_manual_filters(section, time_limit)
         }
 
         merger.merge();
