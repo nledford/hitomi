@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{env, fs};
 
-use crate::plex;
 use crate::plex::types::{PlexToken, PlexUrl};
 use crate::plex::PlexClient;
 use crate::profiles::manager;
@@ -25,10 +24,8 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 pub async fn initialize_app() -> Result<()> {
     let config = load_config().await?;
 
-    plex::initialize_plex_client(&config).await?;
-
-    let dir = config.get_profiles_directory();
-    manager::initialize_profile_manager(dir).await?;
+    // plex::initialize_plex_client(&config).await?;
+    manager::initialize_profile_manager(&config).await?;
 
     CONFIG.set(config)?;
     Ok(())

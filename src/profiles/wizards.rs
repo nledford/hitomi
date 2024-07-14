@@ -1,6 +1,6 @@
 //! Profile wizards
 
-use crate::plex;
+use crate::plex::PlexClient;
 use crate::profiles::manager::PROFILE_MANAGER;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
@@ -14,7 +14,7 @@ use simplelog::info;
 use strum::VariantNames;
 
 /// The main entrypoint of the wizard
-pub async fn create_profile_wizard() -> Result<Profile> {
+pub async fn create_profile_wizard(plex_client: &PlexClient) -> Result<Profile> {
     let profile_name = set_profile_name().await?;
 
     let summary = set_summary()?;
@@ -22,7 +22,7 @@ pub async fn create_profile_wizard() -> Result<Profile> {
     let time_limit = set_time_limit()?;
 
     let profile_source = select_profile_source()?;
-    let profile_source_id = select_profile_source_id(profile_source).await?;
+    let profile_source_id = select_profile_source_id(plex_client, profile_source).await?;
 
     let sections = select_profile_sections()?;
 
@@ -115,14 +115,13 @@ fn select_profile_source() -> Result<ProfileSource> {
 }
 
 async fn select_profile_source_id(
+    plex_client: &PlexClient,
     profile_source: ProfileSource,
 ) -> Result<Option<ProfileSourceId>> {
-    let plex = plex::get_plex_client().await;
-
     let id: Option<String> = match profile_source {
         ProfileSource::Library => None,
         ProfileSource::Collection => {
-            let collections = plex.get_collections();
+            let collections = plex_client.get_collections();
             let titles = collections
                 .iter()
                 .map(|x| x.get_title())
@@ -139,7 +138,7 @@ async fn select_profile_source_id(
             Some(id)
         }
         ProfileSource::Playlist => {
-            let playlists = plex.get_playlists();
+            let playlists = plex_client.get_playlists();
             let titles = playlists
                 .iter()
                 .map(|x| x.get_title())
@@ -159,7 +158,7 @@ async fn select_profile_source_id(
                 .interact_text()?;
 
             info!("Searching for artists. Please wait...");
-            let artists = plex.search_for_artist(&artist).await?;
+            let artists = plex_client.search_for_artist(&artist).await?;
 
             let names = &artists
                 .iter()

@@ -15,21 +15,22 @@ use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 
+use crate::config::Config;
+use crate::files;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
-use crate::plex::PLEX_CLIENT;
+use crate::plex::PlexClient;
 use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
 use crate::profiles::{ProfileAction, ProfileSource};
-use crate::{files, plex};
 
 pub static PROFILE_MANAGER: OnceCell<Arc<RwLock<ProfileManager>>> = OnceCell::const_new();
 
-pub async fn initialize_profile_manager(profiles_directory: &str) -> Result<()> {
-    let manager = ProfileManager::new(profiles_directory).await?;
+pub async fn initialize_profile_manager(config: &Config) -> Result<()> {
+    let manager = ProfileManager::new(config).await?;
     PROFILE_MANAGER.set(Arc::new(RwLock::new(manager)))?;
     Ok(())
 }
@@ -40,6 +41,7 @@ new_key_type! {
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
+    plex_client: PlexClient,
     playlists: Vec<Playlist>,
     /// Profiles that have been loaded from disk
     profiles: Vec<Profile>,
@@ -50,6 +52,13 @@ pub struct ProfileManager {
     managed_oldest_sections: SecondaryMap<ProfileKey, ProfileSection>,
 }
 
+// PlEX
+impl ProfileManager {
+    pub fn get_plex_client(&self) -> &PlexClient {
+        &self.plex_client
+    }
+}
+
 // PLAYLISTS
 impl ProfileManager {
     pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
@@ -58,12 +67,14 @@ impl ProfileManager {
 }
 
 impl ProfileManager {
-    pub async fn new(profiles_directory: &str) -> Result<Self> {
-        let plex_client = PLEX_CLIENT.get().unwrap();
+    pub async fn new(config: &Config) -> Result<Self> {
+        let plex_client = PlexClient::initialize(config).await?;
+        let playlists = plex_client.get_playlists().to_vec();
 
         let mut manager = ProfileManager {
-            playlists: plex_client.get_playlists().to_vec(),
-            profiles: files::load_profiles_from_disk(profiles_directory).await?,
+            plex_client,
+            playlists,
+            profiles: files::load_profiles_from_disk(config.get_profiles_directory()).await?,
             ..Default::default()
         };
         manager.build_managed_profiles_and_sections();
@@ -316,7 +327,6 @@ impl ProfileManager {
         profile_key: ProfileKey,
         merger: &SectionTracksMerger,
     ) -> Result<()> {
-        let plex_client = plex::get_plex_client().await;
         let save = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Would you like to save this profile?")
             .default(true)
@@ -324,12 +334,12 @@ impl ProfileManager {
 
         if save {
             info!("Creating playlist in plex...");
-            let playlist_id = plex_client.create_playlist(profile).await?;
+            let playlist_id = self.plex_client.create_playlist(profile).await?;
             let playlist_id = PlexId::try_new(playlist_id)?;
             self.set_playlist_id(profile_key, &playlist_id);
 
             info!("Adding tracks to newly created playlist...");
-            plex_client
+            self.plex_client
                 .add_items_to_playlist(&playlist_id, &merger.get_track_ids())
                 .await?;
 
@@ -354,18 +364,17 @@ impl ProfileManager {
     }
 
     pub async fn update_playlist(&self, profile_key: ProfileKey, limit: Option<i32>) -> Result<()> {
-        let plex_client = plex::get_plex_client().await;
         let profile = self.get_profile_by_key(profile_key).unwrap();
         let merger = self.fetch_profile_tracks(profile_key, limit).await?;
         info!("Updating `{}` playlist...", profile.get_title());
 
         info!("Wiping destination playlist...");
-        plex_client
+        self.plex_client
             .clear_playlist(profile.get_playlist_id())
             .await?;
 
         info!("Updating destination playlist...");
-        plex_client
+        self.plex_client
             .add_items_to_playlist(profile.get_playlist_id(), &merger.get_track_ids())
             .await?;
 
@@ -374,7 +383,7 @@ impl ProfileManager {
             profile.get_next_refresh_str(),
             profile.get_summary()
         );
-        plex_client
+        self.plex_client
             .update_summary(profile.get_playlist_id(), &summary)
             .await?;
 
@@ -426,8 +435,16 @@ impl ProfileManager {
             .unwrap()
             .get_profile_source_and_id();
 
-        let tracks =
-            fetch_sections_tracks(source, source_id, unplayed, least_played, oldest, limit).await?;
+        let tracks = fetch_sections_tracks(
+            &self.plex_client,
+            source,
+            source_id,
+            unplayed,
+            least_played,
+            oldest,
+            limit,
+        )
+            .await?;
 
         Ok(tracks)
     }
@@ -458,6 +475,7 @@ fn print_refresh_results(tracks: &[Track], playlist_title: &str, action: Profile
 }
 
 async fn fetch_sections_tracks(
+    plex_client: &PlexClient,
     profile_source: &ProfileSource,
     profile_source_id: Option<&ProfileSourceId>,
     unplayed: Option<&ProfileSection>,
@@ -468,20 +486,38 @@ async fn fetch_sections_tracks(
     let mut result = SectionTracksMerger::default();
 
     if let Some(section) = unplayed {
-        let tracks =
-            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks = fetch_section_tracks(
+            plex_client,
+            section,
+            profile_source,
+            profile_source_id,
+            limit,
+        )
+            .await?;
         result.set_unplayed_tracks(tracks);
     }
 
     if let Some(section) = least_played {
-        let tracks =
-            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks = fetch_section_tracks(
+            plex_client,
+            section,
+            profile_source,
+            profile_source_id,
+            limit,
+        )
+            .await?;
         result.set_least_played_tracks(tracks)
     }
 
     if let Some(section) = oldest {
-        let tracks =
-            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks = fetch_section_tracks(
+            plex_client,
+            section,
+            profile_source,
+            profile_source_id,
+            limit,
+        )
+            .await?;
         result.set_oldest_tracks(tracks)
     }
 
@@ -489,6 +525,7 @@ async fn fetch_sections_tracks(
 }
 
 async fn fetch_section_tracks(
+    plex_client: &PlexClient,
     section: &ProfileSection,
     profile_source: &ProfileSource,
     profile_source_id: Option<&ProfileSourceId>,
@@ -499,8 +536,6 @@ async fn fetch_section_tracks(
     if !section.is_enabled() {
         return Ok(tracks);
     }
-    let plex_client = plex::get_plex_client().await;
-
     let mut filters = HashMap::new();
     if section.get_minimum_track_rating() != 0 {
         filters.insert(

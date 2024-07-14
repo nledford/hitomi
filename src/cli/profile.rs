@@ -18,15 +18,14 @@ pub struct CliProfile {
 pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
-            let profile = wizards::create_profile_wizard().await?;
-            {
-                let mut manager = PROFILE_MANAGER.get().unwrap().write().await;
-                let new_profile_key = manager.add_new_profile(&profile);
-                let merger = manager.fetch_profile_tracks(new_profile_key, None).await?;
-                manager
-                    .create_playlist(&profile, new_profile_key, &merger)
-                    .await?;
-            }
+            let mut manager = PROFILE_MANAGER.get().unwrap().write().await;
+
+            let profile = wizards::create_profile_wizard(manager.get_plex_client()).await?;
+            let new_profile_key = manager.add_new_profile(&profile);
+            let merger = manager.fetch_profile_tracks(new_profile_key, None).await?;
+            manager
+                .create_playlist(&profile, new_profile_key, &merger)
+                .await?;
             files::save_profile_to_disk(&profile).await?;
 
             info!("Profile created successfully!")

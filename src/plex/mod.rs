@@ -7,7 +7,6 @@ use itertools::Itertools;
 use log::{error, info};
 use serde::Deserialize;
 use simplelog::debug;
-use tokio::sync::OnceCell;
 
 use crate::config::Config;
 use crate::http_client::HttpClient;
@@ -23,20 +22,6 @@ use crate::profiles::profile::Profile;
 
 pub mod models;
 pub mod types;
-
-pub static PLEX_CLIENT: OnceCell<PlexClient> = OnceCell::const_new();
-
-pub async fn initialize_plex_client(config: &Config) -> Result<()> {
-    PLEX_CLIENT
-        .get_or_init(|| async { PlexClient::initialize(config).await.unwrap() })
-        .await;
-
-    Ok(())
-}
-
-pub async fn get_plex_client() -> &'static PlexClient {
-    PLEX_CLIENT.get().unwrap()
-}
 
 /// Plex API wrapper
 ///
