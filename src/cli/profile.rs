@@ -5,7 +5,7 @@ use dialoguer::Select;
 use simplelog::{debug, info};
 
 use crate::files;
-use crate::profiles::manager::{ProfileManager};
+use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::Profile;
 use crate::profiles::{wizards, ProfileAction};
 
@@ -24,15 +24,13 @@ pub async fn run_profile_command(profile: CliProfile, mut manager: ProfileManage
             manager
                 .create_playlist(&profile, new_profile_key, &merger)
                 .await?;
-            files::save_profile_to_disk(&profile, &manager.get_config_profiles_directory()).await?;
+            files::save_profile_to_disk(&profile, manager.get_config_profiles_directory()).await?;
 
             info!("Profile created successfully!")
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
-        ProfileAction::List => {
-            manager.list_profiles()
-        }
+        ProfileAction::List => manager.list_profiles(),
         ProfileAction::Preview => {
             preview_playlist(&manager).await?;
         }
@@ -49,7 +47,8 @@ async fn preview_playlist(manager: &ProfileManager) -> Result<()> {
         return Ok(());
     }
 
-    let profile = select_profile("Select which profile you would like to preview:", &manager).await?;
+    let profile =
+        select_profile("Select which profile you would like to preview:", manager).await?;
     manager.preview_playlist(&profile).await?;
 
     Ok(())
@@ -61,7 +60,7 @@ async fn view_playlist(manager: &ProfileManager) -> Result<()> {
         return Ok(());
     }
 
-    let profile = select_profile("Select which profile you would like to view:", &manager).await?;
+    let profile = select_profile("Select which profile you would like to view:", manager).await?;
     println!("{profile}");
 
     // Print raw json of profile

@@ -1,15 +1,16 @@
 use std::path::Path;
 
+use crate::profiles::profile::Profile;
 use anyhow::Result;
 use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use crate::profiles::profile::Profile;
 
 pub async fn save_profile_to_disk(profile: &Profile, profiles_directory: &str) -> Result<()> {
     tokio::fs::create_dir_all(profiles_directory).await?;
 
     let json = serde_json::to_string_pretty(profile)?;
-    let mut file = tokio::fs::File::create(profile.get_profile_path(profiles_directory).await).await?;
+    let mut file =
+        tokio::fs::File::create(profile.get_profile_path(profiles_directory).await).await?;
     file.write_all(json.as_bytes()).await?;
 
     Ok(())

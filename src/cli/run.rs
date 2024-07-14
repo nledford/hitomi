@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use anyhow::{Result};
+use anyhow::Result;
 use clap::Args;
 use simplelog::info;
 use tokio::time::sleep;
 
-use crate::profiles::manager::{ProfileManager};
+use crate::profiles::manager::ProfileManager;
 
 #[derive(Args, Debug, PartialEq)]
 pub struct RunCmds {

@@ -1,6 +1,7 @@
 //! Profile wizards
 
 use crate::plex::PlexClient;
+use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
 use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
@@ -11,7 +12,6 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
-use crate::profiles::manager::ProfileManager;
 
 /// The main entrypoint of the wizard
 pub async fn create_profile_wizard(manager: &ProfileManager) -> Result<Profile> {
@@ -22,7 +22,8 @@ pub async fn create_profile_wizard(manager: &ProfileManager) -> Result<Profile> 
     let time_limit = set_time_limit()?;
 
     let profile_source = select_profile_source()?;
-    let profile_source_id = select_profile_source_id(&manager.get_plex_client(), profile_source).await?;
+    let profile_source_id =
+        select_profile_source_id(manager.get_plex_client(), profile_source).await?;
 
     let sections = select_profile_sections()?;
 
