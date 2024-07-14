@@ -75,18 +75,6 @@ impl ProfileSection {
         self.maximum_tracks_by_artist
     }
 
-    pub fn is_unplayed(&self) -> bool {
-        self.section_type == SectionType::Unplayed
-    }
-
-    pub fn is_least_played(&self) -> bool {
-        self.section_type == SectionType::LeastPlayed
-    }
-
-    pub fn is_oldest(&self) -> bool {
-        self.section_type == SectionType::Oldest
-    }
-
     pub fn run_manual_filters(
         &self,
         tracks: &[Track],
@@ -130,7 +118,7 @@ impl ProfileSection {
             return;
         }
 
-        if self.is_unplayed() || self.is_least_played() {
+        if self.is_unplayed_section() || self.is_least_played_section() {
             tracks.sort_by_key(|track| (track.plays(), track.last_played()))
         } else {
             tracks.sort_by_key(|track| (track.last_played(), track.plays()))
@@ -147,13 +135,13 @@ impl ProfileSection {
     }
 
     fn sort_tracks(&self, tracks: &mut [Track]) {
-        if self.is_unplayed() {
+        if self.is_unplayed_section() {
             tracks.sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
         }
-        if self.is_least_played() {
+        if self.is_least_played_section() {
             tracks.sort_by_key(|t| (t.plays(), t.last_played()))
         }
-        if self.is_oldest() {
+        if self.is_oldest_section() {
             tracks.sort_by_key(|t| (t.last_played(), t.plays()))
         }
     }
