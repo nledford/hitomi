@@ -5,7 +5,7 @@ use dialoguer::Select;
 use simplelog::{debug, info};
 
 use crate::files;
-use crate::profiles::manager::PROFILE_MANAGER;
+use crate::profiles::manager::{ProfileManager};
 use crate::profiles::profile::Profile;
 use crate::profiles::{wizards, ProfileAction};
 
@@ -15,60 +15,53 @@ pub struct CliProfile {
     pub profile_cmds: ProfileAction,
 }
 
-pub async fn run_profile_command(profile: CliProfile) -> Result<()> {
+pub async fn run_profile_command(profile: CliProfile, mut manager: ProfileManager) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
-            let mut manager = PROFILE_MANAGER.get().unwrap().write().await;
-
-            let profile = wizards::create_profile_wizard(manager.get_plex_client()).await?;
+            let profile = wizards::create_profile_wizard(&manager).await?;
             let new_profile_key = manager.add_new_profile(&profile);
             let merger = manager.fetch_profile_tracks(new_profile_key, None).await?;
             manager
                 .create_playlist(&profile, new_profile_key, &merger)
                 .await?;
-            files::save_profile_to_disk(&profile).await?;
+            files::save_profile_to_disk(&profile, &manager.get_config_profiles_directory()).await?;
 
             info!("Profile created successfully!")
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
         ProfileAction::List => {
-            let manager = PROFILE_MANAGER.get().unwrap().read().await;
             manager.list_profiles()
         }
         ProfileAction::Preview => {
-            preview_playlist().await?;
+            preview_playlist(&manager).await?;
         }
         ProfileAction::Update => {}
-        ProfileAction::View => view_playlist().await?,
+        ProfileAction::View => view_playlist(&manager).await?,
     }
 
     Ok(())
 }
 
-async fn preview_playlist() -> Result<()> {
-    let manager = PROFILE_MANAGER.get().unwrap().read().await;
-
+async fn preview_playlist(manager: &ProfileManager) -> Result<()> {
     if !manager.have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
 
-    let profile = select_profile("Select which profile you would like to preview:").await?;
+    let profile = select_profile("Select which profile you would like to preview:", &manager).await?;
     manager.preview_playlist(&profile).await?;
 
     Ok(())
 }
 
-async fn view_playlist() -> Result<()> {
-    let manager = PROFILE_MANAGER.get().unwrap().read().await;
-
+async fn view_playlist(manager: &ProfileManager) -> Result<()> {
     if !manager.have_profiles() {
         println!("No profiles found.");
         return Ok(());
     }
 
-    let profile = select_profile("Select which profile you would like to view:").await?;
+    let profile = select_profile("Select which profile you would like to view:", &manager).await?;
     println!("{profile}");
 
     // Print raw json of profile
@@ -76,9 +69,7 @@ async fn view_playlist() -> Result<()> {
     Ok(())
 }
 
-async fn select_profile(prompt: &str) -> Result<Profile> {
-    let manager = PROFILE_MANAGER.get().unwrap().read().await;
-
+async fn select_profile(prompt: &str, manager: &ProfileManager) -> Result<Profile> {
     let titles = manager.get_profile_titles();
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(prompt)

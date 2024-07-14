@@ -3,22 +3,13 @@ use std::path::Path;
 use anyhow::Result;
 use simplelog::{debug, error, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-use crate::config::CONFIG;
 use crate::profiles::profile::Profile;
 
-async fn get_profiles_directory() -> Result<String> {
-    let config = CONFIG.get().unwrap();
-    let profiles_directory = config.get_profiles_directory();
-    Ok(profiles_directory.to_owned())
-}
-
-pub async fn save_profile_to_disk(profile: &Profile) -> Result<()> {
-    let profiles_directory = get_profiles_directory().await?;
+pub async fn save_profile_to_disk(profile: &Profile, profiles_directory: &str) -> Result<()> {
     tokio::fs::create_dir_all(profiles_directory).await?;
 
     let json = serde_json::to_string_pretty(profile)?;
-    let mut file = tokio::fs::File::create(profile.get_profile_path().await).await?;
+    let mut file = tokio::fs::File::create(profile.get_profile_path(profiles_directory).await).await?;
     file.write_all(json.as_bytes()).await?;
 
     Ok(())

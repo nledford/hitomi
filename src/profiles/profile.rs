@@ -3,7 +3,6 @@ use std::fmt::{Display, Formatter};
 use std::ops::Add;
 use std::path::PathBuf;
 
-use crate::config::CONFIG;
 use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
@@ -79,9 +78,9 @@ impl Profile {
         &self.sections
     }
 
-    pub async fn get_profile_path(&self) -> PathBuf {
+    pub async fn get_profile_path(&self, profiles_directory: &str) -> PathBuf {
         PathBuf::new()
-            .join(CONFIG.get().unwrap().get_profiles_directory())
+            .join(profiles_directory)
             .join(self.file_name())
     }
 

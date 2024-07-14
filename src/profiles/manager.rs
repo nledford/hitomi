@@ -2,38 +2,28 @@
 
 use std::cmp::PartialEq;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
-use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 
 use crate::config::Config;
 use crate::files;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
+use crate::plex::types::PlexId;
+use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
-use crate::profiles::{ProfileAction, ProfileSource};
-
-pub static PROFILE_MANAGER: OnceCell<Arc<RwLock<ProfileManager>>> = OnceCell::const_new();
-
-pub async fn initialize_profile_manager(config: &Config) -> Result<()> {
-    let manager = ProfileManager::new(config).await?;
-    PROFILE_MANAGER.set(Arc::new(RwLock::new(manager)))?;
-    Ok(())
-}
 
 new_key_type! {
     pub struct ProfileKey;
@@ -41,6 +31,7 @@ new_key_type! {
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
+    config: Config,
     plex_client: PlexClient,
     playlists: Vec<Playlist>,
     /// Profiles that have been loaded from disk
@@ -52,29 +43,19 @@ pub struct ProfileManager {
     managed_oldest_sections: SecondaryMap<ProfileKey, ProfileSection>,
 }
 
-// PlEX
+// INITIALIZATION
 impl ProfileManager {
-    pub fn get_plex_client(&self) -> &PlexClient {
-        &self.plex_client
-    }
-}
-
-// PLAYLISTS
-impl ProfileManager {
-    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
-        self.playlists.iter().find(|p| p.get_title() == title)
-    }
-}
-
-impl ProfileManager {
-    pub async fn new(config: &Config) -> Result<Self> {
-        let plex_client = PlexClient::initialize(config).await?;
+    pub async fn new() -> Result<Self> {
+        let config = crate::config::load_config().await?;
+        let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
+        let profiles = files::load_profiles_from_disk(config.get_profiles_directory()).await?;
 
         let mut manager = ProfileManager {
+            config,
             plex_client,
             playlists,
-            profiles: files::load_profiles_from_disk(config.get_profiles_directory()).await?,
+            profiles,
             ..Default::default()
         };
         manager.build_managed_profiles_and_sections();
@@ -110,7 +91,30 @@ impl ProfileManager {
         self.managed_least_played_sections = managed_least_played_sections;
         self.managed_oldest_sections = managed_oldest_sections;
     }
+}
 
+// CONFIG
+impl ProfileManager {
+    pub fn get_config_profiles_directory(&self) -> &str {
+        &self.config.get_profiles_directory()
+    }
+}
+
+// PlEX
+impl ProfileManager {
+    pub fn get_plex_client(&self) -> &PlexClient {
+        &self.plex_client
+    }
+}
+
+// PLAYLISTS
+impl ProfileManager {
+    pub fn get_playlist_by_title(&self, title: &str) -> Option<&Playlist> {
+        self.playlists.iter().find(|p| p.get_title() == title)
+    }
+}
+
+impl ProfileManager {
     pub fn add_new_profile(&mut self, new_profile: &Profile) -> ProfileKey {
         self.managed_profiles.insert(new_profile.clone())
     }

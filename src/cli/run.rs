@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result};
 use clap::Args;
 use simplelog::info;
 use tokio::time::sleep;
 
-use crate::profiles::manager::PROFILE_MANAGER;
+use crate::profiles::manager::{ProfileManager};
 
 #[derive(Args, Debug, PartialEq)]
 pub struct RunCmds {
@@ -24,14 +24,8 @@ fn print_title(looping: bool) {
     }
 }
 
-pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
+pub async fn execute_run_cmd(cmd: RunCmds, manager: ProfileManager) -> Result<()> {
     print_title(cmd.run_loop);
-
-    let manager = PROFILE_MANAGER
-        .get()
-        .ok_or_else(|| anyhow!("Cannot get lock on profile manager"))?
-        .read()
-        .await;
 
     // Initial refresh is performed irrespective of `run_loop` flag
     manager

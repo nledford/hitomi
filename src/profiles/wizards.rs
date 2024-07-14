@@ -1,7 +1,6 @@
 //! Profile wizards
 
 use crate::plex::PlexClient;
-use crate::profiles::manager::PROFILE_MANAGER;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
 use crate::profiles::types::{ProfileSectionSort, ProfileSourceId, RefreshInterval};
@@ -12,17 +11,18 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
+use crate::profiles::manager::ProfileManager;
 
 /// The main entrypoint of the wizard
-pub async fn create_profile_wizard(plex_client: &PlexClient) -> Result<Profile> {
-    let profile_name = set_profile_name().await?;
+pub async fn create_profile_wizard(manager: &ProfileManager) -> Result<Profile> {
+    let profile_name = set_profile_name(manager).await?;
 
     let summary = set_summary()?;
     let refresh_interval = select_refresh_interval()?;
     let time_limit = set_time_limit()?;
 
     let profile_source = select_profile_source()?;
-    let profile_source_id = select_profile_source_id(plex_client, profile_source).await?;
+    let profile_source_id = select_profile_source_id(&manager.get_plex_client(), profile_source).await?;
 
     let sections = select_profile_sections()?;
 
@@ -39,14 +39,13 @@ pub async fn create_profile_wizard(plex_client: &PlexClient) -> Result<Profile> 
     Ok(profile)
 }
 
-async fn set_profile_name() -> Result<Title> {
+async fn set_profile_name(manager: &ProfileManager) -> Result<Title> {
     let profile_name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("What is the name of your new profile? This will also be the name of the playlist on the plex server.")
         .interact_text()?;
     let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
-    let manager = PROFILE_MANAGER.get().unwrap().read().await;
     if manager.get_profile_by_title(&title).is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(

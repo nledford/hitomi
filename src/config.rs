@@ -9,7 +9,6 @@ use std::{env, fs};
 
 use crate::plex::types::{PlexToken, PlexUrl};
 use crate::plex::PlexClient;
-use crate::profiles::manager;
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
@@ -17,19 +16,6 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
-use tokio::sync::OnceCell;
-
-pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
-
-pub async fn initialize_app() -> Result<()> {
-    let config = load_config().await?;
-
-    // plex::initialize_plex_client(&config).await?;
-    manager::initialize_profile_manager(&config).await?;
-
-    CONFIG.set(config)?;
-    Ok(())
-}
 
 /// Default config file path where application config will be stored.
 fn build_config_path() -> String {
