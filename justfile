@@ -66,7 +66,7 @@ drop-db:
 
 # Recreates the database from scratch
 [group('sqlx')]
-rebuild-db: drop-db create-db
+rebuild-db: drop-db create-db run-migrations
 
 # Create a sqlx migration
 [group('sqlx')]
