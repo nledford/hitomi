@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, FromRepr, VariantNames};
 
 pub mod manager;
+mod merger;
 pub mod profile;
 mod profile_section;
 pub mod types;
 pub mod wizards;
-mod merger;
 
 /// Divisors of 60
 static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];

@@ -1,5 +1,5 @@
-use simplelog::info;
 use crate::plex::models::tracks::Track;
+use simplelog::info;
 
 #[derive(Debug, Default)]
 pub struct SectionTracksMerger {

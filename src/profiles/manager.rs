@@ -7,24 +7,24 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::sync::{OnceCell, RwLock};
 use tokio::time::sleep;
 
-use crate::{files, plex};
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::PLEX_CLIENT;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileAction, ProfileSource};
+use crate::plex::PLEX_CLIENT;
 use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
+use crate::profiles::{ProfileAction, ProfileSource};
+use crate::{files, plex};
 
 pub static PROFILE_MANAGER: OnceCell<Arc<RwLock<ProfileManager>>> = OnceCell::const_new();
 
@@ -257,7 +257,7 @@ impl ProfileManager {
             .sorted()
             .fold(String::default(), |mut acc, (k, v)| {
                 acc += &format!("  <b>Refreshing at {k}:</b>\n");
-                for title in v {
+                for title in v.iter().sorted() {
                     acc += &format!("    - {title}\n");
                 }
                 acc
@@ -333,7 +333,11 @@ impl ProfileManager {
                 .add_items_to_playlist(&playlist_id, &merger.get_track_ids())
                 .await?;
 
-            print_refresh_results(merger.get_combined_tracks(), profile.get_title(), ProfileAction::Create);
+            print_refresh_results(
+                merger.get_combined_tracks(),
+                profile.get_title(),
+                ProfileAction::Create,
+            );
         } else {
             info!("Playlist not saved");
         }
@@ -374,7 +378,11 @@ impl ProfileManager {
             .update_summary(profile.get_playlist_id(), &summary)
             .await?;
 
-        print_refresh_results(&merger.get_combined_tracks(), profile.get_title(), ProfileAction::Update);
+        print_refresh_results(
+            merger.get_combined_tracks(),
+            profile.get_title(),
+            ProfileAction::Update,
+        );
 
         Ok(())
     }
@@ -393,7 +401,8 @@ impl ProfileManager {
         }
 
         if let Some(section) = self.managed_least_played_sections.get(profile_key) {
-            let tracks = section.run_manual_filters(merger.get_least_played_tracks(), time_limit, None);
+            let tracks =
+                section.run_manual_filters(merger.get_least_played_tracks(), time_limit, None);
             merger.set_least_played_tracks(tracks)
         }
 
@@ -463,17 +472,20 @@ async fn fetch_sections_tracks(
     let mut result = SectionTracksMerger::default();
 
     if let Some(section) = unplayed {
-        let tracks = fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks =
+            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
         result.set_unplayed_tracks(tracks);
     }
 
     if let Some(section) = least_played {
-        let tracks = fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks =
+            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
         result.set_least_played_tracks(tracks)
     }
 
     if let Some(section) = oldest {
-        let tracks = fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
+        let tracks =
+            fetch_section_tracks(section, profile_source, profile_source_id, limit).await?;
         result.set_oldest_tracks(tracks)
     }
 
