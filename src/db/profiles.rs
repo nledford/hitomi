@@ -3,8 +3,9 @@
 use anyhow::Result;
 use sqlx::Row;
 
-use crate::db::{db_profile_to_profile, POOL};
+use crate::db;
 use crate::db::models::{DbProfile, DbProfileSection};
+use crate::db::POOL;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::SectionType;
@@ -222,7 +223,7 @@ pub async fn fetch_all_data() -> Result<Vec<Profile>> {
 
     for db_profile in db_profiles {
         let db_sections = fetch_profile_sections(db_profile.profile_id).await?;
-        let profile = db_profile_to_profile(db_profile, db_sections);
+        let profile = db::db_profile_to_profile(db_profile, db_sections);
         profiles.push(profile)
     }
 
