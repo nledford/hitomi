@@ -3,16 +3,16 @@
 use std::env;
 use std::fmt::{Display, Formatter};
 
+use crate::db;
+use crate::plex::types::{PlexToken, PlexUrl};
+use crate::plex::PlexClient;
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
-use dialoguer::{Input, Select};
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, info};
-use crate::db;
-use crate::plex::PlexClient;
-use crate::plex::types::{PlexToken, PlexUrl};
 
 /// Represents the configuration file
 #[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq, sqlx::Type)]

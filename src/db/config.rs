@@ -24,11 +24,16 @@ pub async fn have_config() -> Result<bool> {
     Ok(result)
 }
 
-async fn add_config_setting<'q, T: 'q + Send + Encode<'q, Sqlite> + sqlx::Type<Sqlite>>(name: &'q str, value: T) -> Result<()> {
-    sqlx::query(r#"
+async fn add_config_setting<'q, T: 'q + Send + Encode<'q, Sqlite> + sqlx::Type<Sqlite>>(
+    name: &'q str,
+    value: T,
+) -> Result<()> {
+    sqlx::query(
+        r#"
         insert into config
         values (?, ?)
-    "#)
+    "#,
+    )
         .bind(name)
         .bind(value)
         .execute(POOL.get().unwrap())
@@ -46,9 +51,11 @@ pub async fn save_config(config: &AppConfig) -> Result<()> {
 }
 
 pub async fn fetch_config() -> Result<AppConfig> {
-    let rows = sqlx::query_as::<_, DbConfig>(r#"
+    let rows = sqlx::query_as::<_, DbConfig>(
+        r#"
         select * from config
-    "#)
+    "#,
+    )
         .fetch_all(POOL.get().unwrap())
         .await?;
 
@@ -72,4 +79,3 @@ pub async fn fetch_config() -> Result<AppConfig> {
 
     Ok(config.build().unwrap())
 }
-

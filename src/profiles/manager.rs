@@ -6,8 +6,8 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
@@ -16,13 +16,13 @@ use tokio::time::sleep;
 use crate::db;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::PlexClient;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileAction, ProfileSource};
+use crate::plex::PlexClient;
 use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
+use crate::profiles::{ProfileAction, ProfileSource};
 
 new_key_type! {
     pub struct ProfileKey;
@@ -157,6 +157,7 @@ impl ProfileManager {
         self.get_profiles()
             .values()
             .map(|profile| profile.get_title().to_string())
+            .sorted_unstable()
             .collect::<Vec<_>>()
     }
 

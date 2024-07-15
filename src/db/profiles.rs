@@ -11,7 +11,8 @@ use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::SectionType;
 
 pub async fn create_profile(new_profile: &Profile) -> Result<()> {
-    let result = sqlx::query(r#"
+    let result = sqlx::query(
+        r#"
         insert into profile (playlist_id,
                      profile_title,
                      profile_summary,
@@ -23,7 +24,8 @@ pub async fn create_profile(new_profile: &Profile) -> Result<()> {
                      track_limit)
         values (?,?,?,?,?,?,?,?,?)
         returning id
-    "#)
+    "#,
+    )
         .bind(new_profile.get_playlist_id().as_str())
         .bind(new_profile.get_title())
         .bind(new_profile.get_summary())
@@ -46,7 +48,8 @@ pub async fn create_profile(new_profile: &Profile) -> Result<()> {
 }
 
 async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Result<()> {
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         insert into profile_section (profile_id,
                              section_type,
                              enabled,
@@ -57,7 +60,8 @@ async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Re
                              randomize_tracks,
                              sorting)
         VALUES(?,?,?,?,?,?,?,?,?)
-    "#)
+    "#,
+    )
         .bind(profile_id)
         .bind(section.get_section_type())
         .bind(true) // enabled
@@ -180,11 +184,11 @@ async fn fetch_profile_section_id(
     profile_id: i32,
     section_type: SectionType,
 ) -> Result<Option<i32>> {
-    let row: Option<(i32,)> = sqlx::query_as(
-        r#"
-        select profile_section_id from profile_section where profile_id = ? and section_type = ?
-    "#,
-    )
+    let row: Option<(i32,)> = sqlx::query_as(r#"
+        select profile_section_id
+        from profile_section
+        where profile_id = ? and section_type = ?
+    "#)
         .bind(profile_id)
         .bind(section_type)
         .fetch_optional(POOL.get().unwrap())
@@ -200,7 +204,11 @@ async fn fetch_profile_section_id(
 }
 
 async fn fetch_profiles() -> Result<Vec<DbProfile>> {
-    let profiles = sqlx::query_as::<_, DbProfile>("select * from profile")
+    let profiles = sqlx::query_as::<_, DbProfile>(r#"
+        select *
+        from profile
+        order by profile_title
+    "#)
         .fetch_all(POOL.get().unwrap())
         .await?;
 

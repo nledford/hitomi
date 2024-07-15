@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::Args;
-use dialoguer::Select;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Select;
 use simplelog::{debug, info};
 
 use crate::db;
-use crate::profiles::{ProfileAction, wizards};
 use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::Profile;
+use crate::profiles::{wizards, ProfileAction};
 
 #[derive(Args, Debug, PartialEq)]
 pub struct CliProfile {

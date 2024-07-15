@@ -10,13 +10,13 @@ use simplelog::debug;
 
 use crate::config::Config;
 use crate::http_client::HttpClient;
-use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::models::artists::Artist;
 use crate::plex::models::collections::{Collection, SubType};
 use crate::plex::models::new_playlist::NewPlaylist;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::sections::Section;
 use crate::plex::models::tracks::Track;
+use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
 
@@ -77,7 +77,6 @@ impl PlexClient {
             .plex_token(plex_token.to_owned())
             .plex_url(plex_url.to_owned())
             .build()?;
-
 
         plex.fetch_music_sections().await?;
 
