@@ -67,12 +67,24 @@ impl ProfileSection {
         self.sorting.split(',').collect::<_>()
     }
 
+    pub fn get_sorting_str(&self) -> String {
+        self.get_sorting().join(",")
+    }
+
     pub fn get_deduplicate_tracks_by_guid(&self) -> bool {
         self.deduplicate_tracks_by_guid
     }
 
+    pub fn get_deduplicate_tracks_by_title_and_artist(&self) -> bool {
+        self.deduplicate_tracks_by_title_and_artist
+    }
+
     pub fn get_maximum_tracks_by_artist(&self) -> u32 {
         self.maximum_tracks_by_artist
+    }
+
+    pub fn get_randomize_tracks(&self) -> bool {
+        self.randomize_tracks
     }
 
     pub fn run_manual_filters(

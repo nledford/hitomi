@@ -19,13 +19,9 @@ async fn main() -> Result<()> {
 
     db::initialize_pool().await?;
 
-    let profiles = db::profiles::get_profiles().await?;
+    let profiles = db::profiles::fetch_all_data().await?;
     for profile in profiles {
-        println!("{:?}", &profile);
-
-        for section in db::profiles::get_profile_sections(profile.profile_id).await? {
-            println!("{:?}", &section);
-        }
+        println!("{}", &profile)
     }
 
     // config::delete_config_file().await;

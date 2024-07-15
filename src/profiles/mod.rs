@@ -5,7 +5,7 @@ use strum::{Display, EnumString, FromRepr, VariantNames};
 pub mod manager;
 mod merger;
 pub mod profile;
-mod profile_section;
+pub mod profile_section;
 pub mod types;
 pub mod wizards;
 
@@ -22,8 +22,10 @@ static VALID_INTERVALS: [u32; 10] = [2, 3, 4, 5, 6, 10, 12, 15, 20, 30];
     EnumString,
     PartialEq,
     Serialize,
+    sqlx::Type,
     VariantNames,
 )]
+#[sqlx(type_name = "section_type")]
 pub enum SectionType {
     /// Tracks that have never been played at least once
     #[default]
@@ -39,7 +41,17 @@ pub enum SectionType {
 }
 
 #[derive(
-    Clone, Copy, Debug, Default, Deserialize, Display, FromRepr, PartialEq, Serialize, VariantNames,
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Display,
+    EnumString,
+    FromRepr,
+    PartialEq,
+    Serialize,
+    VariantNames,
 )]
 pub enum ProfileSource {
     #[default]

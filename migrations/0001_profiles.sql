@@ -1,10 +1,12 @@
 -- Profiles table
 
+drop table if exists profile;
 CREATE TABLE profile
 (
     profile_id        integer                       not null
         constraint profile_pk
             primary key autoincrement,
+    playlist_id TEXT not null,
     profile_title     TEXT    default 'New Profile' not null,
     profile_summary   TEXT,
     enabled           boolean default 1             not null,
@@ -30,6 +32,7 @@ CREATE UNIQUE INDEX profile_profile_title_uindex
 
 -- Profile sections table
 
+drop table if exists profile_section;
 CREATE TABLE profile_section
 (
     profile_section_id                     integer           not null
@@ -37,7 +40,7 @@ CREATE TABLE profile_section
             primary key autoincrement,
     profile_id                             integer           not null
         constraint profile_section_profile_profile_id_fk
-            references profile,
+            references profile on delete cascade,
     section_type                           text              not null,
     enabled                                boolean default 1 not null,
     deduplicate_tracks_by_guid             boolean default 0 not null,

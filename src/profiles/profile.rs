@@ -70,6 +70,14 @@ impl Profile {
         self.profile_source_id.as_ref()
     }
 
+    pub fn get_profile_source_id_str(&self) -> Option<&str> {
+        if let Some(id) = &self.profile_source_id {
+            Some(id.as_ref())
+        } else {
+            None
+        }
+    }
+
     fn file_name(&self) -> String {
         format!("{}.json", self.title)
     }
@@ -82,6 +90,18 @@ impl Profile {
         PathBuf::new()
             .join(profiles_directory)
             .join(self.file_name())
+    }
+
+    pub fn get_refresh_interval(&self) -> &u32 {
+        self.refresh_interval.as_ref()
+    }
+
+    pub fn get_time_limit(&self) -> u32 {
+        self.time_limit
+    }
+
+    pub fn get_track_limit(&self) -> u32 {
+        self.track_limit
     }
 
     pub fn check_for_refresh(&self, force_refresh: bool) -> bool {
