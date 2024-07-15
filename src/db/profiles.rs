@@ -41,7 +41,7 @@ pub async fn create_profile(new_profile: &Profile) -> Result<()> {
     let profile_id = result.get(0);
 
     for section in new_profile.get_sections() {
-        create_profile_section(profile_id, &section).await?;
+        create_profile_section(profile_id, section).await?;
     }
 
     Ok(())
@@ -93,11 +93,7 @@ async fn fetch_profile_id(profile_title: &str) -> Result<Option<i32>> {
             .fetch_optional(POOL.get().unwrap())
             .await?;
 
-    let id = if let Some(row) = row {
-        Some(row.0)
-    } else {
-        None
-    };
+    let id = row.map(|row| row.0);
 
     Ok(id)
 }
@@ -194,11 +190,7 @@ async fn fetch_profile_section_id(
         .fetch_optional(POOL.get().unwrap())
         .await?;
 
-    let id = if let Some(row) = row {
-        Some(row.0)
-    } else {
-        None
-    };
+    let id = row.map(|row| row.0);
 
     Ok(id)
 }
