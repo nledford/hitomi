@@ -12,7 +12,7 @@ docker-build:
 # Build and run a docker image
 [group('docker')]
 docker-run: docker-build
-    docker run -e TZ="America/New_York" -e CONFIG_DIR="/config" -e PROFILES_DIRECTORY="/profiles" -it -v "./data/profiles:/profiles" -v "./data/config:/config" --rm --name hitomi nledford/hitomi:latest run
+    docker run -e TZ="America/New_York" -e -it -v "./data:/data" -v --rm --name hitomi nledford/hitomi:latest run
 
 # Run clippy. Fails if clippy finds issues.
 [group('rust')]
