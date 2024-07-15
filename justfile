@@ -54,6 +54,11 @@ install: build test
 update:
     cargo upgrade; cargo update;
 
+# Backup the sqlite database
+[group('sqlite')]
+backup-db:
+    sqlite3 ./data/hitomi.db ".backup './data/hitomi-backup.db'"
+
 # Create a database using sqlx
 [group('sqlx')]
 create-db:
@@ -66,7 +71,7 @@ drop-db:
 
 # Recreates the database from scratch
 [group('sqlx')]
-rebuild-db: drop-db create-db run-migrations
+rebuild-db: backup-db drop-db create-db run-migrations
 
 # Create a sqlx migration
 [group('sqlx')]
