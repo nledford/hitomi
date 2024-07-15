@@ -3,7 +3,7 @@
 use std::env;
 use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use simplelog::warn;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
@@ -19,8 +19,8 @@ pub async fn initialize_pool() -> Result<()> {
         String::from("sqlite:./data/hitomi.db")
     };
 
-    let options = SqliteConnectOptions::from_str(&database_url)?
-        .journal_mode(SqliteJournalMode::Wal);
+    let options =
+        SqliteConnectOptions::from_str(&database_url)?.journal_mode(SqliteJournalMode::Wal);
 
     let pool = SqlitePool::connect_with(options).await?;
 

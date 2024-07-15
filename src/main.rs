@@ -3,7 +3,7 @@ use clap::Parser;
 use log::*;
 use simplelog::*;
 
-use hitomi::cli;
+use hitomi::{cli, db};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -17,6 +17,8 @@ async fn main() -> Result<()> {
         TerminalMode::Mixed,
         ColorChoice::Auto,
     )?;
+
+    db::initialize_pool().await?;
 
     // config::delete_config_file().await;
 
