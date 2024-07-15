@@ -4,6 +4,7 @@ use std::env;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
+use simplelog::warn;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
 use tokio::sync::OnceCell;
@@ -11,19 +12,19 @@ use tokio::sync::OnceCell;
 pub static POOL: OnceCell<SqlitePool> = OnceCell::const_new();
 
 pub async fn initialize_pool() -> Result<()> {
-    match env::var("DATABASE_URL") {
-        Ok(url) => {
-            let options = SqliteConnectOptions::from_str(&url)?
-                .journal_mode(SqliteJournalMode::Wal);
+    let database_url = if let Ok(database_url) = env::var("DATABASE_URL") {
+        database_url
+    } else {
+        warn!("Environment variable `DATABASE_URL` not set. Using default URL.");
+        String::from("sqlite:./data/hitomi.db")
+    };
 
-            let pool = SqlitePool::connect_with(options).await?;
+    let options = SqliteConnectOptions::from_str(&database_url)?
+        .journal_mode(SqliteJournalMode::Wal);
 
-            POOL.get_or_init(|| async { pool }).await;
+    let pool = SqlitePool::connect_with(options).await?;
 
-            Ok(())
-        }
-        Err(_) => {
-            Err(anyhow!("Environment variable `DATABASE_URL` is not set."))
-        }
-    }
+    POOL.get_or_init(|| async { pool }).await;
+
+    Ok(())
 }
