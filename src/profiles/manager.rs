@@ -6,24 +6,24 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
 use itertools::Itertools;
 use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::time::sleep;
 
 use crate::config::Config;
-use crate::files;
+use crate::db;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
+use crate::plex::types::PlexId;
+use crate::profiles::{ProfileAction, ProfileSource};
 use crate::profiles::merger::SectionTracksMerger;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
-use crate::profiles::{ProfileAction, ProfileSource};
 
 new_key_type! {
     pub struct ProfileKey;
@@ -49,7 +49,8 @@ impl ProfileManager {
         let config = crate::config::load_config().await?;
         let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
-        let profiles = files::load_profiles_from_disk(config.get_profiles_directory()).await?;
+        // let profiles = files::load_profiles_from_disk(config.get_profiles_directory()).await?;
+        let profiles = db::profiles::fetch_all_data().await?;
 
         let mut manager = ProfileManager {
             config,
@@ -245,9 +246,9 @@ impl ProfileManager {
     pub fn get_any_profile_refresh(&self) -> bool {
         Utc::now().second() == 0
             && self
-                .get_enabled_profiles()
-                .iter()
-                .any(|(_, v)| v.check_for_refresh(false))
+            .get_enabled_profiles()
+            .iter()
+            .any(|(_, v)| v.check_for_refresh(false))
     }
 
     fn print_update(&self, playlists_updated: usize) {
@@ -448,7 +449,7 @@ impl ProfileManager {
             oldest,
             limit,
         )
-        .await?;
+            .await?;
 
         Ok(tracks)
     }
@@ -497,7 +498,7 @@ async fn fetch_sections_tracks(
             profile_source_id,
             limit,
         )
-        .await?;
+            .await?;
         result.set_unplayed_tracks(tracks);
     }
 
@@ -509,7 +510,7 @@ async fn fetch_sections_tracks(
             profile_source_id,
             limit,
         )
-        .await?;
+            .await?;
         result.set_least_played_tracks(tracks)
     }
 
@@ -521,7 +522,7 @@ async fn fetch_sections_tracks(
             profile_source_id,
             limit,
         )
-        .await?;
+            .await?;
         result.set_oldest_tracks(tracks)
     }
 
@@ -576,7 +577,7 @@ async fn fetch_section_tracks(
     }
 
     tracks = plex_client
-        .fetch_music(filters, section.get_sorting(), limit)
+        .fetch_music(filters, section.get_sorting_vec(), limit)
         .await?;
 
     Ok(tracks)

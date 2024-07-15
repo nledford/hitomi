@@ -1,8 +1,9 @@
 use anyhow::Result;
+use clap::Parser;
 use log::*;
 use simplelog::*;
 
-use hitomi::db;
+use hitomi::{cli, db};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -11,7 +12,7 @@ async fn main() -> Result<()> {
         .build();
 
     TermLogger::init(
-        LevelFilter::Trace,
+        LevelFilter::Debug,
         logger_config,
         TerminalMode::Mixed,
         ColorChoice::Auto,
@@ -19,15 +20,10 @@ async fn main() -> Result<()> {
 
     db::initialize_pool().await?;
 
-    let profiles = db::profiles::fetch_all_data().await?;
-    for profile in profiles {
-        println!("{}", &profile)
-    }
-
     // config::delete_config_file().await;
 
-    // let cli = cli::Cli::parse();
-    // cli::run_cli_command(cli).await?;
+    let cli = cli::Cli::parse();
+    cli::run_cli_command(cli).await?;
 
     Ok(())
 }

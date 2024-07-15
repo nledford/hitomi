@@ -63,12 +63,12 @@ impl ProfileSection {
         (self.minimum_track_rating - 1) * 2
     }
 
-    pub fn get_sorting(&self) -> Vec<&str> {
+    pub fn get_sorting_vec(&self) -> Vec<&str> {
         self.sorting.split(',').collect::<_>()
     }
 
-    pub fn get_sorting_str(&self) -> String {
-        self.get_sorting().join(",")
+    pub fn get_sorting(&self) -> &str {
+        &self.sorting
     }
 
     pub fn get_deduplicate_tracks_by_guid(&self) -> bool {

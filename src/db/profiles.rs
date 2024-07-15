@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use crate::db::{db_profile_to_profile, POOL};
 use crate::db::models::{DbProfile, DbProfileSection};
+use crate::db::{db_profile_to_profile, POOL};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::SectionType;
@@ -20,10 +20,11 @@ async fn fetch_profile(profile_id: i32) -> Result<DbProfile> {
 }
 
 async fn fetch_profile_id(profile_title: &str) -> Result<Option<i32>> {
-    let row: Option<(i32,)> = sqlx::query_as("select profile_id from profile where profile_title = ?")
-        .bind(profile_title)
-        .fetch_optional(POOL.get().unwrap())
-        .await?;
+    let row: Option<(i32,)> =
+        sqlx::query_as("select profile_id from profile where profile_title = ?")
+            .bind(profile_title)
+            .fetch_optional(POOL.get().unwrap())
+            .await?;
 
     let id = if let Some(row) = row {
         Some(row.0)
@@ -46,7 +47,8 @@ async fn delete_profile(profile_id: i32) -> Result<()> {
 async fn update_profile(profile: &Profile) -> Result<()> {
     let profile_id = fetch_profile_id(profile.get_title()).await?.unwrap();
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         update profile
         set profile_title = ?,
             profile_summary = ?,
@@ -57,7 +59,8 @@ async fn update_profile(profile: &Profile) -> Result<()> {
             time_limit = ?,
             track_limit = ?
         where profile_id = ?
-    "#)
+    "#,
+    )
         .bind(profile.get_title())
         .bind(profile.get_summary())
         .bind(profile.get_enabled())
@@ -78,9 +81,12 @@ async fn update_profile(profile: &Profile) -> Result<()> {
 }
 
 async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Result<()> {
-    let profile_section_id = fetch_profile_section_id(profile_id, section.get_section_type()).await?.unwrap();
+    let profile_section_id = fetch_profile_section_id(profile_id, section.get_section_type())
+        .await?
+        .unwrap();
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         update profile_section
         set enabled = ?,
            deduplicate_tracks_by_guid = ?,
@@ -90,14 +96,15 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
            randomize_tracks = ?,
            sorting = ?
         where profile_id = ? and profile_section_id = ?
-    "#)
+    "#,
+    )
         .bind(section.is_enabled())
         .bind(section.get_deduplicate_tracks_by_guid())
         .bind(section.get_deduplicate_tracks_by_title_and_artist())
         .bind(section.get_maximum_tracks_by_artist())
         .bind(section.get_minimum_track_rating())
         .bind(section.get_randomize_tracks())
-        .bind(section.get_sorting_str())
+        .bind(section.get_sorting())
         .bind(profile_id)
         .bind(profile_section_id)
         .execute(POOL.get().unwrap())
@@ -106,11 +113,15 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
     Ok(())
 }
 
-
-async fn fetch_profile_section_id(profile_id: i32, section_type: SectionType) -> Result<Option<i32>> {
-    let row: Option<(i32,)> = sqlx::query_as(r#"
+async fn fetch_profile_section_id(
+    profile_id: i32,
+    section_type: SectionType,
+) -> Result<Option<i32>> {
+    let row: Option<(i32,)> = sqlx::query_as(
+        r#"
         select profile_section_id from profile_section where profile_id = ? and section_type = ?
-    "#)
+    "#,
+    )
         .bind(profile_id)
         .bind(section_type)
         .fetch_optional(POOL.get().unwrap())
@@ -134,10 +145,11 @@ async fn fetch_profiles() -> Result<Vec<DbProfile>> {
 }
 
 async fn fetch_profile_sections(profile_id: i32) -> Result<Vec<DbProfileSection>> {
-    let sections = sqlx::query_as::<_, DbProfileSection>("select * from profile_section where profile_id = ?")
-        .bind(profile_id)
-        .fetch_all(POOL.get().unwrap())
-        .await?;
+    let sections =
+        sqlx::query_as::<_, DbProfileSection>("select * from profile_section where profile_id = ?")
+            .bind(profile_id)
+            .fetch_all(POOL.get().unwrap())
+            .await?;
 
     Ok(sections)
 }

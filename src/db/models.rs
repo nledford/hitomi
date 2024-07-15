@@ -27,4 +27,3 @@ pub struct DbProfileSection {
     pub randomize_tracks: bool,
     pub sorting: String,
 }
-

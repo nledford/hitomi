@@ -13,8 +13,8 @@ use crate::db::models::{DbProfile, DbProfileSection};
 use crate::plex::types::PlexId;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::ProfileSectionBuilder;
-use crate::profiles::ProfileSource;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
+use crate::profiles::ProfileSource;
 use crate::types::Title;
 
 mod models;
@@ -47,7 +47,9 @@ fn db_profile_to_profile(db_profile: DbProfile, db_sections: Vec<DbProfileSectio
             ProfileSectionBuilder::default()
                 .section_type(db_section.section_type)
                 .enabled(db_section.enabled)
-                .deduplicate_tracks_by_title_and_artist(db_section.deduplicate_tracks_by_title_and_artist)
+                .deduplicate_tracks_by_title_and_artist(
+                    db_section.deduplicate_tracks_by_title_and_artist,
+                )
                 .deduplicate_tracks_by_guid(db_section.deduplicate_tracks_by_guid)
                 .maximum_tracks_by_artist(db_section.maximum_tracks_by_artist)
                 .minimum_track_rating(db_section.minimum_track_rating)
