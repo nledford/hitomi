@@ -180,11 +180,13 @@ async fn fetch_profile_section_id(
     profile_id: i32,
     section_type: SectionType,
 ) -> Result<Option<i32>> {
-    let row: Option<(i32,)> = sqlx::query_as(r#"
+    let row: Option<(i32,)> = sqlx::query_as(
+        r#"
         select profile_section_id
         from profile_section
         where profile_id = ? and section_type = ?
-    "#)
+    "#,
+    )
         .bind(profile_id)
         .bind(section_type)
         .fetch_optional(POOL.get().unwrap())
@@ -196,11 +198,13 @@ async fn fetch_profile_section_id(
 }
 
 async fn fetch_profiles() -> Result<Vec<DbProfile>> {
-    let profiles = sqlx::query_as::<_, DbProfile>(r#"
+    let profiles = sqlx::query_as::<_, DbProfile>(
+        r#"
         select *
         from profile
         order by profile_title
-    "#)
+    "#,
+    )
         .fetch_all(POOL.get().unwrap())
         .await?;
 
