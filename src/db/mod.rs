@@ -9,6 +9,9 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
 use tokio::sync::OnceCell;
 
+pub mod models;
+pub mod profiles;
+
 pub static POOL: OnceCell<SqlitePool> = OnceCell::const_new();
 
 pub async fn initialize_pool() -> Result<()> {

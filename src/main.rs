@@ -1,9 +1,8 @@
 use anyhow::Result;
-use clap::Parser;
 use log::*;
 use simplelog::*;
 
-use hitomi::{cli, db};
+use hitomi::db;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -20,10 +19,19 @@ async fn main() -> Result<()> {
 
     db::initialize_pool().await?;
 
+    let profiles = db::profiles::get_profiles().await?;
+    for profile in profiles {
+        println!("{:?}", &profile);
+
+        for section in db::profiles::get_profile_sections(profile.profile_id).await? {
+            println!("{:?}", &section);
+        }
+    }
+
     // config::delete_config_file().await;
 
-    let cli = cli::Cli::parse();
-    cli::run_cli_command(cli).await?;
+    // let cli = cli::Cli::parse();
+    // cli::run_cli_command(cli).await?;
 
     Ok(())
 }
