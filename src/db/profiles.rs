@@ -1,13 +1,73 @@
 use anyhow::Result;
+use sqlx::Row;
 
-use crate::db::models::{DbProfile, DbProfileSection};
 use crate::db::{db_profile_to_profile, POOL};
+use crate::db::models::{DbProfile, DbProfileSection};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::SectionType;
 
-async fn create_profile() -> Result<()> {
-    todo!()
+pub async fn create_profile(new_profile: &Profile) -> Result<()> {
+    let result = sqlx::query(r#"
+        insert into profile (playlist_id,
+                     profile_title,
+                     profile_summary,
+                     enabled,
+                     profile_source,
+                     profile_source_id,
+                     refresh_interval,
+                     time_limit,
+                     track_limit)
+        values (?,?,?,?,?,?,?,?,?)
+        returning id
+    "#)
+        .bind(new_profile.get_playlist_id().as_str())
+        .bind(new_profile.get_title())
+        .bind(new_profile.get_summary())
+        .bind(true) // enabled
+        .bind(new_profile.get_profile_source().to_string())
+        .bind(new_profile.get_profile_source_id_str())
+        .bind(new_profile.get_refresh_interval())
+        .bind(new_profile.get_time_limit())
+        .bind(new_profile.get_track_limit())
+        .fetch_one(POOL.get().unwrap())
+        .await?;
+
+    let profile_id = result.get(0);
+
+    for section in new_profile.get_sections() {
+        create_profile_section(profile_id, &section).await?;
+    }
+
+    Ok(())
+}
+
+async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Result<()> {
+    sqlx::query(r#"
+        insert into profile_section (profile_id,
+                             section_type,
+                             enabled,
+                             deduplicate_tracks_by_guid,
+                             deduplicate_tracks_by_title_and_artist,
+                             maximum_tracks_by_artist,
+                             minimum_track_rating,
+                             randomize_tracks,
+                             sorting)
+        VALUES(?,?,?,?,?,?,?,?,?)
+    "#)
+        .bind(profile_id)
+        .bind(section.get_section_type())
+        .bind(true) // enabled
+        .bind(section.get_deduplicate_tracks_by_guid())
+        .bind(section.get_deduplicate_tracks_by_title_and_artist())
+        .bind(section.get_maximum_tracks_by_artist())
+        .bind(section.get_minimum_track_rating())
+        .bind(section.get_randomize_tracks())
+        .bind(section.get_sorting())
+        .execute(POOL.get().unwrap())
+        .await?;
+
+    Ok(())
 }
 
 async fn fetch_profile(profile_id: i32) -> Result<DbProfile> {

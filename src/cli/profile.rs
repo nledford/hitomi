@@ -4,7 +4,7 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
 use simplelog::{debug, info};
 
-use crate::files;
+use crate::{db, files};
 use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::Profile;
 use crate::profiles::{wizards, ProfileAction};
@@ -24,7 +24,7 @@ pub async fn run_profile_command(profile: CliProfile, mut manager: ProfileManage
             manager
                 .create_playlist(&profile, new_profile_key, &merger)
                 .await?;
-            files::save_profile_to_disk(&profile, manager.get_config_profiles_directory()).await?;
+            db::profiles::create_profile(&profile).await?;
 
             info!("Profile created successfully!")
         }

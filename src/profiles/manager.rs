@@ -46,7 +46,8 @@ pub struct ProfileManager {
 // INITIALIZATION
 impl ProfileManager {
     pub async fn new() -> Result<Self> {
-        let config = crate::config::load_config().await?;
+        // let config = crate::config::load_config().await?;
+        let config = crate::config::Config::default();
         let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
         // let profiles = files::load_profiles_from_disk(config.get_profiles_directory()).await?;
@@ -91,13 +92,6 @@ impl ProfileManager {
         self.managed_unplayed_sections = managed_unplayed_sections;
         self.managed_least_played_sections = managed_least_played_sections;
         self.managed_oldest_sections = managed_oldest_sections;
-    }
-}
-
-// CONFIG
-impl ProfileManager {
-    pub fn get_config_profiles_directory(&self) -> &str {
-        self.config.get_profiles_directory()
     }
 }
 

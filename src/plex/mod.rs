@@ -50,12 +50,6 @@ impl PlexClient {
     pub async fn initialize(config: &Config) -> Result<Self> {
         debug!("Initializing plex...");
 
-        if !config.is_loaded() {
-            return Err(anyhow!(
-                "Cannot initialize plex because application config has not yet been loaded."
-            ));
-        }
-
         let plex_url = PlexUrl::try_new(config.get_plex_url())?;
         let plex_token = PlexToken::try_new(config.get_plex_token())?;
 

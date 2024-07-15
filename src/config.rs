@@ -17,24 +17,8 @@ use dialoguer::{Input, Select};
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, error, info};
 
-/// Default config file path where application config will be stored.
-fn build_config_path() -> String {
-    let config_dir = if let Ok(dir) = env::var("CONFIG_DIR") {
-        PathBuf::from_str(&dir).expect("Error parsing `CONFIG_DIR`")
-    } else {
-        dirs::config_dir()
-            .expect("Could not fetch the user's configuration directory")
-            .join(env!("CARGO_PKG_NAME"))
-    };
-
-    fs::create_dir_all(&config_dir).expect("Error creating directory");
-
-    let config_path = config_dir.join("config.json");
-    config_path.into_os_string().into_string().unwrap()
-}
-
 /// Represents the configuration file
-#[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq, sqlx::Type)]
 pub struct Config {
     #[arg(long)]
     plex_token: String,
@@ -42,12 +26,6 @@ pub struct Config {
     plex_url: String,
     #[arg(long)]
     primary_section_id: i32,
-    #[arg(long, default_value_t = String::from("."))]
-    profiles_directory: String,
-    #[serde(skip)]
-    is_default: bool,
-    #[serde(skip)]
-    is_loaded: bool,
 }
 
 impl Default for Config {
@@ -56,9 +34,6 @@ impl Default for Config {
             plex_url: "http://127.0.0.1:32400".to_string(),
             plex_token: "PLEX_TOKEN".to_string(),
             primary_section_id: 0,
-            profiles_directory: "./profiles".to_string(),
-            is_default: true,
-            is_loaded: false,
         }
     }
 }
@@ -79,65 +54,6 @@ impl Config {
     pub fn get_primary_section_id(&self) -> i32 {
         self.primary_section_id
     }
-
-    pub fn get_profiles_directory(&self) -> &str {
-        &self.profiles_directory
-    }
-
-    pub fn set_profiles_directory(&mut self, dir: &str) {
-        self.profiles_directory = dir.to_string()
-    }
-
-    pub fn is_loaded(&self) -> bool {
-        self.is_loaded
-    }
-
-    pub async fn save_config(&self, config_path: Option<&str>) -> Result<()> {
-        debug!("Saving config to disk...");
-
-        let default_config_path = build_config_path();
-        let config_path = if let Some(config_path) = config_path {
-            fs::create_dir_all(config_path)?;
-            Path::new(config_path).join("config.json")
-        } else {
-            Path::new(&default_config_path).to_path_buf()
-        };
-        let json = serde_json::to_string_pretty(self)?;
-        let mut file = File::create(config_path)?;
-        file.write_all(json.as_bytes())?;
-
-        Ok(())
-    }
-}
-
-pub async fn load_config() -> Result<Config> {
-    debug!("Loading config...");
-
-    let config_path = if let Ok(dir) = env::var("CONFIG_DIR") {
-        Path::new(&dir).join("config.json")
-    } else {
-        Path::new(&build_config_path()).to_path_buf()
-    };
-    debug!("{}", &config_path.display());
-
-    if !config_path.exists() {
-        return build_config_wizard().await;
-    }
-
-    let mut file = File::open(config_path)?;
-    let mut config = String::default();
-    file.read_to_string(&mut config)?;
-
-    if let Ok(mut config) = serde_json::from_str::<Config>(&config) {
-        config.is_loaded = true;
-        Ok(config)
-    } else {
-        Ok(build_config_wizard().await?)
-    }
-}
-
-pub async fn delete_config_file() {
-    tokio::fs::remove_file(build_config_path()).await.unwrap()
 }
 
 /// Wizard used by user to create an initial configuration file
@@ -206,17 +122,13 @@ pub async fn build_config_wizard() -> Result<Config> {
     .expect("Could not parse section id");
 
     let config = ConfigBuilder::default()
-        .profiles_directory(profiles_directory)
         .plex_url(plex_url.to_string())
         .plex_token(plex_token.to_string())
         .primary_section_id(primary_section_id)
-        .is_default(false)
-        .is_loaded(true)
         .build()?;
     let data = serde_json::to_string_pretty(&config)?;
 
-    let mut file = File::create(build_config_path())?;
-    file.write_all(data.as_bytes())?;
+    // TODO save config to database
 
     Ok(config)
 }
@@ -225,7 +137,6 @@ impl Display for Config {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut output = String::default();
         output += &format!("Plex URL:       {}\n", self.get_plex_url());
-        output += &format!("Default Config: {}\n", self.is_default);
 
         write!(f, "{}", output)
     }
