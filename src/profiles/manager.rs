@@ -13,7 +13,6 @@ use simplelog::{error, info};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use tokio::time::sleep;
 
-use crate::config::Config;
 use crate::db;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
@@ -31,7 +30,6 @@ new_key_type! {
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
-    config: Config,
     plex_client: PlexClient,
     playlists: Vec<Playlist>,
     /// Profiles that have been loaded from disk
@@ -46,15 +44,13 @@ pub struct ProfileManager {
 // INITIALIZATION
 impl ProfileManager {
     pub async fn new() -> Result<Self> {
-        // let config = crate::config::load_config().await?;
-        let config = crate::config::Config::default();
+        let config = crate::config::load_config().await?;
         let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
         // let profiles = files::load_profiles_from_disk(config.get_profiles_directory()).await?;
         let profiles = db::profiles::fetch_all_data().await?;
 
         let mut manager = ProfileManager {
-            config,
             plex_client,
             playlists,
             profiles,

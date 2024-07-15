@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
-use crate::config as AppConfig;
 use crate::config::ConfigBuilder as AppConfigBuilder;
+use crate::db;
 
 #[derive(Args, PartialEq)]
 pub struct CliConfig {
@@ -46,13 +46,14 @@ pub async fn run_config_cmd(cfg: CliConfig) -> Result<()> {
                 .primary_section_id(cmd.primary_section_id)
                 .build()?;
 
-            // new_config.save_config(Some(&cmd.config_directory)).await?;
+            db::config::save_config(&new_config).await?;
         }
         ConfigCmds::View => {
             // let _config = AppConfig::load_config().await;
+            let _config = db::config::fetch_config().await?;
             // config.print_table();
         }
-        ConfigCmds::Update(args) => {
+        ConfigCmds::Update(_args) => {
             // let mut config = AppConfig::load_config().await?;
             //
             // if let Some(profiles_directory) = args.profiles_directory {

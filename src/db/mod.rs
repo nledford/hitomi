@@ -17,6 +17,7 @@ use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::ProfileSource;
 use crate::types::Title;
 
+pub mod config;
 mod models;
 pub mod profiles;
 

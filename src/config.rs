@@ -1,21 +1,18 @@
 //! Configuration for `hitomi`
 
+use std::env;
 use std::fmt::{Display, Formatter};
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::{env, fs};
 
-use crate::plex::types::{PlexToken, PlexUrl};
-use crate::plex::PlexClient;
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
+use dialoguer::theme::ColorfulTheme;
 use serde::{Deserialize, Serialize};
-use simplelog::{debug, error, info};
+use simplelog::{debug, info};
+use crate::db;
+use crate::plex::PlexClient;
+use crate::plex::types::{PlexToken, PlexUrl};
 
 /// Represents the configuration file
 #[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq, sqlx::Type)]
@@ -56,50 +53,37 @@ impl Config {
     }
 }
 
-/// Wizard used by user to create an initial configuration file
+/// Wizard used by user to create an initial configuration table
 pub async fn build_config_wizard() -> Result<Config> {
-    info!("Config file not found. Checking for environment variables...");
+    info!("Config table not populated. Checking for environment variables...");
 
-    let profiles_directory = if let Ok(dir) = env::var("PROFILES_DIRECTORY") {
-        dir
+    let plex_url = if let Ok(plex_url) = env::var("PLEX_URL") {
+        plex_url
     } else {
-        Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter a directory to store your profiles:")
-            .default("./profiles".to_string())
+        Input::<String>::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter your plex URL:")
             .interact_text()?
             .to_string()
     };
+    let plex_url = PlexUrl::try_new(plex_url)?;
 
-    let (plex_url, plex_token) = loop {
-        let plex_url = if let Ok(plex_url) = env::var("PLEX_URL") {
-            plex_url
-        } else {
-            Input::<String>::with_theme(&ColorfulTheme::default())
-                .with_prompt("Enter your plex URL:")
-                .interact_text()?
-                .to_string()
-        };
-        let plex_url = PlexUrl::try_new(plex_url)?;
+    let plex_token = if let Ok(plex_token) = env::var("PLEX_TOKEN") {
+        plex_token
+    } else {
+        Input::<String>::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter your plex token:")
+            .interact_text()?
+            .to_string()
+    };
+    let plex_token = PlexToken::try_new(plex_token)?;
 
-        let plex_token = if let Ok(plex_token) = env::var("PLEX_TOKEN") {
-            plex_token
-        } else {
-            Input::<String>::with_theme(&ColorfulTheme::default())
-                .with_prompt("Enter your plex token:")
-                .interact_text()?
-                .to_string()
-        };
-        let plex_token = PlexToken::try_new(plex_token)?;
-
-        info!("Testing connection to plex. Please wait...");
-        if PlexClient::new_for_config(&plex_url, &plex_token)
-            .await
-            .is_ok()
-        {
-            info!("Success!");
-            break (plex_url, plex_token);
-        } else {
-            error!("Could not connect to plex. Please re-enter your URL and token.")
+    info!("Testing connection to plex. Please wait...");
+    match PlexClient::new_for_config(&plex_url, &plex_token).await {
+        Ok(_) => {
+            info!("Successfully connected to plex!");
+        }
+        Err(err) => {
+            panic!("Could not connect to plex:\n{err}")
         }
     };
 
@@ -119,16 +103,28 @@ pub async fn build_config_wizard() -> Result<Config> {
             .interact()?;
         sections[selection].id().parse::<i32>()
     }
-    .expect("Could not parse section id");
+        .expect("Could not parse section id");
 
     let config = ConfigBuilder::default()
         .plex_url(plex_url.to_string())
         .plex_token(plex_token.to_string())
         .primary_section_id(primary_section_id)
         .build()?;
-    let data = serde_json::to_string_pretty(&config)?;
 
-    // TODO save config to database
+    db::config::save_config(&config).await?;
+
+    Ok(config)
+}
+
+pub async fn load_config() -> Result<Config> {
+    debug!("Loading config...");
+
+    if !db::config::have_config().await? {
+        info!("Config not found in database.");
+        return build_config_wizard().await;
+    }
+
+    let config = db::config::fetch_config().await?;
 
     Ok(config)
 }

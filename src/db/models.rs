@@ -14,6 +14,7 @@ pub struct DbProfile {
     pub track_limit: u32,
 }
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct DbProfileSection {
     profile_section_id: i32,

@@ -5,7 +5,6 @@
 pub mod cli;
 pub mod config;
 pub mod db;
-pub mod files;
 pub mod http_client;
 pub mod plex;
 pub mod profiles;
