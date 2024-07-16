@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -7,11 +5,13 @@ use sqlx::Row;
 
 use crate::db::POOL;
 use crate::plex::types::PlexId;
+use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
-use crate::profiles::{ProfileSource, SectionType};
 use crate::types::Title;
+
+// CREATE #####################################################################
 
 pub async fn create_profile(new_profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
     let result = sqlx::query(
@@ -29,17 +29,17 @@ pub async fn create_profile(new_profile: &Profile, sections: &[ProfileSection]) 
         returning id
     "#,
     )
-    .bind(new_profile.get_playlist_id().as_str())
-    .bind(new_profile.get_title())
-    .bind(new_profile.get_summary())
-    .bind(true) // enabled
-    .bind(new_profile.get_profile_source().to_string())
-    .bind(new_profile.get_profile_source_id_str())
-    .bind(new_profile.get_refresh_interval())
-    .bind(new_profile.get_time_limit())
-    .bind(new_profile.get_track_limit())
-    .fetch_one(POOL.get().unwrap())
-    .await?;
+        .bind(new_profile.get_playlist_id().as_str())
+        .bind(new_profile.get_title())
+        .bind(new_profile.get_summary())
+        .bind(true) // enabled
+        .bind(new_profile.get_profile_source().to_string())
+        .bind(new_profile.get_profile_source_id_str())
+        .bind(new_profile.get_refresh_interval())
+        .bind(new_profile.get_time_limit())
+        .bind(new_profile.get_track_limit())
+        .fetch_one(POOL.get().unwrap())
+        .await?;
 
     let profile_id = result.get(0);
 
@@ -65,20 +65,104 @@ async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Re
         VALUES(?,?,?,?,?,?,?,?,?)
     "#,
     )
-    .bind(profile_id)
-    .bind(section.get_section_type())
-    .bind(true) // enabled
-    .bind(section.get_deduplicate_tracks_by_guid())
-    .bind(section.get_deduplicate_tracks_by_title_and_artist())
-    .bind(section.get_maximum_tracks_by_artist())
-    .bind(section.get_minimum_track_rating())
-    .bind(section.get_randomize_tracks())
-    .bind(section.get_sorting())
-    .execute(POOL.get().unwrap())
-    .await?;
+        .bind(profile_id)
+        .bind(section.get_section_type())
+        .bind(true) // enabled
+        .bind(section.get_deduplicate_tracks_by_guid())
+        .bind(section.get_deduplicate_tracks_by_title_and_artist())
+        .bind(section.get_maximum_tracks_by_artist())
+        .bind(section.get_minimum_track_rating())
+        .bind(section.get_randomize_tracks())
+        .bind(section.get_sorting())
+        .execute(POOL.get().unwrap())
+        .await?;
 
     Ok(())
 }
+
+// DELETE #####################################################################
+
+pub async fn delete_profile(profile_id: i32) -> Result<()> {
+    sqlx::query("delete from profile where profile_id = ?")
+        .bind(profile_id)
+        .execute(POOL.get().unwrap())
+        .await?;
+
+    Ok(())
+}
+
+// UPDATE #####################################################################
+
+pub async fn update_profile(profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
+    let profile_id = fetch_profile_id(profile.get_title()).await?.unwrap();
+
+    sqlx::query(
+        r#"
+        update profile
+        set profile_title = ?,
+            profile_summary = ?,
+            enabled = ?,
+            profile_source = ?,
+            profile_source_id = ?,
+            refresh_interval = ?,
+            time_limit = ?,
+            track_limit = ?
+        where profile_id = ?
+    "#,
+    )
+        .bind(profile.get_title())
+        .bind(profile.get_summary())
+        .bind(profile.get_enabled())
+        .bind(profile.get_profile_source().to_string())
+        .bind(profile.get_profile_source_id_str())
+        .bind(profile.get_refresh_interval())
+        .bind(profile.get_time_limit())
+        .bind(profile.get_track_limit())
+        .bind(profile_id)
+        .execute(POOL.get().unwrap())
+        .await?;
+
+    for section in sections {
+        update_profile_section(profile_id, section).await?;
+    }
+
+    Ok(())
+}
+
+async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Result<()> {
+    let profile_section_id = fetch_profile_section_id(profile_id, section.get_section_type())
+        .await?
+        .unwrap();
+
+    sqlx::query(
+        r#"
+        update profile_section
+        set enabled = ?,
+           deduplicate_tracks_by_guid = ?,
+           deduplicate_tracks_by_title_and_artist = ?,
+           maximum_tracks_by_artist = ?,
+           minimum_track_rating = ?,
+           randomize_tracks = ?,
+           sorting = ?
+        where profile_id = ? and profile_section_id = ?
+    "#,
+    )
+        .bind(section.is_enabled())
+        .bind(section.get_deduplicate_tracks_by_guid())
+        .bind(section.get_deduplicate_tracks_by_title_and_artist())
+        .bind(section.get_maximum_tracks_by_artist())
+        .bind(section.get_minimum_track_rating())
+        .bind(section.get_randomize_tracks())
+        .bind(section.get_sorting())
+        .bind(profile_id)
+        .bind(profile_section_id)
+        .execute(POOL.get().unwrap())
+        .await?;
+
+    Ok(())
+}
+
+// FETCH ######################################################################
 
 async fn fetch_profile(profile_id: i32) -> Result<Profile> {
     let row = sqlx::query(
@@ -88,9 +172,9 @@ async fn fetch_profile(profile_id: i32) -> Result<Profile> {
         where profile_id = ?
     "#,
     )
-    .bind(profile_id)
-    .fetch_one(POOL.get().unwrap())
-    .await?;
+        .bind(profile_id)
+        .fetch_one(POOL.get().unwrap())
+        .await?;
 
     let playlist_id = PlexId::try_new(row.try_get::<&str, &str>("playlist_id")?).unwrap();
     let title = Title::try_new(row.try_get::<&str, &str>("profile_title")?).unwrap();
@@ -146,84 +230,6 @@ async fn fetch_profile_id(profile_title: &str) -> Result<Option<i32>> {
     Ok(id)
 }
 
-async fn delete_profile(profile_id: i32) -> Result<()> {
-    sqlx::query("delete from profile where profile_id = ?")
-        .bind(profile_id)
-        .execute(POOL.get().unwrap())
-        .await?;
-
-    Ok(())
-}
-
-async fn update_profile(profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
-    let profile_id = fetch_profile_id(profile.get_title()).await?.unwrap();
-
-    sqlx::query(
-        r#"
-        update profile
-        set profile_title = ?,
-            profile_summary = ?,
-            enabled = ?,
-            profile_source = ?,
-            profile_source_id = ?,
-            refresh_interval = ?,
-            time_limit = ?,
-            track_limit = ?
-        where profile_id = ?
-    "#,
-    )
-    .bind(profile.get_title())
-    .bind(profile.get_summary())
-    .bind(profile.get_enabled())
-    .bind(profile.get_profile_source().to_string())
-    .bind(profile.get_profile_source_id_str())
-    .bind(profile.get_refresh_interval())
-    .bind(profile.get_time_limit())
-    .bind(profile.get_track_limit())
-    .bind(profile_id)
-    .execute(POOL.get().unwrap())
-    .await?;
-
-    for section in sections {
-        update_profile_section(profile_id, section).await?;
-    }
-
-    Ok(())
-}
-
-async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Result<()> {
-    let profile_section_id = fetch_profile_section_id(profile_id, section.get_section_type())
-        .await?
-        .unwrap();
-
-    sqlx::query(
-        r#"
-        update profile_section
-        set enabled = ?,
-           deduplicate_tracks_by_guid = ?,
-           deduplicate_tracks_by_title_and_artist = ?,
-           maximum_tracks_by_artist = ?,
-           minimum_track_rating = ?,
-           randomize_tracks = ?,
-           sorting = ?
-        where profile_id = ? and profile_section_id = ?
-    "#,
-    )
-    .bind(section.is_enabled())
-    .bind(section.get_deduplicate_tracks_by_guid())
-    .bind(section.get_deduplicate_tracks_by_title_and_artist())
-    .bind(section.get_maximum_tracks_by_artist())
-    .bind(section.get_minimum_track_rating())
-    .bind(section.get_randomize_tracks())
-    .bind(section.get_sorting())
-    .bind(profile_id)
-    .bind(profile_section_id)
-    .execute(POOL.get().unwrap())
-    .await?;
-
-    Ok(())
-}
-
 async fn fetch_profile_section_id(
     profile_id: i32,
     section_type: SectionType,
@@ -235,10 +241,10 @@ async fn fetch_profile_section_id(
         where profile_id = ? and section_type = ?
     "#,
     )
-    .bind(profile_id)
-    .bind(section_type)
-    .fetch_optional(POOL.get().unwrap())
-    .await?;
+        .bind(profile_id)
+        .bind(section_type)
+        .fetch_optional(POOL.get().unwrap())
+        .await?;
 
     let id = row.map(|row| row.0);
 
@@ -293,8 +299,8 @@ pub async fn fetch_any_eligible_for_refresh() -> Result<bool> {
         where eligible_for_refresh = 1;
     "#,
     )
-    .fetch_one(POOL.get().unwrap())
-    .await?;
+        .fetch_one(POOL.get().unwrap())
+        .await?;
 
     let result = result.0 > 0;
 
@@ -320,6 +326,7 @@ pub async fn fetch_profiles_to_refresh(force_refresh: bool) -> Result<Vec<Profil
 }
 
 pub async fn fetch_profile_by_title(title: &str) -> Result<Option<Profile>> {
+    #[allow(dead_code)]
     #[derive(sqlx::FromRow)]
     struct IdTitleResult {
         profile_id: i32,
@@ -333,9 +340,9 @@ pub async fn fetch_profile_by_title(title: &str) -> Result<Option<Profile>> {
         where profile_title = ?;
     "#,
     )
-    .bind(title)
-    .fetch_optional(POOL.get().unwrap())
-    .await?;
+        .bind(title)
+        .fetch_optional(POOL.get().unwrap())
+        .await?;
 
     let profile = if let Some(result) = result {
         let profile = fetch_profile(result.profile_id).await?;
@@ -353,8 +360,8 @@ pub async fn fetch_profile_titles() -> Result<Vec<String>> {
         select profile_title from v_profile order by profile_title
     "#,
     )
-    .fetch_all(POOL.get().unwrap())
-    .await?;
+        .fetch_all(POOL.get().unwrap())
+        .await?;
 
     let titles = titles.into_iter().map(|x| x.0).collect::<Vec<_>>();
 
