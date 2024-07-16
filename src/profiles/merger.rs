@@ -35,17 +35,21 @@ impl SectionTracksMerger {
 
     pub fn run_manual_filters(&mut self, profile_section: &ProfileSection, time_limit: f64) {
         if profile_section.is_unplayed_section() {
-            self.unplayed = profile_section.run_manual_filters(&self.unplayed, time_limit, None)
+            self.unplayed = profile_section.run_manual_filters(&self.unplayed, time_limit)
         }
 
         if profile_section.is_least_played_section() {
-            self.least_played =
-                profile_section.run_manual_filters(&self.least_played, time_limit, None)
+            self.least_played = profile_section.run_manual_filters(&self.least_played, time_limit)
         }
 
         if profile_section.is_oldest_section() {
-            self.oldest = profile_section.run_manual_filters(&self.oldest, time_limit, None)
+            self.oldest = profile_section.run_manual_filters(&self.oldest, time_limit)
         }
+    }
+
+    pub fn deduplicate_lists(&mut self) {
+        deduplicate_tracks_by_lists(&mut self.least_played, Some(&self.oldest), None);
+        deduplicate_tracks_by_lists(&mut self.oldest, Some(&self.least_played), None);
     }
 
     pub fn get_combined_tracks(&self) -> &[Track] {
@@ -125,5 +129,18 @@ impl SectionTracksMerger {
                 self.merged.push(track.clone())
             }
         }
+    }
+}
+
+fn deduplicate_tracks_by_lists(
+    tracks: &mut Vec<Track>,
+    list_one: Option<&[Track]>,
+    list_two: Option<&[Track]>,
+) {
+    if let Some(comp) = list_one {
+        tracks.retain(|t| !comp.contains(t))
+    }
+    if let Some(comp) = list_two {
+        tracks.retain(|t| !comp.contains(t))
     }
 }

@@ -2,13 +2,14 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use crate::plex::models::tracks::Track;
-use crate::profiles::SectionType;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use simplelog::info;
+
+use crate::plex::models::tracks::Track;
+use crate::profiles::SectionType;
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize, sqlx::FromRow)]
@@ -102,12 +103,7 @@ impl ProfileSection {
         self.randomize_tracks
     }
 
-    pub fn run_manual_filters(
-        &self,
-        tracks: &[Track],
-        time_limit: f64,
-        list_to_dedup: Option<&mut Vec<Track>>,
-    ) -> Vec<Track> {
+    pub fn run_manual_filters(&self, tracks: &[Track], time_limit: f64) -> Vec<Track> {
         info!("Running manual section filters...");
         let mut tracks = tracks.to_vec();
 
@@ -116,10 +112,6 @@ impl ProfileSection {
         self.limit_tracks_by_artist(&mut tracks);
         self.sort_tracks(&mut tracks);
         self.reduce_to_time_limit(&mut tracks, time_limit);
-
-        if let Some(lst) = list_to_dedup {
-            self.dedup_tracks_by_list(&mut tracks, lst)
-        }
 
         if self.randomize_tracks {
             tracks.shuffle(&mut rand::thread_rng())
@@ -172,10 +164,6 @@ impl ProfileSection {
         if self.is_oldest_section() {
             tracks.sort_by_key(|t| (t.last_played(), t.plays()))
         }
-    }
-
-    fn dedup_tracks_by_list(&self, tracks: &mut Vec<Track>, comp: &[Track]) {
-        tracks.retain(|t| !comp.contains(t))
     }
 
     pub fn reduce_to_time_limit(&self, tracks: &mut Vec<Track>, time_limit: f64) {

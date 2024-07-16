@@ -5,10 +5,10 @@ use sqlx::Row;
 
 use crate::db::POOL;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
+use crate::profiles::{ProfileSource, SectionType};
 use crate::types::Title;
 
 // CREATE #####################################################################
