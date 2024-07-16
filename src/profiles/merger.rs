@@ -1,13 +1,18 @@
+use derive_builder::Builder;
 use simplelog::info;
 
 use crate::plex::models::tracks::Track;
 use crate::profiles::profile_section::ProfileSection;
 
-#[derive(Debug, Default)]
+#[derive(Builder, Debug, Default)]
 pub struct SectionTracksMerger {
+    #[builder(default)]
     unplayed: Vec<Track>,
+    #[builder(default)]
     least_played: Vec<Track>,
+    #[builder(default)]
     oldest: Vec<Track>,
+    #[builder(default)]
     merged: Vec<Track>,
 }
 

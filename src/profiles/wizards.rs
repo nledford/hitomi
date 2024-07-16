@@ -12,9 +12,10 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
+use crate::db;
 
 /// The main entrypoint of the wizard
-pub async fn create_profile_wizard(manager: &ProfileManager) -> Result<Profile> {
+pub async fn create_profile_wizard(manager: &ProfileManager) -> Result<(Profile, Vec<ProfileSection>)> {
     let profile_name = set_profile_name(manager).await?;
 
     let summary = set_summary()?;
@@ -32,12 +33,11 @@ pub async fn create_profile_wizard(manager: &ProfileManager) -> Result<Profile> 
         .summary(summary)
         .profile_source(profile_source)
         .profile_source_id(profile_source_id)
-        .sections(sections)
         .refresh_interval(refresh_interval)
         .time_limit(time_limit)
         .build()?;
 
-    Ok(profile)
+    Ok((profile, sections))
 }
 
 async fn set_profile_name(manager: &ProfileManager) -> Result<Title> {
@@ -47,7 +47,7 @@ async fn set_profile_name(manager: &ProfileManager) -> Result<Title> {
     let title = Title::try_new(profile_name.clone())
         .with_context(|| "Error setting profile/playlist title from wizard")?;
 
-    if manager.get_profile_by_title(&title).is_some() {
+    if db::profiles::fetch_profile_by_title(&title).await?.is_some() {
         let choice = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Profile `{profile_name}` already exists. Do you want to overwrite this profile?"

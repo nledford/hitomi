@@ -31,8 +31,7 @@ reqwest = { version = "0.12.5", features = ["brotli", "deflate", "gzip", "hickor
 serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.120"
 simplelog = { version = "0.12.2", features = ["paris", "termcolor"] }
-slotmap = "1.0.7"
-sqlx = { version = "0.7.4", features = ["runtime-tokio", "macros", "sqlite"] }
+sqlx = { version = "0.7.4", features = ["chrono", "runtime-tokio", "macros", "sqlite"] }
 strum = { version = "0.26", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["full"] }
 

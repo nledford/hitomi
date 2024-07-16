@@ -18,19 +18,18 @@ pub struct CliProfile {
 pub async fn run_profile_command(profile: CliProfile, mut manager: ProfileManager) -> Result<()> {
     match profile.profile_cmds {
         ProfileAction::Create => {
-            let profile = wizards::create_profile_wizard(&manager).await?;
-            let new_profile_key = manager.add_new_profile(&profile);
-            let merger = manager.fetch_profile_tracks(new_profile_key, None).await?;
+            let (profile, sections) = wizards::create_profile_wizard(&manager).await?;
+            let merger = manager.fetch_profile_tracks(&profile, None).await?;
             manager
-                .create_playlist(&profile, new_profile_key, &merger)
+                .create_playlist(&profile, &sections, &merger)
                 .await?;
-            db::profiles::create_profile(&profile).await?;
+            // db::profiles::create_profile(&profile, &sections).await?;
 
             info!("Profile created successfully!")
         }
         ProfileAction::Edit => {}
         ProfileAction::Delete => {}
-        ProfileAction::List => manager.list_profiles(),
+        ProfileAction::List => manager.list_profiles_and_sections().await?,
         ProfileAction::Preview => {
             preview_playlist(&manager).await?;
         }
@@ -42,25 +41,25 @@ pub async fn run_profile_command(profile: CliProfile, mut manager: ProfileManage
 }
 
 async fn preview_playlist(manager: &ProfileManager) -> Result<()> {
-    if !manager.have_profiles() {
+    if !manager.have_profiles().await? {
         println!("No profiles found.");
         return Ok(());
     }
 
     let profile =
-        select_profile("Select which profile you would like to preview:", manager).await?;
+        select_profile("Select which profile you would like to preview:").await?;
     manager.preview_playlist(&profile).await?;
 
     Ok(())
 }
 
 async fn view_playlist(manager: &ProfileManager) -> Result<()> {
-    if !manager.have_profiles() {
+    if !manager.have_profiles().await? {
         println!("No profiles found.");
         return Ok(());
     }
 
-    let profile = select_profile("Select which profile you would like to view:", manager).await?;
+    let profile = select_profile("Select which profile you would like to view:").await?;
     println!("{profile}");
 
     // Print raw json of profile
@@ -68,18 +67,15 @@ async fn view_playlist(manager: &ProfileManager) -> Result<()> {
     Ok(())
 }
 
-async fn select_profile(prompt: &str, manager: &ProfileManager) -> Result<Profile> {
-    let titles = manager.get_profile_titles();
+async fn select_profile(prompt: &str) -> Result<Profile> {
+    let titles = db::profiles::fetch_profile_titles().await?;
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(prompt)
         .items(&titles)
         .default(0)
         .interact()?;
 
-    let profile = manager
-        .get_profile_by_title(&titles[selection])
-        .unwrap()
-        .to_owned();
+    let profile = db::profiles::fetch_profile_by_title(&titles[selection]).await?.unwrap();
 
     Ok(profile)
 }

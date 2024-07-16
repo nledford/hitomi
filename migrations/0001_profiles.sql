@@ -63,6 +63,37 @@ CREATE TABLE profile_section
         check (profile_section.randomize_tracks in (0, 1)),
     constraint section_type
         check (profile_section.section_type in ('Unplayed', 'LeastPlayed', 'Oldest'))
-)
+);
 
+-- Profiles view
+
+drop view if exists v_profile;
+create view v_profile as
+select profile_id,
+       playlist_id,
+       profile_title,
+       profile_summary,
+       enabled,
+       profile_source,
+       profile_source_id,
+       refresh_interval,
+       time_limit,
+       track_limit,
+       num_sections,
+       (cast(time_limit as real) / cast(num_sections as real))                   section_time_limit,
+       cast((60.0 / refresh_interval) as integer)                                refreshes_per_hour,
+       datetime(strftime('%s', current_timestamp) - (strftime('%s', current_timestamp) % (refresh_interval * 60.0)),
+                'unixepoch',
+                'localtime')                                                     current_refresh,
+       datetime(strftime('%s', current_timestamp) +
+                ((refresh_interval * 60.0) - (strftime('%s', current_timestamp)) % (refresh_interval * 60.0)),
+                'unixepoch', 'localtime')                                        next_refresh_at,
+       (cast(strftime('%M', current_timestamp) as real) % refresh_interval == 0) eligible_for_refresh
+from (select *,
+             (select count(1)
+              from profile_section
+              where profile_id = p.profile_id
+                and p.enabled = 1) num_sections
+      from profile p
+      order by profile_title);
 

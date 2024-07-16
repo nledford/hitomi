@@ -6,7 +6,7 @@ use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-
+use simplelog::info;
 use crate::plex::models::tracks::Track;
 use crate::profiles::SectionType;
 
@@ -108,6 +108,7 @@ impl ProfileSection {
         time_limit: f64,
         list_to_dedup: Option<&mut Vec<Track>>,
     ) -> Vec<Track> {
+        info!("Running manual section filters...");
         let mut tracks = tracks.to_vec();
 
         self.deduplicate_by_track_guid(&mut tracks);

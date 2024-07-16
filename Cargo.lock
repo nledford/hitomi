@@ -967,7 +967,6 @@ dependencies = [
  "serde",
  "serde_json",
  "simplelog",
- "slotmap",
  "sqlx",
  "strum",
  "tokio",
@@ -2147,15 +2146,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "slotmap"
-version = "1.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbff4acf519f630b3a3ddcfaea6c06b42174d9a44bc70c620e9ed1649d58b82a"
-dependencies = [
- "version_check",
-]
-
-[[package]]
 name = "smallvec"
 version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2223,6 +2213,7 @@ dependencies = [
  "atoi",
  "byteorder",
  "bytes",
+    "chrono",
  "crc",
  "crossbeam-queue",
  "either",
@@ -2283,6 +2274,7 @@ dependencies = [
  "sha2",
  "sqlx-core",
  "sqlx-mysql",
+    "sqlx-postgres",
  "sqlx-sqlite",
  "syn 1.0.109",
  "tempfile",
@@ -2301,6 +2293,7 @@ dependencies = [
  "bitflags 2.6.0",
  "byteorder",
  "bytes",
+    "chrono",
  "crc",
  "digest",
  "dotenvy",
@@ -2342,6 +2335,7 @@ dependencies = [
  "base64 0.21.7",
  "bitflags 2.6.0",
  "byteorder",
+    "chrono",
  "crc",
  "dotenvy",
  "etcetera",
@@ -2377,6 +2371,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b244ef0a8414da0bed4bb1910426e890b19e5e9bccc27ada6b797d05c55ae0aa"
 dependencies = [
  "atoi",
+    "chrono",
  "flume",
  "futures-channel",
  "futures-core",
