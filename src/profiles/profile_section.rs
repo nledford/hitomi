@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 
 use chrono::TimeDelta;
@@ -129,8 +129,8 @@ impl ProfileSection {
         }
 
         if section_type == SectionType::LeastPlayed {
-            let grouped: HashMap<i32, Vec<Track>> =
-                tracks.iter().fold(HashMap::new(), |mut acc, track| {
+            let grouped: BTreeMap<i32, Vec<Track>> =
+                tracks.iter().fold(BTreeMap::new(), |mut acc, track| {
                     let plays = acc.entry(track.plays()).or_default();
                     plays.push(track.clone());
                     acc
