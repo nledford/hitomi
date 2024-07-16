@@ -103,7 +103,7 @@ pub async fn build_config_wizard() -> Result<Config> {
             .interact()?;
         sections[selection].id().parse::<i32>()
     }
-        .expect("Could not parse section id");
+    .expect("Could not parse section id");
 
     let config = ConfigBuilder::default()
         .plex_url(plex_url.to_string())

@@ -5,21 +5,21 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::Local;
-use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use itertools::Itertools;
 use simplelog::{error, info};
 
 use crate::db;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::PlexClient;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileAction, ProfileSource, SectionType};
+use crate::plex::PlexClient;
 use crate::profiles::merger::{SectionTracksMerger, SectionTracksMergerBuilder};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
+use crate::profiles::{ProfileAction, ProfileSource, SectionType};
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
@@ -230,15 +230,19 @@ impl ProfileManager {
         profile: &Profile,
         limit: Option<i32>,
     ) -> Result<SectionTracksMerger> {
-        let sections = db::profiles::fetch_profile_sections_for_profile(profile.get_profile_id()).await?;
+        let sections =
+            db::profiles::fetch_profile_sections_for_profile(profile.get_profile_id()).await?;
 
         let mut merger = SectionTracksMergerBuilder::default();
         for section in &sections {
-            let tracks = fetch_section_tracks(self.get_plex_client(),
-                                              &section,
-                                              profile.get_profile_source(),
-                                              profile.get_profile_source_id(),
-                                              limit).await?;
+            let tracks = fetch_section_tracks(
+                self.get_plex_client(),
+                section,
+                profile.get_profile_source(),
+                profile.get_profile_source_id(),
+                limit,
+            )
+            .await?;
 
             match section.get_section_type() {
                 SectionType::Unplayed => {

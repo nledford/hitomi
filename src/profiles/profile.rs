@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 use crate::db;
 use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::ProfileSource;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
+use crate::profiles::ProfileSource;
 use crate::types::Title;
 
 // PROFILE ####################################################################
@@ -145,8 +145,7 @@ impl Profile {
     fn refresh_interval_str(&self) -> String {
         format!(
             "Every {} minutes ({} refreshes per hour)",
-            self.refresh_interval,
-            self.refreshes_per_hour
+            self.refresh_interval, self.refreshes_per_hour
         )
     }
 

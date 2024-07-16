@@ -221,7 +221,7 @@ impl PlexClient {
         let params = HashMap::from([
             (
                 "uri".to_string(),
-                format!("{}/library/metadata", self.uri_root(), ),
+                format!("{}/library/metadata", self.uri_root(),),
             ),
             ("title".to_string(), profile.get_title().to_string()),
             // ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),

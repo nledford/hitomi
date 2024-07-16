@@ -34,10 +34,10 @@ async fn add_config_setting<'q, T: 'q + Send + Encode<'q, Sqlite> + sqlx::Type<S
         values (?, ?)
     "#,
     )
-        .bind(name)
-        .bind(value)
-        .execute(POOL.get().unwrap())
-        .await?;
+    .bind(name)
+    .bind(value)
+    .execute(POOL.get().unwrap())
+    .await?;
 
     Ok(())
 }
@@ -56,8 +56,8 @@ pub async fn fetch_config() -> Result<AppConfig> {
         select * from config
     "#,
     )
-        .fetch_all(POOL.get().unwrap())
-        .await?;
+    .fetch_all(POOL.get().unwrap())
+    .await?;
 
     let mut config = ConfigBuilder::default();
     for row in rows {

@@ -2,13 +2,13 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
+use crate::plex::models::tracks::Track;
+use crate::profiles::SectionType;
 use chrono::TimeDelta;
 use derive_builder::Builder;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use simplelog::info;
-use crate::plex::models::tracks::Track;
-use crate::profiles::SectionType;
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize, sqlx::FromRow)]

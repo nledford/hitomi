@@ -7,10 +7,10 @@ use sqlx::Row;
 
 use crate::db::POOL;
 use crate::plex::types::PlexId;
-use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
+use crate::profiles::{ProfileSource, SectionType};
 use crate::types::Title;
 
 pub async fn create_profile(new_profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
@@ -29,17 +29,17 @@ pub async fn create_profile(new_profile: &Profile, sections: &[ProfileSection]) 
         returning id
     "#,
     )
-        .bind(new_profile.get_playlist_id().as_str())
-        .bind(new_profile.get_title())
-        .bind(new_profile.get_summary())
-        .bind(true) // enabled
-        .bind(new_profile.get_profile_source().to_string())
-        .bind(new_profile.get_profile_source_id_str())
-        .bind(new_profile.get_refresh_interval())
-        .bind(new_profile.get_time_limit())
-        .bind(new_profile.get_track_limit())
-        .fetch_one(POOL.get().unwrap())
-        .await?;
+    .bind(new_profile.get_playlist_id().as_str())
+    .bind(new_profile.get_title())
+    .bind(new_profile.get_summary())
+    .bind(true) // enabled
+    .bind(new_profile.get_profile_source().to_string())
+    .bind(new_profile.get_profile_source_id_str())
+    .bind(new_profile.get_refresh_interval())
+    .bind(new_profile.get_time_limit())
+    .bind(new_profile.get_track_limit())
+    .fetch_one(POOL.get().unwrap())
+    .await?;
 
     let profile_id = result.get(0);
 
@@ -65,30 +65,32 @@ async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Re
         VALUES(?,?,?,?,?,?,?,?,?)
     "#,
     )
-        .bind(profile_id)
-        .bind(section.get_section_type())
-        .bind(true) // enabled
-        .bind(section.get_deduplicate_tracks_by_guid())
-        .bind(section.get_deduplicate_tracks_by_title_and_artist())
-        .bind(section.get_maximum_tracks_by_artist())
-        .bind(section.get_minimum_track_rating())
-        .bind(section.get_randomize_tracks())
-        .bind(section.get_sorting())
-        .execute(POOL.get().unwrap())
-        .await?;
+    .bind(profile_id)
+    .bind(section.get_section_type())
+    .bind(true) // enabled
+    .bind(section.get_deduplicate_tracks_by_guid())
+    .bind(section.get_deduplicate_tracks_by_title_and_artist())
+    .bind(section.get_maximum_tracks_by_artist())
+    .bind(section.get_minimum_track_rating())
+    .bind(section.get_randomize_tracks())
+    .bind(section.get_sorting())
+    .execute(POOL.get().unwrap())
+    .await?;
 
     Ok(())
 }
 
 async fn fetch_profile(profile_id: i32) -> Result<Profile> {
-    let row = sqlx::query(r#"
+    let row = sqlx::query(
+        r#"
         select *
         from v_profile
         where profile_id = ?
-    "#)
-        .bind(profile_id)
-        .fetch_one(POOL.get().unwrap())
-        .await?;
+    "#,
+    )
+    .bind(profile_id)
+    .fetch_one(POOL.get().unwrap())
+    .await?;
 
     let playlist_id = PlexId::try_new(row.try_get::<&str, &str>("playlist_id")?).unwrap();
     let title = Title::try_new(row.try_get::<&str, &str>("profile_title")?).unwrap();
@@ -170,17 +172,17 @@ async fn update_profile(profile: &Profile, sections: &[ProfileSection]) -> Resul
         where profile_id = ?
     "#,
     )
-        .bind(profile.get_title())
-        .bind(profile.get_summary())
-        .bind(profile.get_enabled())
-        .bind(profile.get_profile_source().to_string())
-        .bind(profile.get_profile_source_id_str())
-        .bind(profile.get_refresh_interval())
-        .bind(profile.get_time_limit())
-        .bind(profile.get_track_limit())
-        .bind(profile_id)
-        .execute(POOL.get().unwrap())
-        .await?;
+    .bind(profile.get_title())
+    .bind(profile.get_summary())
+    .bind(profile.get_enabled())
+    .bind(profile.get_profile_source().to_string())
+    .bind(profile.get_profile_source_id_str())
+    .bind(profile.get_refresh_interval())
+    .bind(profile.get_time_limit())
+    .bind(profile.get_track_limit())
+    .bind(profile_id)
+    .execute(POOL.get().unwrap())
+    .await?;
 
     for section in sections {
         update_profile_section(profile_id, section).await?;
@@ -207,17 +209,17 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
         where profile_id = ? and profile_section_id = ?
     "#,
     )
-        .bind(section.is_enabled())
-        .bind(section.get_deduplicate_tracks_by_guid())
-        .bind(section.get_deduplicate_tracks_by_title_and_artist())
-        .bind(section.get_maximum_tracks_by_artist())
-        .bind(section.get_minimum_track_rating())
-        .bind(section.get_randomize_tracks())
-        .bind(section.get_sorting())
-        .bind(profile_id)
-        .bind(profile_section_id)
-        .execute(POOL.get().unwrap())
-        .await?;
+    .bind(section.is_enabled())
+    .bind(section.get_deduplicate_tracks_by_guid())
+    .bind(section.get_deduplicate_tracks_by_title_and_artist())
+    .bind(section.get_maximum_tracks_by_artist())
+    .bind(section.get_minimum_track_rating())
+    .bind(section.get_randomize_tracks())
+    .bind(section.get_sorting())
+    .bind(profile_id)
+    .bind(profile_section_id)
+    .execute(POOL.get().unwrap())
+    .await?;
 
     Ok(())
 }
@@ -233,10 +235,10 @@ async fn fetch_profile_section_id(
         where profile_id = ? and section_type = ?
     "#,
     )
-        .bind(profile_id)
-        .bind(section_type)
-        .fetch_optional(POOL.get().unwrap())
-        .await?;
+    .bind(profile_id)
+    .bind(section_type)
+    .fetch_optional(POOL.get().unwrap())
+    .await?;
 
     let id = row.map(|row| row.0);
 
@@ -246,16 +248,15 @@ async fn fetch_profile_section_id(
 pub async fn fetch_profiles(enabled: bool) -> Result<Vec<Profile>> {
     let mut sql = r#"
     select profile_id
-    from v_profile"#.to_string();
+    from v_profile"#
+        .to_string();
 
     if enabled {
         sql += "where enabled = 1"
     }
     sql += "order by profile_title";
 
-    let ids: Vec<(i32,)> = sqlx::query_as(&sql)
-        .fetch_all(POOL.get().unwrap())
-        .await?;
+    let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;
 
     let mut profiles = vec![];
     for id in ids {
@@ -285,13 +286,15 @@ pub async fn fetch_profile_sections_for_profile(profile_id: i32) -> Result<Vec<P
 }
 
 pub async fn fetch_any_eligible_for_refresh() -> Result<bool> {
-    let result: (i32,) = sqlx::query_as(r#"
+    let result: (i32,) = sqlx::query_as(
+        r#"
         select count(1) eligible_count
         from v_profile
         where eligible_for_refresh = 1;
-    "#)
-        .fetch_one(POOL.get().unwrap())
-        .await?;
+    "#,
+    )
+    .fetch_one(POOL.get().unwrap())
+    .await?;
 
     let result = result.0 > 0;
 
@@ -304,9 +307,7 @@ pub async fn fetch_profiles_to_refresh(force_refresh: bool) -> Result<Vec<Profil
         sql += "where eligible_for_refresh = 1";
     }
 
-    let ids: Vec<(i32,)> = sqlx::query_as(&sql)
-        .fetch_all(POOL.get().unwrap())
-        .await?;
+    let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;
 
     let mut profiles = vec![];
 
@@ -325,14 +326,16 @@ pub async fn fetch_profile_by_title(title: &str) -> Result<Option<Profile>> {
         profile_title: String,
     }
 
-    let result = sqlx::query_as::<_, IdTitleResult>(r#"
+    let result = sqlx::query_as::<_, IdTitleResult>(
+        r#"
         select profile_id, profile_title
         from v_profile
         where profile_title = ?;
-    "#)
-        .bind(title)
-        .fetch_optional(POOL.get().unwrap())
-        .await?;
+    "#,
+    )
+    .bind(title)
+    .fetch_optional(POOL.get().unwrap())
+    .await?;
 
     let profile = if let Some(result) = result {
         let profile = fetch_profile(result.profile_id).await?;
@@ -345,11 +348,13 @@ pub async fn fetch_profile_by_title(title: &str) -> Result<Option<Profile>> {
 }
 
 pub async fn fetch_profile_titles() -> Result<Vec<String>> {
-    let titles: Vec<(String,)> = sqlx::query_as(r#"
+    let titles: Vec<(String,)> = sqlx::query_as(
+        r#"
         select profile_title from v_profile order by profile_title
-    "#)
-        .fetch_all(POOL.get().unwrap())
-        .await?;
+    "#,
+    )
+    .fetch_all(POOL.get().unwrap())
+    .await?;
 
     let titles = titles.into_iter().map(|x| x.0).collect::<Vec<_>>();
 

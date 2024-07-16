@@ -46,8 +46,7 @@ async fn preview_playlist(manager: &ProfileManager) -> Result<()> {
         return Ok(());
     }
 
-    let profile =
-        select_profile("Select which profile you would like to preview:").await?;
+    let profile = select_profile("Select which profile you would like to preview:").await?;
     manager.preview_playlist(&profile).await?;
 
     Ok(())
@@ -75,7 +74,9 @@ async fn select_profile(prompt: &str) -> Result<Profile> {
         .default(0)
         .interact()?;
 
-    let profile = db::profiles::fetch_profile_by_title(&titles[selection]).await?.unwrap();
+    let profile = db::profiles::fetch_profile_by_title(&titles[selection])
+        .await?
+        .unwrap();
 
     Ok(profile)
 }
