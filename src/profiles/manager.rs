@@ -9,7 +9,6 @@ use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
 use itertools::Itertools;
 use simplelog::{error, info};
-use tokio::time::sleep;
 
 use crate::db;
 use crate::plex::models::playlists::Playlist;
@@ -117,21 +116,6 @@ impl ProfileManager {
                 acc
             });
         info!("Upcoming refreshes:\n{str}");
-
-        Ok(())
-    }
-
-    pub async fn run_refreshes(&self, run_loop: bool) -> Result<()> {
-        self.refresh_playlists_from_profiles(run_loop, false)
-            .await?;
-
-        if run_loop {
-            loop {
-                sleep(Duration::from_secs(1)).await;
-
-                self.refresh_playlists_from_profiles(run_loop, true).await?;
-            }
-        }
 
         Ok(())
     }
