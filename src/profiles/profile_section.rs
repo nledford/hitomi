@@ -130,7 +130,7 @@ impl ProfileSection {
 
         if section_type == SectionType::LeastPlayed {
             let grouped: HashMap<i32, Vec<Track>> =
-                tracks.into_iter().fold(HashMap::new(), |mut acc, track| {
+                tracks.iter().fold(HashMap::new(), |mut acc, track| {
                     let plays = acc.entry(track.plays()).or_default();
                     plays.push(track.clone());
                     acc
