@@ -252,9 +252,9 @@ pub async fn fetch_profiles(enabled: bool) -> Result<Vec<Profile>> {
         .to_string();
 
     if enabled {
-        sql += "where enabled = 1"
+        sql += "\nwhere enabled = 1"
     }
-    sql += "order by profile_title";
+    sql += "\norder by profile_title";
 
     let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;
 
@@ -304,7 +304,7 @@ pub async fn fetch_any_eligible_for_refresh() -> Result<bool> {
 pub async fn fetch_profiles_to_refresh(force_refresh: bool) -> Result<Vec<Profile>> {
     let mut sql = "select profile_id from v_profile".to_string();
     if !force_refresh {
-        sql += "where eligible_for_refresh = 1";
+        sql += "\nwhere eligible_for_refresh = 1";
     }
 
     let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;

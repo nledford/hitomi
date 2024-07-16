@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Result;
-use chrono::Local;
+use chrono::{Local, Timelike, Utc};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
@@ -84,6 +84,10 @@ impl ProfileManager {
     }
 
     pub async fn fetch_any_profile_refresh(&self) -> Result<bool> {
+        if Utc::now().second() != 0 {
+            return Ok(false);
+        }
+
         let any = db::profiles::fetch_any_eligible_for_refresh().await?;
         Ok(any)
     }
