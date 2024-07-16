@@ -10,8 +10,15 @@ use serde::{Deserialize, Serialize};
 use crate::plex::models::tracks::Track;
 use crate::profiles::SectionType;
 
-#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[allow(dead_code)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Serialize, sqlx::FromRow)]
 pub struct ProfileSection {
+    /// The primary key in the database
+    #[builder(setter(skip))]
+    profile_section_id: i32,
+    /// The foreign key linking to the profile in the database
+    #[builder(setter(skip))]
+    profile_id: i32,
     /// Deduplicate tracks by its `guid`, so that the exact same track that appears on
     /// multiple albums (e.g., a studio album and a Greatest Hits album) only appears once in
     /// the resulting playlist.
@@ -30,6 +37,14 @@ pub struct ProfileSection {
 impl ProfileSection {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn get_profile_section_id(&self) -> i32 {
+        self.profile_section_id
+    }
+
+    pub fn get_profile_id(&self) -> i32 {
+        self.profile_id
     }
 
     pub fn is_enabled(&self) -> bool {

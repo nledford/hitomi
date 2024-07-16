@@ -3,21 +3,24 @@ use std::fmt::{Display, Formatter};
 use std::ops::Add;
 use std::path::PathBuf;
 
+use chrono::{DateTime, Local, TimeDelta, Timelike};
+use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
+
 use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::ProfileSource;
 use crate::types::Title;
 use crate::utils;
-use chrono::{DateTime, Local, TimeDelta, Timelike};
-use derive_builder::Builder;
-use serde::{Deserialize, Serialize};
 
 // PROFILE ####################################################################
 
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize, PartialEq, sqlx::FromRow)]
 #[builder(default)]
 pub struct Profile {
+    /// The primary key in the database
+    profile_id: i32,
     /// The plex ID for the playlist
     playlist_id: PlexId,
     /// The name of the profile and the resulting playlist
@@ -38,10 +41,15 @@ pub struct Profile {
     /// The track limit of the playlist
     track_limit: u32,
     /// Profile sections
+    #[sqlx(skip)]
     sections: Vec<ProfileSection>,
 }
 
 impl Profile {
+    pub fn get_profile_id(&self) -> i32 {
+        self.profile_id
+    }
+
     pub fn get_playlist_id(&self) -> &PlexId {
         &self.playlist_id
     }

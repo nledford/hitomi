@@ -9,16 +9,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
 use tokio::sync::OnceCell;
 
-use crate::db::models::{DbProfile, DbProfileSection};
-use crate::plex::types::PlexId;
-use crate::profiles::profile::{Profile, ProfileBuilder};
-use crate::profiles::profile_section::ProfileSectionBuilder;
-use crate::profiles::types::{ProfileSourceId, RefreshInterval};
-use crate::profiles::ProfileSource;
-use crate::types::Title;
-
 pub mod config;
-mod models;
 pub mod profiles;
 
 pub static POOL: OnceCell<SqlitePool> = OnceCell::const_new();
@@ -41,7 +32,7 @@ pub async fn initialize_pool() -> Result<()> {
     Ok(())
 }
 
-fn db_profile_to_profile(db_profile: DbProfile, db_sections: Vec<DbProfileSection>) -> Profile {
+/*fn db_profile_to_profile(db_profile: DbProfile, db_sections: Vec<DbProfileSection>) -> Profile {
     let sections = db_sections
         .into_iter()
         .map(|db_section| {
@@ -86,4 +77,4 @@ fn db_profile_to_profile(db_profile: DbProfile, db_sections: Vec<DbProfileSectio
         .unwrap();
 
     profile
-}
+}*/

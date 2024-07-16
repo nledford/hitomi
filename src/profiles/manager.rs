@@ -32,7 +32,6 @@ new_key_type! {
 pub struct ProfileManager {
     plex_client: PlexClient,
     playlists: Vec<Playlist>,
-    /// Profiles that have been loaded from disk
     profiles: Vec<Profile>,
     /// Profiles being managed by the application
     managed_profiles: SlotMap<ProfileKey, Profile>,
@@ -47,8 +46,7 @@ impl ProfileManager {
         let config = crate::config::load_config().await?;
         let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
-        // let profiles = files::load_profiles_from_disk(config.get_profiles_directory()).await?;
-        let profiles = db::profiles::fetch_all_data().await?;
+        let profiles = db::profiles::fetch_profiles().await?;
 
         let mut manager = ProfileManager {
             plex_client,
