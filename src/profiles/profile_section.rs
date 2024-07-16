@@ -4,6 +4,7 @@ use std::fmt::{Display, Formatter};
 
 use chrono::TimeDelta;
 use derive_builder::Builder;
+use itertools::Itertools;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use simplelog::info;
@@ -103,7 +104,12 @@ impl ProfileSection {
         self.randomize_tracks
     }
 
-    pub fn run_manual_filters(&self, tracks: &[Track], time_limit: f64) -> Vec<Track> {
+    pub fn run_manual_filters(
+        &self,
+        tracks: &[Track],
+        section_type: SectionType,
+        time_limit: f64,
+    ) -> Vec<Track> {
         info!("Running manual section filters...");
         let mut tracks = tracks.to_vec();
 
@@ -112,12 +118,37 @@ impl ProfileSection {
         self.limit_tracks_by_artist(&mut tracks);
         self.sort_tracks(&mut tracks);
         self.reduce_to_time_limit(&mut tracks, time_limit);
-
-        if self.randomize_tracks {
-            tracks.shuffle(&mut rand::thread_rng())
-        }
+        self.track_randomizer(&mut tracks, section_type);
 
         tracks
+    }
+
+    fn track_randomizer(&self, tracks: &mut Vec<Track>, section_type: SectionType) {
+        if !self.randomize_tracks {
+            return;
+        }
+
+        if section_type == SectionType::LeastPlayed {
+            let grouped: HashMap<i32, Vec<Track>> =
+                tracks.into_iter().fold(HashMap::new(), |mut acc, track| {
+                    let plays = acc.entry(track.plays()).or_default();
+                    plays.push(track.clone());
+                    acc
+                });
+
+            *tracks = Vec::new();
+            for (_, group) in grouped {
+                let mut group = group
+                    .into_iter()
+                    .sorted_by_key(|track| (track.plays(), track.last_played()))
+                    .collect::<Vec<_>>();
+
+                group.shuffle(&mut rand::thread_rng());
+                tracks.append(&mut group);
+            }
+        } else {
+            tracks.shuffle(&mut rand::thread_rng())
+        }
     }
 
     fn deduplicate_by_track_guid(&self, tracks: &mut Vec<Track>) {
