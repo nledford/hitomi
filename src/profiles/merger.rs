@@ -58,8 +58,8 @@ impl SectionTracksMerger {
     }
 
     pub fn deduplicate_lists(&mut self) {
-        deduplicate_tracks_by_lists(&mut self.least_played, Some(&self.oldest), None);
-        deduplicate_tracks_by_lists(&mut self.oldest, Some(&self.least_played), None);
+        deduplicate_tracks_by_lists(&mut self.least_played, vec![&self.oldest]);
+        deduplicate_tracks_by_lists(&mut self.oldest, vec![&self.least_played]);
     }
 
     pub fn get_combined_tracks(&self) -> &[Track] {
@@ -142,15 +142,8 @@ impl SectionTracksMerger {
     }
 }
 
-fn deduplicate_tracks_by_lists(
-    tracks: &mut Vec<Track>,
-    list_one: Option<&[Track]>,
-    list_two: Option<&[Track]>,
-) {
-    if let Some(comp) = list_one {
-        tracks.retain(|t| !comp.contains(t))
-    }
-    if let Some(comp) = list_two {
-        tracks.retain(|t| !comp.contains(t))
+fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, lists: Vec<&[Track]>) {
+    for list in lists {
+        tracks.retain(|t| !list.contains(t))
     }
 }
