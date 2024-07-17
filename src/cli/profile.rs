@@ -19,10 +19,7 @@ pub async fn run_profile_command(profile: CliProfile, mut manager: ProfileManage
     match profile.profile_cmds {
         ProfileAction::Create => {
             let (profile, sections) = wizards::create_profile_wizard(&manager).await?;
-            let merger = manager.fetch_profile_tracks(&profile, None).await?;
-            manager
-                .create_playlist(&profile, &sections, &merger)
-                .await?;
+            manager.create_playlist(&profile, &sections).await?;
             // db::profiles::create_profile(&profile, &sections).await?;
 
             info!("Profile created successfully!")

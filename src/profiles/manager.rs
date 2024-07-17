@@ -158,7 +158,6 @@ impl ProfileManager {
         &mut self,
         profile: &Profile,
         sections: &[ProfileSection],
-        merger: &SectionTracksMerger,
     ) -> Result<()> {
         let save = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Would you like to save this profile?")
@@ -171,9 +170,10 @@ impl ProfileManager {
             let playlist_id = PlexId::try_new(playlist_id)?;
 
             info!("Saving profile to database...");
-            db::profiles::create_profile(profile, sections).await?;
+            db::profiles::create_profile(playlist_id.as_str(), profile, sections).await?;
 
             info!("Adding tracks to newly created playlist...");
+            let merger = self.fetch_profile_tracks(profile, None).await?;
             self.plex_client
                 .add_items_to_playlist(&playlist_id, &merger.get_track_ids())
                 .await?;
@@ -246,7 +246,7 @@ impl ProfileManager {
                 profile.get_profile_source_id(),
                 limit,
             )
-            .await?;
+                .await?;
 
             match section.get_section_type() {
                 SectionType::Unplayed => {
@@ -310,10 +310,10 @@ async fn fetch_section_tracks(
         return Ok(tracks);
     }
     let mut filters = HashMap::new();
-    if section.get_minimum_track_rating() != 0 {
+    if section.get_minimum_track_rating_adjusted() != 0 {
         filters.insert(
             "userRating>>".to_string(),
-            section.get_minimum_track_rating().to_string(),
+            section.get_minimum_track_rating_adjusted().to_string(),
         );
     }
 

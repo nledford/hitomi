@@ -13,7 +13,7 @@ use crate::types::Title;
 
 // CREATE #####################################################################
 
-pub async fn create_profile(new_profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
+pub async fn create_profile(playlist_id: &str, new_profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
     let result = sqlx::query(
         r#"
         insert into profile (playlist_id,
@@ -26,10 +26,10 @@ pub async fn create_profile(new_profile: &Profile, sections: &[ProfileSection]) 
                      time_limit,
                      track_limit)
         values (?,?,?,?,?,?,?,?,?)
-        returning id
+        returning profile_id
     "#,
     )
-    .bind(new_profile.get_playlist_id().as_str())
+        .bind(playlist_id)
     .bind(new_profile.get_title())
     .bind(new_profile.get_summary())
     .bind(true) // enabled
@@ -151,7 +151,7 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
     .bind(section.get_deduplicate_tracks_by_guid())
     .bind(section.get_deduplicate_tracks_by_title_and_artist())
     .bind(section.get_maximum_tracks_by_artist())
-    .bind(section.get_minimum_track_rating())
+        .bind(section.get_minimum_track_rating_adjusted())
     .bind(section.get_randomize_tracks())
     .bind(section.get_sorting())
     .bind(profile_id)

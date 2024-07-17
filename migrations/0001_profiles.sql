@@ -58,7 +58,7 @@ CREATE TABLE profile_section
     constraint maximum_tracks_by_artist
         check (profile_section.maximum_tracks_by_artist >= 0),
     constraint minimum_track_rating
-        check (profile_section.minimum_track_rating >= 0 AND profile_section.minimum_track_rating < 6),
+        check (profile_section.minimum_track_rating >= 0 AND profile_section.minimum_track_rating <= 5),
     constraint randomize_tracks
         check (profile_section.randomize_tracks in (0, 1)),
     constraint section_type

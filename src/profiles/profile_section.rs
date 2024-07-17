@@ -77,7 +77,14 @@ impl ProfileSection {
         if self.minimum_track_rating <= 1 {
             return 0;
         }
-        (self.minimum_track_rating - 1) * 2
+        self.minimum_track_rating
+    }
+
+    pub fn get_minimum_track_rating_adjusted(&self) -> u32 {
+        if self.get_minimum_track_rating() <= 1 {
+            return 0;
+        }
+        (self.get_minimum_track_rating() - 1) * 2
     }
 
     pub fn get_sorting_vec(&self) -> Vec<&str> {
