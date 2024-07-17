@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::Result;
+use simplelog::debug;
 use sqlx::Row;
 
 use crate::db::POOL;
@@ -13,7 +14,11 @@ use crate::types::Title;
 
 // CREATE #####################################################################
 
-pub async fn create_profile(playlist_id: &str, new_profile: &Profile, sections: &[ProfileSection]) -> Result<()> {
+pub async fn create_profile(
+    playlist_id: &str,
+    new_profile: &Profile,
+    sections: &[ProfileSection],
+) -> Result<()> {
     let result = sqlx::query(
         r#"
         insert into profile (playlist_id,
@@ -29,7 +34,7 @@ pub async fn create_profile(playlist_id: &str, new_profile: &Profile, sections: 
         returning profile_id
     "#,
     )
-        .bind(playlist_id)
+    .bind(playlist_id)
     .bind(new_profile.get_title())
     .bind(new_profile.get_summary())
     .bind(true) // enabled
@@ -151,7 +156,7 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
     .bind(section.get_deduplicate_tracks_by_guid())
     .bind(section.get_deduplicate_tracks_by_title_and_artist())
     .bind(section.get_maximum_tracks_by_artist())
-        .bind(section.get_minimum_track_rating_adjusted())
+    .bind(section.get_minimum_track_rating_adjusted())
     .bind(section.get_randomize_tracks())
     .bind(section.get_sorting())
     .bind(profile_id)
@@ -288,6 +293,8 @@ pub async fn fetch_profile_sections_for_profile(profile_id: i32) -> Result<Vec<P
             .fetch_all(POOL.get().unwrap())
             .await?;
 
+    debug!("{:?}", sections);
+
     Ok(sections)
 }
 
@@ -296,7 +303,7 @@ pub async fn fetch_any_eligible_for_refresh() -> Result<bool> {
         r#"
         select count(1) eligible_count
         from v_profile
-        where eligible_for_refresh = 1;
+        where eligible_for_refresh = 1 and enabled = 1;
     "#,
     )
     .fetch_one(POOL.get().unwrap())
@@ -308,10 +315,11 @@ pub async fn fetch_any_eligible_for_refresh() -> Result<bool> {
 }
 
 pub async fn fetch_profiles_to_refresh(force_refresh: bool) -> Result<Vec<Profile>> {
-    let mut sql = "select profile_id from v_profile".to_string();
+    let mut sql = "select profile_id from v_profile\nwhere".to_string();
     if !force_refresh {
-        sql += "\nwhere eligible_for_refresh = 1";
+        sql += " eligible_for_refresh = 1 and";
     }
+    sql += " enabled = 1";
 
     let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;
 

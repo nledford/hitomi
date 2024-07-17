@@ -246,7 +246,7 @@ impl ProfileManager {
                 profile.get_profile_source_id(),
                 limit,
             )
-                .await?;
+            .await?;
 
             match section.get_section_type() {
                 SectionType::Unplayed => {

@@ -91,9 +91,10 @@ select profile_id,
        (cast(strftime('%M', current_timestamp) as real) % refresh_interval == 0) eligible_for_refresh
 from (select *,
              (select count(1)
-              from profile_section
+              from profile_section ps
               where profile_id = p.profile_id
-                and p.enabled = 1) num_sections
+                and p.enabled = 1
+                and ps.enabled = 1) num_sections
       from profile p
       order by profile_title);
 
