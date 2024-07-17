@@ -36,24 +36,23 @@ impl SectionTracksMerger {
 
     pub fn run_manual_filters(&mut self, profile_section: &ProfileSection, time_limit: f64) {
         if profile_section.is_unplayed_section() {
-            self.unplayed = profile_section.run_manual_filters(
-                &self.unplayed,
+            profile_section.run_manual_filters(
+                &mut self.unplayed,
                 SectionType::Unplayed,
                 time_limit,
             )
         }
 
         if profile_section.is_least_played_section() {
-            self.least_played = profile_section.run_manual_filters(
-                &self.least_played,
+            profile_section.run_manual_filters(
+                &mut self.least_played,
                 SectionType::LeastPlayed,
                 time_limit,
             )
         }
 
         if profile_section.is_oldest_section() {
-            self.oldest =
-                profile_section.run_manual_filters(&self.oldest, SectionType::Oldest, time_limit)
+            profile_section.run_manual_filters(&mut self.oldest, SectionType::Oldest, time_limit)
         }
     }
 

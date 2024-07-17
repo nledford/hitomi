@@ -113,21 +113,18 @@ impl ProfileSection {
 
     pub fn run_manual_filters(
         &self,
-        tracks: &[Track],
+        tracks: &mut Vec<Track>,
         section_type: SectionType,
         time_limit: f64,
-    ) -> Vec<Track> {
+    ) {
         info!("Running manual section filters...");
-        let mut tracks = tracks.to_vec();
 
-        self.deduplicate_by_track_guid(&mut tracks);
-        self.run_deduplicate_by_title_and_artist(&mut tracks);
-        self.limit_tracks_by_artist(&mut tracks);
-        self.sort_tracks(&mut tracks);
-        self.reduce_to_time_limit(&mut tracks, time_limit);
-        self.track_randomizer(&mut tracks, section_type);
-
-        tracks
+        self.deduplicate_by_track_guid(tracks);
+        self.run_deduplicate_by_title_and_artist(tracks);
+        self.limit_tracks_by_artist(tracks);
+        self.sort_tracks(tracks);
+        self.reduce_to_time_limit(tracks, time_limit);
+        self.track_randomizer(tracks, section_type);
     }
 
     fn track_randomizer(&self, tracks: &mut Vec<Track>, section_type: SectionType) {
