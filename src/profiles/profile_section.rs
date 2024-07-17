@@ -135,24 +135,25 @@ impl ProfileSection {
             return;
         }
 
-        if section_type == SectionType::LeastPlayed {
-            let grouped: BTreeMap<i32, Vec<Track>> =
-                tracks.iter().fold(BTreeMap::new(), |mut acc, track| {
-                    let plays = acc.entry(track.plays()).or_default();
-                    plays.push(track.clone());
+        if section_type != SectionType::Oldest {
+            *tracks = tracks
+                .iter()
+                .sorted_by_key(|track| (track.plays(), track.last_played()))
+                .fold(
+                    BTreeMap::new(),
+                    |mut acc: BTreeMap<i32, Vec<Track>>, track| {
+                        let plays = acc.entry(track.plays()).or_default();
+                        plays.push(track.clone());
+                        acc
+                    },
+                )
+                .iter()
+                .fold(Vec::new(), |mut acc, (_, group)| {
+                    let mut group = group.clone();
+                    group.shuffle(&mut rand::thread_rng());
+                    acc.append(&mut group);
                     acc
-                });
-
-            *tracks = Vec::new();
-            for (_, group) in grouped {
-                let mut group = group
-                    .into_iter()
-                    .sorted_by_key(|track| (track.plays(), track.last_played()))
-                    .collect::<Vec<_>>();
-
-                group.shuffle(&mut rand::thread_rng());
-                tracks.append(&mut group);
-            }
+                })
         } else {
             tracks.shuffle(&mut rand::thread_rng())
         }
