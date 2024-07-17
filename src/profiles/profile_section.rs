@@ -148,9 +148,9 @@ impl ProfileSection {
                     },
                 )
                 .iter_mut()
-                .fold(Vec::new(), |mut acc, (_, mut group)| {
+                .fold(Vec::new(), |mut acc, (_, group)| {
                     group.shuffle(&mut rand::thread_rng());
-                    acc.append(&mut group);
+                    acc.append(group);
                     acc
                 })
         } else {
