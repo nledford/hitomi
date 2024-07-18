@@ -39,6 +39,9 @@ impl SectionTracksMerger {
         self.oldest = tracks
     }
 
+    /// Runs manual filters for the profile sections
+    ///
+    /// Manual filters are those that are unique to this application and not included with plex
     pub fn run_manual_filters(&mut self, profile_sections: &[ProfileSection], time_limit: f64) {
         info!("Running manual section filters...");
         self.deduplicate_lists();
@@ -72,41 +75,57 @@ impl SectionTracksMerger {
         }
     }
 
+    /// Deduplicates the least played and oldest tracks
+    ///
+    /// Least played is deduplicated first, and oldest is deduplicated second
     fn deduplicate_lists(&mut self) {
         deduplicate_tracks_by_lists(&mut self.least_played, vec![&self.oldest]);
         deduplicate_tracks_by_lists(&mut self.oldest, vec![&self.least_played]);
     }
 
+    /// Returns a slice of the merged tracks
     pub fn get_combined_tracks(&self) -> &[Track] {
         &self.merged
     }
 
+    /// Returns `false` if no sections are valid
     fn none_are_valid(&self) -> bool {
         self.get_num_valid() == 0
     }
 
+    /// Returns the number of valid sections (those that are not empty)
     fn get_num_valid(&self) -> usize {
         [
             !self.unplayed.is_empty(),
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-        .iter()
-        .filter(|x| **x)
-        .count()
+            .iter()
+            .filter(|x| **x)
+            .count()
     }
 
+    /// Calculates the largest section from all sections included in the merger
+    ///
+    /// # Example
+    ///
+    /// - Unplayed Tracks:      100 Tracks
+    /// - Least Played Tracks:  105 Tracks
+    /// - Oldest Track:         103 Tracks
+    ///
+    /// The largest section is Least Played Tracks
     fn get_largest_section_length(&self) -> usize {
         *[
             self.unplayed.len(),
             self.least_played.len(),
             self.oldest.len(),
         ]
-        .iter()
-        .max()
-        .unwrap_or(&0_usize)
+            .iter()
+            .max()
+            .unwrap_or(&0_usize)
     }
 
+    /// Returns a [`Vec`] of track IDs
     pub fn get_track_ids(&self) -> Vec<String> {
         if self.merged.is_empty() {
             vec![]
@@ -118,6 +137,7 @@ impl SectionTracksMerger {
         }
     }
 
+    /// Displays the first 25 tracks in the merged playlist in the console
     pub fn print_preview(&self) {
         if self.merged.is_empty() {
             return;
@@ -130,6 +150,14 @@ impl SectionTracksMerger {
         }
     }
 
+    /// Merges tracks from each playlist section into a single playlist
+    ///
+    /// The following pattern is followed:
+    ///  - Unplayed
+    ///  - Least Played
+    ///  - Oldest
+    ///
+    /// If a track cannot be found in a given section, that section is skipped.
     pub fn merge(&mut self) {
         if self.none_are_valid() {
             return;
@@ -157,21 +185,29 @@ impl SectionTracksMerger {
     }
 }
 
+/// Remove duplicate tracks by the title and artist of a track
+///
+/// e,g, If the track "The Beatles - Get Back" appears multiple times in a playlist, any duplicates will be removed.
 fn deduplicate_by_title_and_artist(tracks: &mut Vec<Track>) {
     tracks.sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
     tracks.dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
 }
 
+/// Remove duplicate tracks based on the Plex `GUID`
 fn deduplicate_by_track_guid(tracks: &mut Vec<Track>) {
     tracks.dedup_by_key(|track| track.get_guid().to_owned());
 }
 
+/// Deduplicates one list based on values in other lists
 fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, lists: Vec<&[Track]>) {
     for list in lists {
         tracks.retain(|t| !list.contains(t))
     }
 }
 
+/// Trims tracks by artist limit (in other words, the maximum number of tracks that can be included in the list by a single artist)
+///
+/// Returns early if the limit is zero
 fn trim_tracks_by_artist(
     tracks: &mut Vec<Track>,
     maximum_tracks_by_artist: u32,
@@ -197,6 +233,7 @@ fn trim_tracks_by_artist(
     })
 }
 
+/// Sorts tracks for a given section
 fn sort_tracks(tracks: &mut [Track], section_type: SectionType) {
     info!("Sorting section tracks...");
 
@@ -209,6 +246,7 @@ fn sort_tracks(tracks: &mut [Track], section_type: SectionType) {
     }
 }
 
+/// Randomizes tracks for a given section
 fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
     *tracks = tracks
         .iter()
@@ -232,6 +270,7 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
         })
 }
 
+/// Reduces a list of tracks to a given time limit
 fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
     info!("Trimming section tracks to time limit...");
 
