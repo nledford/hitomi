@@ -41,6 +41,7 @@ impl SectionTracksMerger {
 
     pub fn run_manual_filters(&mut self, profile_sections: &[ProfileSection], time_limit: f64) {
         info!("Running manual section filters...");
+        self.deduplicate_lists();
 
         for section in profile_sections {
             let tracks = match section.get_section_type() {
@@ -71,7 +72,7 @@ impl SectionTracksMerger {
         }
     }
 
-    pub fn deduplicate_lists(&mut self) {
+    fn deduplicate_lists(&mut self) {
         deduplicate_tracks_by_lists(&mut self.least_played, vec![&self.oldest]);
         deduplicate_tracks_by_lists(&mut self.oldest, vec![&self.least_played]);
     }
