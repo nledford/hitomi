@@ -133,15 +133,18 @@ impl ProfileSection {
 
         *tracks = tracks
             .iter()
-            .fold(BTreeMap::new(), |mut acc: BTreeMap<String, Vec<Track>>, track| {
-                let key = match section_type {
-                    SectionType::Oldest => track.last_played_year_and_month(),
-                    _ => track.plays().to_string()
-                };
-                let value = acc.entry(key).or_default();
-                value.push(track.clone());
-                acc
-            })
+            .fold(
+                BTreeMap::new(),
+                |mut acc: BTreeMap<String, Vec<Track>>, track| {
+                    let key = match section_type {
+                        SectionType::Oldest => track.last_played_year_and_month(),
+                        _ => track.plays().to_string(),
+                    };
+                    let value = acc.entry(key).or_default();
+                    value.push(track.clone());
+                    acc
+                },
+            )
             .iter_mut()
             .fold(Vec::new(), |mut acc, (_, group)| {
                 group.shuffle(&mut rand::thread_rng());
