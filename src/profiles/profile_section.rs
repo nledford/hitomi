@@ -1,14 +1,8 @@
-use std::cmp::Reverse;
-use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 
-use chrono::TimeDelta;
 use derive_builder::Builder;
-use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use simplelog::info;
 
-use crate::plex::models::tracks::Track;
 use crate::profiles::SectionType;
 
 #[allow(dead_code)]
@@ -108,117 +102,6 @@ impl ProfileSection {
 
     pub fn get_randomize_tracks(&self) -> bool {
         self.randomize_tracks
-    }
-
-    pub fn run_manual_filters(
-        &self,
-        tracks: &mut Vec<Track>,
-        section_type: SectionType,
-        time_limit: f64,
-    ) {
-        info!("Running manual section filters...");
-
-        self.deduplicate_by_track_guid(tracks);
-        self.run_deduplicate_by_title_and_artist(tracks);
-        self.limit_tracks_by_artist(tracks);
-        self.sort_tracks(tracks);
-        self.reduce_to_time_limit(tracks, time_limit);
-        self.track_randomizer(tracks, section_type);
-    }
-
-    fn track_randomizer(&self, tracks: &mut Vec<Track>, section_type: SectionType) {
-        if !self.randomize_tracks {
-            return;
-        }
-
-        *tracks = tracks
-            .iter()
-            .fold(
-                BTreeMap::new(),
-                |mut acc: BTreeMap<String, Vec<Track>>, track| {
-                    let key = match section_type {
-                        SectionType::Oldest => track.last_played_year_and_month(),
-                        _ => track.plays().to_string(),
-                    };
-                    let value = acc.entry(key).or_default();
-                    value.push(track.clone());
-                    acc
-                },
-            )
-            .iter_mut()
-            .fold(Vec::new(), |mut acc, (_, group)| {
-                group.shuffle(&mut rand::thread_rng());
-                acc.append(group);
-                acc
-            })
-    }
-
-    fn deduplicate_by_track_guid(&self, tracks: &mut Vec<Track>) {
-        if self.deduplicate_tracks_by_guid {
-            tracks.dedup_by_key(|track| track.get_guid().to_owned());
-        }
-    }
-
-    fn run_deduplicate_by_title_and_artist(&self, tracks: &mut Vec<Track>) {
-        if self.deduplicate_tracks_by_title_and_artist {
-            tracks.sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
-            tracks.dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
-        }
-    }
-
-    fn limit_tracks_by_artist(&self, tracks: &mut Vec<Track>) {
-        if self.maximum_tracks_by_artist == 0 {
-            return;
-        }
-
-        if self.is_unplayed_section() || self.is_least_played_section() {
-            tracks.sort_by_key(|track| (track.plays(), track.last_played()))
-        } else {
-            tracks.sort_by_key(|track| (track.last_played(), track.plays()))
-        }
-
-        let mut artist_occurrences: HashMap<String, u32> = HashMap::new();
-        tracks.retain(|track| {
-            let artist_guid = track.get_artist_guid().to_owned();
-            let occurrences = artist_occurrences.entry(artist_guid).or_insert(0);
-            *occurrences += 1;
-
-            *occurrences <= self.maximum_tracks_by_artist
-        })
-    }
-
-    fn sort_tracks(&self, tracks: &mut [Track]) {
-        if self.is_unplayed_section() {
-            tracks.sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
-        }
-        if self.is_least_played_section() {
-            tracks.sort_by_key(|t| (t.plays(), t.last_played()))
-        }
-        if self.is_oldest_section() {
-            tracks.sort_by_key(|t| (t.last_played(), t.plays()))
-        }
-    }
-
-    pub fn reduce_to_time_limit(&self, tracks: &mut Vec<Track>, time_limit: f64) {
-        let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
-
-        let total_duration: i64 = tracks.iter().map(|track| track.duration()).sum();
-        let total_duration = TimeDelta::milliseconds(total_duration);
-
-        if total_duration <= limit {
-            return;
-        }
-
-        let mut accum_total = TimeDelta::seconds(0);
-        let index = tracks
-            .iter()
-            .position(|track| {
-                accum_total += TimeDelta::milliseconds(track.duration());
-                accum_total > limit
-            })
-            .unwrap_or(0);
-
-        *tracks = tracks[..=index].to_vec();
     }
 }
 

@@ -257,10 +257,7 @@ impl ProfileManager {
         }
         let mut merger = merger.build().unwrap();
         merger.deduplicate_lists();
-
-        for section in &sections {
-            merger.run_manual_filters(section, profile.get_section_time_limit())
-        }
+        merger.run_manual_filters(&sections, profile.get_section_time_limit());
 
         merger.merge();
 
