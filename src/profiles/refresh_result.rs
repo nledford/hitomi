@@ -27,9 +27,19 @@ impl RefreshResult {
         self.tracks.len()
     }
 
+    fn get_total_duration(&self) -> i64 {
+        self.tracks.iter().map(|t| t.duration()).sum()
+    }
+
     fn get_duration(&self) -> Duration {
-        let duration: i64 = self.tracks.iter().map(|t| t.duration()).sum();
-        Duration::from_millis(duration as u64)
+        Duration::from_millis(self.get_total_duration() as u64)
+    }
+
+    fn get_avg_track_duration(&self) -> String {
+        let avg_track_duration =
+            (self.get_total_duration() as f64 / self.get_size() as f64).floor() as u64;
+        let avg_track_duration = Duration::from_millis(avg_track_duration);
+        humantime::format_duration(avg_track_duration).to_string()
     }
 
     fn get_duration_str(&self) -> String {
@@ -53,8 +63,12 @@ impl Display for RefreshResult {
             self.get_action(),
             self.profile_title
         );
-        str += &format!("\n  Final size:     {}", self.get_size());
-        str += &format!("\n  Final duration: {}", self.get_duration_str());
+        str += &format!("\n  Final size:                {} tracks", self.get_size());
+        str += &format!("\n  Final total duration:      {}", self.get_duration_str());
+        str += &format!(
+            "\n  Average track duration:    {}",
+            self.get_avg_track_duration()
+        );
 
         write!(f, "{str}")
     }

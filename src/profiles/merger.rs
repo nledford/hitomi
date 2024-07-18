@@ -100,9 +100,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-            .iter()
-            .filter(|x| **x)
-            .count()
+        .iter()
+        .filter(|x| **x)
+        .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -120,9 +120,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
+        .iter()
+        .max()
+        .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
