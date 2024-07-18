@@ -136,7 +136,7 @@ impl ProfileManager {
         let profiles = self.get_profiles_to_refresh(ran_once).await?;
         let tasks = profiles
             .iter()
-            .map(|profile| self.update_playlist(profile, None))
+            .map(|profile| self.update_playlist(profile))
             .collect::<Vec<_>>();
         let refreshed = tasks.len();
 
@@ -173,7 +173,7 @@ impl ProfileManager {
             db::profiles::create_profile(playlist_id.as_str(), profile, sections).await?;
 
             info!("Adding tracks to newly created playlist...");
-            let merger = self.fetch_profile_tracks(profile, None).await?;
+            let merger = self.fetch_profile_tracks(profile).await?;
             self.plex_client
                 .add_items_to_playlist(&playlist_id, &merger.get_track_ids())
                 .await?;
@@ -191,14 +191,14 @@ impl ProfileManager {
     }
 
     pub async fn preview_playlist(&self, profile: &Profile) -> Result<()> {
-        let merger = self.fetch_profile_tracks(profile, None).await?;
+        let merger = self.fetch_profile_tracks(profile).await?;
         merger.print_preview();
 
         Ok(())
     }
 
-    pub async fn update_playlist(&self, profile: &Profile, limit: Option<i32>) -> Result<()> {
-        let merger = self.fetch_profile_tracks(profile, limit).await?;
+    pub async fn update_playlist(&self, profile: &Profile) -> Result<()> {
+        let merger = self.fetch_profile_tracks(profile).await?;
         info!("Updating `{}` playlist...", profile.get_title());
 
         info!("Wiping destination playlist...");
@@ -232,7 +232,6 @@ impl ProfileManager {
     pub async fn fetch_profile_tracks(
         &self,
         profile: &Profile,
-        limit: Option<i32>,
     ) -> Result<SectionTracksMerger> {
         let sections =
             db::profiles::fetch_profile_sections_for_profile(profile.get_profile_id()).await?;
@@ -244,7 +243,6 @@ impl ProfileManager {
                 section,
                 profile.get_profile_source(),
                 profile.get_profile_source_id(),
-                limit,
             )
             .await?;
 
@@ -302,7 +300,6 @@ async fn fetch_section_tracks(
     section: &ProfileSection,
     profile_source: &ProfileSource,
     profile_source_id: Option<&ProfileSourceId>,
-    limit: Option<i32>,
 ) -> Result<Vec<Track>> {
     let mut tracks = vec![];
 
@@ -345,7 +342,7 @@ async fn fetch_section_tracks(
     }
 
     tracks = plex_client
-        .fetch_music(filters, section.get_sorting_vec(), limit)
+        .fetch_music(filters, section.get_sorting_vec(), Some(5000))
         .await?;
 
     Ok(tracks)
