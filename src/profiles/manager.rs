@@ -18,6 +18,7 @@ use crate::plex::PlexClient;
 use crate::profiles::merger::{SectionTracksMerger, SectionTracksMergerBuilder};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
+use crate::profiles::refresh_result::RefreshResult;
 use crate::profiles::types::ProfileSourceId;
 use crate::profiles::{ProfileAction, ProfileSource, SectionType};
 
@@ -141,7 +142,12 @@ impl ProfileManager {
         let refreshed = tasks.len();
 
         match futures::future::try_join_all(tasks).await {
-            Ok(_) => {
+            Ok(results) => {
+                info!("<b>Updated Profiles:</b>");
+                for result in results.iter().sorted_by_key(|result| result.get_title()) {
+                    println!("{result}\n");
+                }
+
                 if run_loop {
                     self.print_update(refreshed).await?;
                 }
@@ -197,7 +203,7 @@ impl ProfileManager {
         Ok(())
     }
 
-    pub async fn update_playlist(&self, profile: &Profile) -> Result<()> {
+    pub async fn update_playlist(&self, profile: &Profile) -> Result<RefreshResult> {
         let merger = self.fetch_profile_tracks(profile).await?;
         info!("Updating `{}` playlist...", profile.get_title());
 
@@ -220,13 +226,13 @@ impl ProfileManager {
             .update_summary(profile.get_playlist_id(), &summary)
             .await?;
 
-        print_refresh_results(
-            merger.get_combined_tracks(),
+        let refresh_result = RefreshResult::new(
             profile.get_title(),
+            merger.get_combined_tracks(),
             ProfileAction::Update,
         );
 
-        Ok(())
+        Ok(refresh_result)
     }
 
     pub async fn fetch_profile_tracks(&self, profile: &Profile) -> Result<SectionTracksMerger> {

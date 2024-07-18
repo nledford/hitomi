@@ -6,6 +6,7 @@ pub mod manager;
 mod merger;
 pub mod profile;
 pub mod profile_section;
+mod refresh_result;
 pub mod types;
 pub mod wizards;
 
