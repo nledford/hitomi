@@ -93,12 +93,7 @@ impl ProfileManager {
         Ok(any)
     }
 
-    async fn print_update(&self, playlists_updated: usize) -> Result<()> {
-        info!(
-            "Updated {playlists_updated} at {}",
-            Local::now().format("%F %T")
-        );
-
+    async fn print_update(&self) -> Result<()> {
         let profiles = db::profiles::fetch_profiles(true).await?;
         let str = profiles
             .into_iter()
@@ -139,17 +134,21 @@ impl ProfileManager {
             .iter()
             .map(|profile| self.update_playlist(profile))
             .collect::<Vec<_>>();
-        let refreshed = tasks.len();
 
         match futures::future::try_join_all(tasks).await {
             Ok(results) => {
-                info!("<b>Updated Profiles:</b>");
+                info!(
+                    "<b>{} Profile{} updated at {}:</b>",
+                    results.len(),
+                    if results.len() == 1 { "" } else { "s" },
+                    Local::now().format("%T")
+                );
                 for result in results.iter().sorted_by_key(|result| result.get_title()) {
                     println!("{result}\n");
                 }
 
                 if run_loop {
-                    self.print_update(refreshed).await?;
+                    self.print_update().await?;
                 }
             }
             Err(err) => {
