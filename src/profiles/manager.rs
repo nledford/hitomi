@@ -229,10 +229,7 @@ impl ProfileManager {
         Ok(())
     }
 
-    pub async fn fetch_profile_tracks(
-        &self,
-        profile: &Profile,
-    ) -> Result<SectionTracksMerger> {
+    pub async fn fetch_profile_tracks(&self, profile: &Profile) -> Result<SectionTracksMerger> {
         let sections =
             db::profiles::fetch_profile_sections_for_profile(profile.get_profile_id()).await?;
 
@@ -342,7 +339,7 @@ async fn fetch_section_tracks(
     }
 
     tracks = plex_client
-        .fetch_music(filters, section.get_sorting_vec(), Some(5000))
+        .fetch_music(filters, section.get_sorting_vec(), Some(2500))
         .await?;
 
     Ok(tracks)
