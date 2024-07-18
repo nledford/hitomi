@@ -89,11 +89,19 @@ impl Track {
         self.last_viewed_at.unwrap_or(0)
     }
 
-    pub fn last_played_fmt(&self) -> String {
+    pub fn last_played_str(&self) -> String {
         DateTime::from_timestamp(self.last_played(), 0)
             .unwrap()
             .naive_local()
-            .format("%Y-%m-%d")
+            .format("%F")
+            .to_string()
+    }
+
+    pub fn last_played_year_and_month(&self) -> String {
+        DateTime::from_timestamp(self.last_played(), 0)
+            .unwrap()
+            .naive_local()
+            .format("%Y-%m")
             .to_string()
     }
 
@@ -120,7 +128,7 @@ impl Display for Track {
         str += &format!("{} ", self.artist());
         str += &format!("{} ", self.album());
         str += &format!("{} ", self.plays());
-        str += &format!("{} ", self.last_played_fmt());
+        str += &format!("{} ", self.last_played_str());
 
         write!(f, "{str}")
     }
