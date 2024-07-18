@@ -216,7 +216,6 @@ fn trim_tracks_by_artist(
     if maximum_tracks_by_artist == 0 {
         return;
     }
-    info!("Trimming tracks by artists...");
 
     match section_type {
         SectionType::Oldest => tracks.sort_by_key(|track| (track.last_played(), track.plays())),
@@ -235,8 +234,6 @@ fn trim_tracks_by_artist(
 
 /// Sorts tracks for a given section
 fn sort_tracks(tracks: &mut [Track], section_type: SectionType) {
-    info!("Sorting section tracks...");
-
     match section_type {
         SectionType::Unplayed => {
             tracks.sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
@@ -272,15 +269,12 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
 
 /// Reduces a list of tracks to a given time limit
 fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
-    info!("Trimming section tracks to time limit...");
-
     let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
     let total_duration: i64 = tracks.iter().map(|track| track.duration()).sum();
     let total_duration = TimeDelta::milliseconds(total_duration);
 
     if total_duration <= limit {
-        info!("Section tracks do not meet or exceed time limit. Skipping...");
         return;
     }
 
