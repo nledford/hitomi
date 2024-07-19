@@ -10,13 +10,13 @@ use simplelog::debug;
 
 use crate::config::Config;
 use crate::http_client::HttpClient;
+use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::models::artists::Artist;
 use crate::plex::models::collections::{Collection, SubType};
 use crate::plex::models::new_playlist::NewPlaylist;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::sections::Section;
 use crate::plex::models::tracks::Track;
-use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
 
@@ -221,7 +221,7 @@ impl PlexClient {
         let params = HashMap::from([
             (
                 "uri".to_string(),
-                format!("{}/library/metadata", self.uri_root(),),
+                format!("{}/library/metadata", self.uri_root(), ),
             ),
             ("title".to_string(), profile.get_title().to_string()),
             // ("summary".to_string(), urlencoding::encode(profile.get_summary()).to_string()),
@@ -264,21 +264,8 @@ impl PlexClient {
         &self,
         collection: &Collection,
     ) -> Result<Vec<String>> {
-        debug!("SUBTYPE: {:?}", collection.get_subtype());
-
         let artists = match collection.get_subtype() {
             SubType::Artist => {
-                debug!("TITLE: {}", collection.get_title());
-
-                // let resp: PlexResponse<Vec<Artist>> = self
-                //     .client
-                //     .get(
-                //         &format!("library/collections/{}/children", collection.get_id()),
-                //         None,
-                //         None,
-                //     )
-                //     .await?;
-
                 let resp: PlexResponse<Vec<Artist>> = self
                     .client
                     .get(
