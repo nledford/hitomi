@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 use chrono::TimeDelta;
 use derive_builder::Builder;
+use itertools::Itertools;
 use rand::seq::SliceRandom;
 use simplelog::info;
 
@@ -44,7 +45,7 @@ impl SectionTracksMerger {
     /// Manual filters are those that are unique to this application and not included with plex
     pub fn run_manual_filters(&mut self, profile_sections: &[ProfileSection], time_limit: f64) {
         info!("Running manual section filters...");
-        self.deduplicate_lists();
+        self.deduplicate_lists(time_limit);
 
         for section in profile_sections {
             let tracks = match section.get_section_type() {
@@ -78,9 +79,9 @@ impl SectionTracksMerger {
     /// Deduplicates the least played and oldest tracks
     ///
     /// Least played is deduplicated first, and oldest is deduplicated second
-    fn deduplicate_lists(&mut self) {
-        deduplicate_tracks_by_lists(&mut self.least_played, vec![&self.oldest]);
-        deduplicate_tracks_by_lists(&mut self.oldest, vec![&self.least_played]);
+    fn deduplicate_lists(&mut self, time_limit: f64) {
+        deduplicate_tracks_by_lists(&mut self.least_played, &self.oldest, time_limit);
+        deduplicate_tracks_by_lists(&mut self.oldest, &self.least_played, time_limit);
     }
 
     /// Returns a slice of the merged tracks
@@ -100,9 +101,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-        .iter()
-        .filter(|x| **x)
-        .count()
+            .iter()
+            .filter(|x| **x)
+            .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -120,9 +121,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-        .iter()
-        .max()
-        .unwrap_or(&0_usize)
+            .iter()
+            .max()
+            .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
@@ -199,10 +200,25 @@ fn deduplicate_by_track_guid(tracks: &mut Vec<Track>) {
 }
 
 /// Deduplicates one list based on values in other lists
-fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, lists: Vec<&[Track]>) {
-    for list in lists {
-        tracks.retain(|t| !list.contains(t))
+fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, comp: &[Track], time_limit: f64) {
+    let mut tracks_chunks = chunk_by_time_limit(tracks, time_limit);
+    let comp_chunks = chunk_by_time_limit(comp, time_limit);
+
+    for i in 0..tracks_chunks.len() {
+        let i = i as i32;
+        if let (Some(track_chunk), Some(comp_chunk)) =
+            (tracks_chunks.get_mut(&i), comp_chunks.get(&i))
+        {
+            track_chunk.retain(|track| !comp_chunk.contains(track))
+        }
     }
+
+    *tracks = tracks_chunks
+        .into_values()
+        .fold(Vec::new(), |mut acc, mut tracks| {
+            acc.append(&mut tracks);
+            acc
+        })
 }
 
 /// Trims tracks by artist limit (in other words, the maximum number of tracks that can be included in the list by a single artist)
@@ -269,13 +285,18 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
 
 /// Reduces a list of tracks to a given time limit
 fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
+    let index = determine_time_limit_index(tracks, time_limit);
+    *tracks = tracks[..=index].to_vec();
+}
+
+fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
     let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
     let total_duration: i64 = tracks.iter().map(|track| track.duration()).sum();
     let total_duration = TimeDelta::milliseconds(total_duration);
 
     if total_duration <= limit {
-        return;
+        return tracks.len();
     }
 
     let mut accum_total = TimeDelta::seconds(0);
@@ -287,5 +308,24 @@ fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
         })
         .unwrap_or(0);
 
-    *tracks = tracks[..=index].to_vec();
+    index
+}
+
+fn chunk_by_time_limit(tracks: &[Track], time_limit: f64) -> BTreeMap<i32, Vec<Track>> {
+    let mut remaining_tracks = tracks.to_vec();
+    let mut chunks: BTreeMap<i32, Vec<Track>> = BTreeMap::new();
+
+    let mut day = 1;
+    let mut index;
+
+    while !remaining_tracks.is_empty() {
+        index = determine_time_limit_index(&remaining_tracks, time_limit);
+        let mut day_tracks = remaining_tracks.drain(..index).collect_vec();
+
+        let entry = chunks.entry(day).or_default();
+        entry.append(&mut day_tracks);
+        day += 1;
+    }
+
+    chunks
 }
