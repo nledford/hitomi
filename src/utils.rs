@@ -1,3 +1,5 @@
+use anyhow::{anyhow, Result};
+
 use crate::profiles::types::RefreshInterval;
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
@@ -5,6 +7,22 @@ pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
     let interval: u32 = refresh_interval.clone().into_inner();
 
     (1..=60).filter(|i| i % interval == 0).collect()
+}
+
+pub fn get_slice<T>(slice: &[T], start: usize, end: usize) -> Result<&[T]> {
+    if start > end {
+        return Err(anyhow!("Starting index cannot be higher than ending index"));
+    }
+
+    // TODO this is hacky, needs to be fixed
+    if end >= slice.len() {
+        if end - 1 <= slice.len() {
+            return Ok(&slice[start..=end - 1]);
+        }
+        return Err(anyhow!("Ending index exceeds slice length"));
+    }
+
+    Ok(&slice[start..=end])
 }
 
 pub fn truncate_string(s: &str, max_chars: usize) -> &str {

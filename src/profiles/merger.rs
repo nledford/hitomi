@@ -10,6 +10,7 @@ use simplelog::info;
 use crate::plex::models::tracks::Track;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::SectionType;
+use crate::utils;
 
 #[derive(Builder, Debug, Default)]
 pub struct SectionTracksMerger {
@@ -40,20 +41,22 @@ impl SectionTracksMerger {
         self.oldest = tracks
     }
 
+    fn get_section_tracks(&mut self, section_type: SectionType) -> &mut Vec<Track> {
+        match section_type {
+            SectionType::Unplayed => &mut self.unplayed,
+            SectionType::LeastPlayed => &mut self.least_played,
+            SectionType::Oldest => &mut self.oldest,
+        }
+    }
+
     /// Runs manual filters for the profile sections
     ///
     /// Manual filters are those that are unique to this application and not included with plex
     pub fn run_manual_filters(&mut self, profile_sections: &[ProfileSection], time_limit: f64) {
         info!("Running manual section filters...");
-        self.deduplicate_lists(time_limit);
 
         for section in profile_sections {
-            let tracks = match section.get_section_type() {
-                SectionType::Unplayed => &mut self.unplayed,
-                SectionType::LeastPlayed => &mut self.least_played,
-                SectionType::Oldest => &mut self.oldest,
-            };
-
+            let tracks = self.get_section_tracks(section.get_section_type());
             if section.get_deduplicate_tracks_by_guid() {
                 deduplicate_by_track_guid(tracks);
             }
@@ -61,6 +64,20 @@ impl SectionTracksMerger {
             if section.get_deduplicate_tracks_by_title_and_artist() {
                 deduplicate_by_title_and_artist(tracks);
             }
+        }
+
+        self.deduplicate_lists(time_limit);
+
+        for section in profile_sections {
+            let tracks = self.get_section_tracks(section.get_section_type());
+
+            // if section.get_deduplicate_tracks_by_guid() {
+            //     deduplicate_by_track_guid(tracks);
+            // }
+
+            // if section.get_deduplicate_tracks_by_title_and_artist() {
+            //     deduplicate_by_title_and_artist(tracks);
+            // }
 
             trim_tracks_by_artist(
                 tracks,
@@ -286,7 +303,7 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
 /// Reduces a list of tracks to a given time limit
 fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
     let index = determine_time_limit_index(tracks, time_limit);
-    *tracks = tracks[..=index].to_vec();
+    *tracks = utils::get_slice(tracks, 0, index).unwrap().to_vec();
 }
 
 fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
