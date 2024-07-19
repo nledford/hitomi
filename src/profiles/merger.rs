@@ -60,10 +60,6 @@ impl SectionTracksMerger {
             if section.get_deduplicate_tracks_by_guid() {
                 deduplicate_by_track_guid(tracks);
             }
-
-            if section.get_deduplicate_tracks_by_title_and_artist() {
-                deduplicate_by_title_and_artist(tracks);
-            }
         }
 
         self.deduplicate_lists(time_limit);
@@ -75,9 +71,9 @@ impl SectionTracksMerger {
             //     deduplicate_by_track_guid(tracks);
             // }
 
-            // if section.get_deduplicate_tracks_by_title_and_artist() {
-            //     deduplicate_by_title_and_artist(tracks);
-            // }
+            if section.get_deduplicate_tracks_by_title_and_artist() {
+                deduplicate_by_title_and_artist(tracks);
+            }
 
             trim_tracks_by_artist(
                 tracks,
@@ -118,9 +114,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-            .iter()
-            .filter(|x| **x)
-            .count()
+        .iter()
+        .filter(|x| **x)
+        .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -138,9 +134,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
+        .iter()
+        .max()
+        .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
