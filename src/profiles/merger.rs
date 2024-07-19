@@ -112,9 +112,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-            .iter()
-            .filter(|x| **x)
-            .count()
+        .iter()
+        .filter(|x| **x)
+        .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -132,9 +132,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
+        .iter()
+        .max()
+        .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
@@ -201,8 +201,18 @@ impl SectionTracksMerger {
 ///
 /// e,g, If the track "The Beatles - Get Back" appears multiple times in a playlist, any duplicates will be removed.
 fn deduplicate_by_title_and_artist(tracks: &mut Vec<Track>) {
-    tracks.sort_by_key(|track| (track.get_track_title().to_owned(), track.get_track_artist().to_owned()));
-    tracks.dedup_by_key(|track| (track.get_track_title().to_owned(), track.get_track_artist().to_owned()));
+    tracks.sort_by_key(|track| {
+        (
+            track.get_track_title().to_owned(),
+            track.get_track_artist().to_owned(),
+        )
+    });
+    tracks.dedup_by_key(|track| {
+        (
+            track.get_track_title().to_owned(),
+            track.get_track_artist().to_owned(),
+        )
+    });
 }
 
 /// Remove duplicate tracks based on the Plex `GUID`
@@ -245,7 +255,9 @@ fn trim_tracks_by_artist(
     }
 
     match section_type {
-        SectionType::Oldest => tracks.sort_by_key(|track| (track.get_last_played(), track.get_plays())),
+        SectionType::Oldest => {
+            tracks.sort_by_key(|track| (track.get_last_played(), track.get_plays()))
+        }
         _ => tracks.sort_by_key(|track| (track.get_plays(), track.get_last_played())),
     }
 
