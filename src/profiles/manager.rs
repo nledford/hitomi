@@ -337,7 +337,7 @@ async fn fetch_section_tracks(
             todo!("Playlist option not yet implemented")
         }
         ProfileSource::SingleArtist => {
-            todo!("Single artist option not yet implemented")
+            filters.insert("artist.id".to_string(), profile_source_id.unwrap().to_string());
         }
     }
 
