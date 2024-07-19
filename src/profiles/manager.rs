@@ -340,7 +340,7 @@ async fn fetch_section_tracks(
     }
 
     tracks = plex_client
-        .fetch_music(filters, section.get_sorting_vec(), Some(1111))
+        .fetch_music(filters, section.get_sorting_vec(), Some(1234))
         .await?;
 
     Ok(tracks)

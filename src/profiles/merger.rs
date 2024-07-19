@@ -311,6 +311,12 @@ fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
     index
 }
 
+/// Splits a list of tracks into chunks by a given time limit
+///
+/// # Example
+///
+/// If the list of tracks is 72 hours long and the playlist time limit is 12 hours,
+/// then 6 chunks will be returned.
 fn chunk_by_time_limit(tracks: &[Track], time_limit: f64) -> BTreeMap<i32, Vec<Track>> {
     let mut remaining_tracks = tracks.to_vec();
     let mut chunks: BTreeMap<i32, Vec<Track>> = BTreeMap::new();
@@ -324,6 +330,7 @@ fn chunk_by_time_limit(tracks: &[Track], time_limit: f64) -> BTreeMap<i32, Vec<T
 
         let entry = chunks.entry(day).or_default();
         entry.append(&mut day_tracks);
+
         day += 1;
     }
 
