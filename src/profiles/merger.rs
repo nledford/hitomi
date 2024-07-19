@@ -67,10 +67,6 @@ impl SectionTracksMerger {
         for section in profile_sections {
             let tracks = self.get_section_tracks(section.get_section_type());
 
-            // if section.get_deduplicate_tracks_by_guid() {
-            //     deduplicate_by_track_guid(tracks);
-            // }
-
             if section.get_deduplicate_tracks_by_title_and_artist() {
                 deduplicate_by_title_and_artist(tracks);
             }
@@ -82,7 +78,9 @@ impl SectionTracksMerger {
             );
 
             sort_tracks(tracks, section.get_section_type());
+
             reduce_to_time_limit(tracks, time_limit);
+
             if section.get_randomize_tracks() {
                 randomizer(tracks, section.get_section_type())
             }
@@ -114,9 +112,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-        .iter()
-        .filter(|x| **x)
-        .count()
+            .iter()
+            .filter(|x| **x)
+            .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -134,9 +132,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-        .iter()
-        .max()
-        .unwrap_or(&0_usize)
+            .iter()
+            .max()
+            .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
@@ -146,7 +144,7 @@ impl SectionTracksMerger {
         } else {
             self.merged
                 .iter()
-                .map(|track| track.id().to_string())
+                .map(|track| track.get_id().to_string())
                 .collect::<Vec<_>>()
         }
     }
@@ -203,8 +201,8 @@ impl SectionTracksMerger {
 ///
 /// e,g, If the track "The Beatles - Get Back" appears multiple times in a playlist, any duplicates will be removed.
 fn deduplicate_by_title_and_artist(tracks: &mut Vec<Track>) {
-    tracks.sort_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
-    tracks.dedup_by_key(|track| (track.title().to_owned(), track.artist().to_owned()));
+    tracks.sort_by_key(|track| (track.get_track_title().to_owned(), track.get_track_artist().to_owned()));
+    tracks.dedup_by_key(|track| (track.get_track_title().to_owned(), track.get_track_artist().to_owned()));
 }
 
 /// Remove duplicate tracks based on the Plex `GUID`
@@ -247,8 +245,8 @@ fn trim_tracks_by_artist(
     }
 
     match section_type {
-        SectionType::Oldest => tracks.sort_by_key(|track| (track.last_played(), track.plays())),
-        _ => tracks.sort_by_key(|track| (track.plays(), track.last_played())),
+        SectionType::Oldest => tracks.sort_by_key(|track| (track.get_last_played(), track.get_plays())),
+        _ => tracks.sort_by_key(|track| (track.get_plays(), track.get_last_played())),
     }
 
     let mut artist_occurrences: BTreeMap<String, u32> = BTreeMap::new();
@@ -265,10 +263,10 @@ fn trim_tracks_by_artist(
 fn sort_tracks(tracks: &mut [Track], section_type: SectionType) {
     match section_type {
         SectionType::Unplayed => {
-            tracks.sort_by_key(|t| (Reverse(t.rating()), t.plays(), t.last_played()))
+            tracks.sort_by_key(|t| (Reverse(t.get_rating()), t.get_plays(), t.get_last_played()))
         }
-        SectionType::LeastPlayed => tracks.sort_by_key(|t| (t.plays(), t.last_played())),
-        SectionType::Oldest => tracks.sort_by_key(|t| (t.last_played(), t.plays())),
+        SectionType::LeastPlayed => tracks.sort_by_key(|t| (t.get_plays(), t.get_last_played())),
+        SectionType::Oldest => tracks.sort_by_key(|t| (t.get_last_played(), t.get_plays())),
     }
 }
 
@@ -280,8 +278,8 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
             BTreeMap::new(),
             |mut acc: BTreeMap<String, Vec<Track>>, track| {
                 let key = match section_type {
-                    SectionType::Oldest => track.last_played_year_and_month(),
-                    _ => track.plays().to_string(),
+                    SectionType::Oldest => track.get_last_played_year_and_month(),
+                    _ => track.get_plays().to_string(),
                 };
                 let value = acc.entry(key).or_default();
                 value.push(track.clone());
@@ -305,7 +303,7 @@ fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
 fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
     let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
-    let total_duration: i64 = tracks.iter().map(|track| track.duration()).sum();
+    let total_duration: i64 = tracks.iter().map(|track| track.get_track_duration()).sum();
     let total_duration = TimeDelta::milliseconds(total_duration);
 
     if total_duration <= limit {
@@ -316,7 +314,7 @@ fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
     let index = tracks
         .iter()
         .position(|track| {
-            accum_total += TimeDelta::milliseconds(track.duration());
+            accum_total += track.get_track_duration_timedelta();
             accum_total > limit
         })
         .unwrap_or(0);

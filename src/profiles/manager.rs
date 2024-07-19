@@ -274,7 +274,7 @@ impl ProfileManager {
 fn print_refresh_results(tracks: &[Track], playlist_title: &str, action: ProfileAction) {
     let size = tracks.len();
 
-    let duration: i64 = tracks.iter().map(|t| t.duration()).sum();
+    let duration: i64 = tracks.iter().map(|t| t.get_track_duration()).sum();
     let duration = Duration::from_millis(duration as u64);
     let duration = humantime::format_duration(duration).to_string();
 

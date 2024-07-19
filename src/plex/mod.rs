@@ -195,7 +195,7 @@ impl PlexClient {
         info!("Updating destination playlist...");
         let ids = tracks
             .iter()
-            .map(|t| t.id().to_string())
+            .map(|t| t.get_id().to_string())
             .collect::<Vec<_>>();
         for chunk in ids.chunks(200) {
             self.add_items_to_playlist(playlist_id, chunk).await?;

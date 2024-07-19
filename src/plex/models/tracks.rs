@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use chrono::DateTime;
+use chrono::{DateTime, TimeDelta};
 use serde::{Deserialize, Serialize};
 
 use crate::plex::types::{Guid, PlexId, PlexKey};
@@ -44,12 +44,12 @@ pub struct Track {
     skip_count: Option<i32>,
     // pub music_analysis_version: Option<String>,
     original_title: Option<Title>,
-    #[serde(alias = "Media")]
-    pub media: Vec<Media>,
+    // #[serde(alias = "Media")]
+    // pub media: Vec<Media>,
 }
 
 impl Track {
-    pub fn id(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         &self.rating_key
     }
 
@@ -57,15 +57,15 @@ impl Track {
         self.guid.as_str()
     }
 
-    pub fn title(&self) -> &str {
+    pub fn get_track_title(&self) -> &str {
         self.title.as_ref()
     }
 
-    pub fn album(&self) -> &str {
+    pub fn get_track_album(&self) -> &str {
         self.parent_title.as_ref()
     }
 
-    pub fn artist(&self) -> &str {
+    pub fn get_track_artist(&self) -> &str {
         match &self.original_title {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
@@ -81,39 +81,43 @@ impl Track {
         self.grandparent_guid.as_str()
     }
 
-    pub fn duration(&self) -> i64 {
+    pub fn get_track_duration(&self) -> i64 {
         self.duration.unwrap_or(0)
     }
 
-    pub fn last_played(&self) -> i64 {
+    pub fn get_track_duration_timedelta(&self) -> TimeDelta {
+        TimeDelta::milliseconds(self.get_track_duration())
+    }
+
+    pub fn get_last_played(&self) -> i64 {
         self.last_viewed_at.unwrap_or(0)
     }
 
-    pub fn last_played_str(&self) -> String {
-        DateTime::from_timestamp(self.last_played(), 0)
+    pub fn get_last_played_str(&self) -> String {
+        DateTime::from_timestamp(self.get_last_played(), 0)
             .unwrap()
             .naive_local()
             .format("%F")
             .to_string()
     }
 
-    pub fn last_played_year_and_month(&self) -> String {
-        DateTime::from_timestamp(self.last_played(), 0)
+    pub fn get_last_played_year_and_month(&self) -> String {
+        DateTime::from_timestamp(self.get_last_played(), 0)
             .unwrap()
             .naive_local()
             .format("%Y-%m")
             .to_string()
     }
 
-    pub fn plays(&self) -> i32 {
+    pub fn get_plays(&self) -> i32 {
         self.view_count.unwrap_or(0)
     }
 
-    pub fn never_played(&self) -> bool {
-        self.plays() == 0 || self.last_played() == 0
+    pub fn get_has_never_been_played(&self) -> bool {
+        self.get_plays() == 0 || self.get_last_played() == 0
     }
 
-    pub fn rating(&self) -> i32 {
+    pub fn get_rating(&self) -> i32 {
         let rating = self.user_rating.unwrap_or_default();
 
         (rating / 2_f32).floor() as i32
@@ -125,33 +129,35 @@ impl Display for Track {
         let mut str = String::default();
 
         str += &format!("{} ", self.title);
-        str += &format!("{} ", self.artist());
-        str += &format!("{} ", self.album());
-        str += &format!("{} ", self.plays());
-        str += &format!("{} ", self.last_played_str());
+        str += &format!("{} ", self.get_track_artist());
+        str += &format!("{} ", self.get_track_album());
+        str += &format!("{} ", self.get_plays());
+        str += &format!("{} ", self.get_last_played_str());
 
         write!(f, "{str}")
     }
 }
 
+/*
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Media {
-    pub id: i64,
-    pub bitrate: Option<i64>,
-    pub duration: Option<i64>,
-    pub audio_channels: i64,
-    pub audio_codec: String,
+    id: i64,
+    bitrate: Option<i64>,
+    duration: Option<i64>,
+    audio_channels: i64,
+    audio_codec: String,
     #[serde(alias = "Part")]
-    pub part: Vec<Part>,
+    part: Vec<Part>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Part {
-    pub id: i64,
-    pub key: String,
-    pub duration: Option<i64>,
-    pub file: String,
-    pub size: i64,
+    id: i64,
+    key: String,
+    duration: Option<i64>,
+    file: String,
+    size: i64,
 }
+*/

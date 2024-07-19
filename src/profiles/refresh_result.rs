@@ -28,7 +28,7 @@ impl RefreshResult {
     }
 
     fn get_total_duration(&self) -> i64 {
-        self.tracks.iter().map(|t| t.duration()).sum()
+        self.tracks.iter().map(|t| t.get_track_duration()).sum()
     }
 
     fn get_duration(&self) -> Duration {
