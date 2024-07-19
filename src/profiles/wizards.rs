@@ -142,21 +142,21 @@ async fn select_profile_source_id(
 
             Some(id)
         }
-        ProfileSource::Playlist => {
-            let playlists = plex_client.get_playlists();
-            let titles = playlists
-                .iter()
-                .map(|x| x.get_title())
-                .collect::<Vec<&str>>();
-
-            let selection = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Select a playlist")
-                .default(0)
-                .items(&titles)
-                .interact()?;
-
-            Some(playlists[selection].get_id().to_owned())
-        }
+        // ProfileSource::Playlist => {
+        //     let playlists = plex_client.get_playlists();
+        //     let titles = playlists
+        //         .iter()
+        //         .map(|x| x.get_title())
+        //         .collect::<Vec<&str>>();
+        //
+        //     let selection = Select::with_theme(&ColorfulTheme::default())
+        //         .with_prompt("Select a playlist")
+        //         .default(0)
+        //         .items(&titles)
+        //         .interact()?;
+        //
+        //     Some(playlists[selection].get_id().to_owned())
+        // }
         ProfileSource::SingleArtist => {
             let artist: String = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Search for an artist:")

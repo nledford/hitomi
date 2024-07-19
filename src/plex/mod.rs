@@ -293,13 +293,13 @@ impl PlexClient {
 
                 resp.media_container
                     .metadata
-                    .into_iter()
+                    .iter()
                     .map(|track| track.get_artist_id().to_owned())
-                    .collect::<Vec<String>>()
+                    .collect_vec()
                     .into_iter()
                     .sorted()
                     .dedup()
-                    .collect::<_>()
+                    .collect_vec()
             }
         };
 

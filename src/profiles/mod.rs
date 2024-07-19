@@ -58,7 +58,7 @@ pub enum ProfileSource {
     #[default]
     Library,
     Collection,
-    Playlist,
+    // Playlist,
     #[strum(to_string = "Single Artist")]
     SingleArtist,
 }

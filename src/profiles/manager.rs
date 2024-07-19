@@ -8,7 +8,7 @@ use chrono::{Local, Timelike, Utc};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
-use simplelog::{debug, error, info};
+use simplelog::{error, info};
 
 use crate::db;
 use crate::plex::models::playlists::Playlist;
@@ -333,9 +333,9 @@ async fn fetch_section_tracks(
             let artists = artists.join(",");
             filters.insert("artist.id".to_string(), artists);
         }
-        ProfileSource::Playlist => {
-            todo!("Playlist option not yet implemented")
-        }
+        // ProfileSource::Playlist => {
+        //     todo!("Playlist option not yet implemented")
+        // }
         ProfileSource::SingleArtist => {
             filters.insert("artist.id".to_string(), profile_source_id.unwrap().to_string());
         }
