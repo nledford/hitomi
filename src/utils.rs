@@ -14,11 +14,7 @@ pub fn get_slice<T>(slice: &[T], start: usize, end: usize) -> Result<&[T]> {
         return Err(anyhow!("Starting index cannot be higher than ending index"));
     }
 
-    // TODO this is hacky, needs to be fixed
     if end >= slice.len() {
-        if end - 1 <= slice.len() {
-            return Ok(&slice[start..=end - 1]);
-        }
         return Err(anyhow!("Ending index exceeds slice length"));
     }
 
