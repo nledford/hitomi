@@ -8,7 +8,7 @@ use chrono::{Local, Timelike, Utc};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
-use simplelog::{error, info};
+use simplelog::{debug, error, info};
 
 use crate::db;
 use crate::plex::models::playlists::Playlist;
@@ -245,6 +245,7 @@ impl ProfileManager {
                 section,
                 profile.get_profile_source(),
                 profile.get_profile_source_id(),
+                profile.get_time_limit() as f64,
             )
             .await?;
 
@@ -298,6 +299,7 @@ async fn fetch_section_tracks(
     section: &ProfileSection,
     profile_source: &ProfileSource,
     profile_source_id: Option<&ProfileSourceId>,
+    time_limit: f64,
 ) -> Result<Vec<Track>> {
     let mut tracks = vec![];
 
@@ -339,8 +341,9 @@ async fn fetch_section_tracks(
         }
     }
 
+    let limit = (400.0 * (time_limit / 12.0)).floor() as i32;
     tracks = plex_client
-        .fetch_music(filters, section.get_sorting_vec(), Some(1234))
+        .fetch_music(filters, section.get_sorting_vec(), Some(limit))
         .await?;
 
     Ok(tracks)

@@ -65,12 +65,10 @@ impl SectionTracksMerger {
 
     fn get_total_duration(&self, section_type: SectionType) -> Duration {
         let tracks = self.get_section_tracks(section_type);
-        let total = tracks
-            .iter()
-            .fold(TimeDelta::seconds(0), |mut acc, track| {
-                acc += track.get_track_duration_timedelta();
-                acc
-            });
+        let total = tracks.iter().fold(TimeDelta::seconds(0), |mut acc, track| {
+            acc += track.get_track_duration_timedelta();
+            acc
+        });
         Duration::from(total)
     }
 
