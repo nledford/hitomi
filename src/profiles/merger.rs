@@ -1,7 +1,9 @@
+#![allow(dead_code)]
+
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
-use chrono::TimeDelta;
+use chrono::{Duration, TimeDelta};
 use derive_builder::Builder;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
@@ -41,12 +43,35 @@ impl SectionTracksMerger {
         self.oldest = tracks
     }
 
-    fn get_section_tracks(&mut self, section_type: SectionType) -> &mut Vec<Track> {
+    fn get_section_tracks(&self, section_type: SectionType) -> &[Track] {
+        match section_type {
+            SectionType::Unplayed => &self.unplayed,
+            SectionType::LeastPlayed => &self.least_played,
+            SectionType::Oldest => &self.oldest,
+        }
+    }
+
+    fn get_section_tracks_mut(&mut self, section_type: SectionType) -> &mut Vec<Track> {
         match section_type {
             SectionType::Unplayed => &mut self.unplayed,
             SectionType::LeastPlayed => &mut self.least_played,
             SectionType::Oldest => &mut self.oldest,
         }
+    }
+
+    fn get_num_tracks(&self, section_type: SectionType) -> usize {
+        self.get_section_tracks(section_type).len()
+    }
+
+    fn get_total_duration(&self, section_type: SectionType) -> Duration {
+        let tracks = self.get_section_tracks(section_type);
+        let total = tracks
+            .iter()
+            .fold(TimeDelta::seconds(0), |mut acc, track| {
+                acc += track.get_track_duration_timedelta();
+                acc
+            });
+        Duration::from(total)
     }
 
     /// Runs manual filters for the profile sections
@@ -56,7 +81,7 @@ impl SectionTracksMerger {
         info!("Running manual section filters...");
 
         for section in profile_sections {
-            let tracks = self.get_section_tracks(section.get_section_type());
+            let tracks = self.get_section_tracks_mut(section.get_section_type());
             if section.get_deduplicate_tracks_by_guid() {
                 deduplicate_by_track_guid(tracks);
             }
@@ -65,7 +90,7 @@ impl SectionTracksMerger {
         self.deduplicate_lists(time_limit);
 
         for section in profile_sections {
-            let tracks = self.get_section_tracks(section.get_section_type());
+            let tracks = self.get_section_tracks_mut(section.get_section_type());
 
             if section.get_deduplicate_tracks_by_title_and_artist() {
                 deduplicate_by_title_and_artist(tracks);
@@ -112,9 +137,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-        .iter()
-        .filter(|x| **x)
-        .count()
+            .iter()
+            .filter(|x| **x)
+            .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -132,9 +157,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-        .iter()
-        .max()
-        .unwrap_or(&0_usize)
+            .iter()
+            .max()
+            .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs

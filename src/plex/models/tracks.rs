@@ -16,7 +16,7 @@ pub struct Track {
     guid: Guid,
     parent_guid: Guid,
     grandparent_guid: Guid,
-    pub parent_studio: Option<String>,
+    // pub parent_studio: Option<String>,
     #[serde(alias = "type")]
     pub track_type: String,
     title: Title,
@@ -24,7 +24,7 @@ pub struct Track {
     pub grandparent_key: PlexKey,
     grandparent_title: Title,
     parent_title: Title,
-    pub summary: String,
+    // pub summary: String,
     pub index: Option<u32>,
     pub parent_index: u32,
     // rating_count: Option<i32>,
@@ -70,7 +70,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-        .trim()
+            .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
