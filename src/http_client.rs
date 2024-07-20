@@ -41,11 +41,7 @@ impl HttpClient {
             header::HeaderValue::from_static("application/json"),
         );
 
-        let client = reqwest::Client::builder()
-            .gzip(true)
-            .brotli(true)
-            .zstd(true)
-            .build()?;
+        let client = reqwest::Client::builder().build()?;
 
         Ok(Self {
             base_url: base_url.to_owned(),
