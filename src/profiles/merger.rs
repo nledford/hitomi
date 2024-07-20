@@ -59,11 +59,11 @@ impl SectionTracksMerger {
         }
     }
 
-    fn get_num_tracks(&self, section_type: SectionType) -> usize {
+    fn get_num_tracks_by_section(&self, section_type: SectionType) -> usize {
         self.get_section_tracks(section_type).len()
     }
 
-    fn get_total_duration(&self, section_type: SectionType) -> Duration {
+    fn get_total_duration_of_section(&self, section_type: SectionType) -> Duration {
         let tracks = self.get_section_tracks(section_type);
         let total = tracks.iter().fold(TimeDelta::seconds(0), |mut acc, track| {
             acc += track.get_track_duration_timedelta();
@@ -124,7 +124,7 @@ impl SectionTracksMerger {
     }
 
     /// Returns `false` if no sections are valid
-    fn none_are_valid(&self) -> bool {
+    fn get_none_are_valid(&self) -> bool {
         self.get_num_valid() == 0
     }
 
@@ -135,9 +135,9 @@ impl SectionTracksMerger {
             !self.least_played.is_empty(),
             !self.oldest.is_empty(),
         ]
-            .iter()
-            .filter(|x| **x)
-            .count()
+        .iter()
+        .filter(|x| **x)
+        .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -155,9 +155,9 @@ impl SectionTracksMerger {
             self.least_played.len(),
             self.oldest.len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
+        .iter()
+        .max()
+        .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
@@ -194,7 +194,7 @@ impl SectionTracksMerger {
     ///
     /// If a track cannot be found in a given section, that section is skipped.
     pub fn merge(&mut self) {
-        if self.none_are_valid() {
+        if self.get_none_are_valid() {
             return;
         }
         info!(
@@ -381,4 +381,79 @@ fn chunk_by_time_limit(tracks: &[Track], time_limit: f64) -> BTreeMap<i32, Vec<T
     }
 
     chunks
+}
+
+// TESTS ######################################################################
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+
+    use super::*;
+
+    // #[test]
+    // fn test_get_total_duration_of_section() {
+    //
+    // }
+
+    #[test]
+    fn test_get_num_tracks_by_section() {
+        let merger = SectionTracksMergerBuilder::default()
+            .unplayed(vec![Track::default(), Track::default()])
+            .least_played(vec![Track::default(), Track::default(), Track::default()])
+            .oldest(vec![Track::default()])
+            .build()
+            .unwrap();
+
+        assert_eq!(merger.get_num_tracks_by_section(SectionType::Unplayed), 2);
+        assert_eq!(
+            merger.get_num_tracks_by_section(SectionType::LeastPlayed),
+            3
+        );
+        assert_eq!(merger.get_num_tracks_by_section(SectionType::Oldest), 1);
+    }
+
+    #[test]
+    fn test_get_num_valid() {
+        let merger = SectionTracksMerger::default();
+        assert_eq!(merger.get_num_valid(), 0);
+        assert_ne!(merger.get_num_valid(), 1);
+        assert_ne!(merger.get_num_valid(), 2);
+        assert_ne!(merger.get_num_valid(), 3);
+
+        let tracks = vec![Track::default(), Track::default()];
+        let mut merger = SectionTracksMergerBuilder::default()
+            .unplayed(tracks.clone())
+            .build()
+            .unwrap();
+        assert_ne!(merger.get_num_valid(), 0);
+        assert_eq!(merger.get_num_valid(), 1);
+        assert_ne!(merger.get_num_valid(), 2);
+        assert_ne!(merger.get_num_valid(), 3);
+
+        merger.least_played = tracks.clone();
+        assert_ne!(merger.get_num_valid(), 0);
+        assert_ne!(merger.get_num_valid(), 1);
+        assert_eq!(merger.get_num_valid(), 2);
+        assert_ne!(merger.get_num_valid(), 3);
+
+        merger.oldest = tracks.clone();
+        assert_ne!(merger.get_num_valid(), 0);
+        assert_ne!(merger.get_num_valid(), 1);
+        assert_ne!(merger.get_num_valid(), 2);
+        assert_eq!(merger.get_num_valid(), 3);
+    }
+
+    #[test]
+    fn test_get_none_are_valid() {
+        let merger = SectionTracksMerger::default();
+        assert_eq!(merger.get_none_are_valid(), true);
+
+        let tracks = vec![Track::default(), Track::default()];
+        let merger = SectionTracksMergerBuilder::default()
+            .unplayed(tracks)
+            .build()
+            .unwrap();
+        assert_eq!(merger.get_none_are_valid(), false);
+    }
 }

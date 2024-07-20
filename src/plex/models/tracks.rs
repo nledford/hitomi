@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::plex::types::{Guid, PlexId, PlexKey};
 use crate::types::Title;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
     rating_key: PlexId,
@@ -70,7 +70,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-            .trim()
+        .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
