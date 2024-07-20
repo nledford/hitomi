@@ -28,8 +28,7 @@ pub enum Commands {
 pub async fn run_cli_command(cli: Cli) -> Result<()> {
     match cli.commands {
         Commands::Run(run) => {
-            let manager = ProfileManager::new().await?;
-            run::execute_run_cmd(run, manager).await?;
+            run::execute_run_cmd(run).await?;
         }
         Commands::Profile(profile) => {
             let manager = ProfileManager::new().await?;

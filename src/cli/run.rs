@@ -24,8 +24,9 @@ fn print_title(looping: bool) {
     }
 }
 
-pub async fn execute_run_cmd(cmd: RunCmds, manager: ProfileManager) -> Result<()> {
+pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     print_title(cmd.run_loop);
+    let mut manager = ProfileManager::new().await?;
 
     // Initial refresh is performed irrespective of `run_loop` flag
     manager
@@ -40,6 +41,7 @@ pub async fn execute_run_cmd(cmd: RunCmds, manager: ProfileManager) -> Result<()
                 manager
                     .refresh_playlists_from_profiles(cmd.run_loop, true)
                     .await?;
+                manager.reset().await?;
             }
         }
     }

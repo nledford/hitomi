@@ -10,7 +10,6 @@ use dialoguer::Confirm;
 use itertools::Itertools;
 use simplelog::{error, info};
 
-use crate::db;
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
 use crate::plex::types::PlexId;
@@ -21,6 +20,7 @@ use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::refresh_result::RefreshResult;
 use crate::profiles::types::ProfileSourceId;
 use crate::profiles::{ProfileAction, ProfileSource, SectionType};
+use crate::{config, db};
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
@@ -31,7 +31,7 @@ pub struct ProfileManager {
 // INITIALIZATION
 impl ProfileManager {
     pub async fn new() -> Result<Self> {
-        let config = crate::config::load_config().await?;
+        let config = config::load_config().await?;
         let plex_client = PlexClient::initialize(&config).await?;
         let playlists = plex_client.get_playlists().to_vec();
 
@@ -40,6 +40,12 @@ impl ProfileManager {
             playlists,
         };
         Ok(manager)
+    }
+
+    pub async fn reset(&mut self) -> Result<()> {
+        info!("Resetting profile manager");
+        *self = Self::new().await?;
+        Ok(())
     }
 }
 
