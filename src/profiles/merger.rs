@@ -314,7 +314,11 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
             |mut acc: BTreeMap<String, Vec<Track>>, track| {
                 let key = match section_type {
                     SectionType::Oldest => track.get_last_played_year_and_month(),
-                    _ => track.get_plays().to_string(),
+                    _ => format!(
+                        "{}-{}",
+                        track.get_plays(),
+                        track.get_last_played_year_and_month(),
+                    ),
                 };
                 let value = acc.entry(key).or_default();
                 value.push(track.clone());
