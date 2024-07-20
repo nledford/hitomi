@@ -42,8 +42,8 @@ impl ProfileManager {
         Ok(manager)
     }
 
-    pub async fn reset(&mut self) -> Result<()> {
-        info!("Resetting profile manager");
+    pub async fn refresh_plex_client(&mut self) -> Result<()> {
+        info!("Refreshing plex client...");
         *self = Self::new().await?;
         Ok(())
     }

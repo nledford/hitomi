@@ -41,7 +41,7 @@ pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
                 manager
                     .refresh_playlists_from_profiles(cmd.run_loop, true)
                     .await?;
-                manager.reset().await?;
+                manager.refresh_plex_client().await?;
             }
         }
     }
