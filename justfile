@@ -41,7 +41,7 @@ run: test
 
 # Run the application in loop mode
 [group('rust')]
-run-loop $RUST_BACKTRACE="full": test
+run-loop $RUST_BACKTRACE="full" $LOG_LEVEL="INFO": test
     cargo run -- run -l
 
 # Install the application to local machine
