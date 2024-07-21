@@ -26,7 +26,7 @@ fn print_title(looping: bool) {
 
 pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
     print_title(cmd.run_loop);
-    let mut manager = ProfileManager::new().await?;
+    let manager = ProfileManager::new().await?;
 
     // Initial refresh is performed irrespective of `run_loop` flag
     manager
@@ -38,7 +38,6 @@ pub async fn execute_run_cmd(cmd: RunCmds) -> Result<()> {
             sleep(Duration::from_secs(1)).await;
 
             if manager.fetch_any_profile_refresh().await? {
-                manager.refresh_plex_client().await?;
                 manager
                     .refresh_playlists_from_profiles(cmd.run_loop, true)
                     .await?;
