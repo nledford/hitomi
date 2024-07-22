@@ -16,8 +16,11 @@ use crate::utils;
 
 #[derive(Builder, Clone, Default)]
 pub struct ProfileTracks {
+    #[builder(default)]
     unplayed: Vec<Track>,
+    #[builder(default)]
     least_played: Vec<Track>,
+    #[builder(default)]
     oldest: Vec<Track>,
     #[builder(default)]
     merged: Vec<Track>,
