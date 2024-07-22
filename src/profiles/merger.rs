@@ -80,6 +80,8 @@ impl SectionTracksMerger {
 
         for section in profile_sections {
             let tracks = self.get_section_tracks_mut(section.get_section_type());
+            remove_played_within_last_day(tracks);
+
             if section.get_deduplicate_tracks_by_guid() {
                 deduplicate_by_track_guid(tracks);
             }
@@ -385,6 +387,19 @@ fn chunk_by_time_limit(tracks: &[Track], time_limit: f64) -> BTreeMap<i32, Vec<T
     }
 
     chunks
+}
+
+fn remove_played_within_last_day(tracks: &mut Vec<Track>) {
+    *tracks = tracks
+        .iter()
+        .filter_map(|track| {
+            if !track.get_played_within_last_day() {
+                Some(track.to_owned())
+            } else {
+                None
+            }
+        })
+        .collect_vec()
 }
 
 // TESTS ######################################################################

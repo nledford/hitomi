@@ -110,7 +110,8 @@ impl Track {
     }
 
     pub fn get_played_today(&self) -> bool {
-        self.get_last_played() >= Utc::now()
+        self.get_last_played()
+            >= Utc::now()
             .with_hour(0)
             .unwrap()
             .with_minute(0)
