@@ -89,9 +89,9 @@ impl ProfileTracks {
     /// Returns the number of valid sections (those that are not empty)
     fn get_num_valid(&self) -> usize {
         [
-            !self.unplayed.is_empty(),
-            !self.least_played.is_empty(),
-            !self.oldest.is_empty(),
+            self.have_unplayed_tracks(),
+            self.have_least_played_tracks(),
+            self.have_oldest_tracks(),
         ]
             .iter()
             .filter(|x| **x)
@@ -439,9 +439,10 @@ async fn fetch_profile_tracks(
             }
         }
     }
-    let mut profile_tracks = profile_tracks.build().unwrap();
+    let mut profile_tracks = profile_tracks
+        .build()
+        .expect("Profile tracks could not be built");
     profile_tracks.run_manual_filters(&sections, profile.get_section_time_limit());
-
     profile_tracks.merge();
 
     Ok(profile_tracks)
@@ -486,9 +487,6 @@ async fn fetch_section_tracks(
             let artists = artists.join(",");
             filters.insert("artist.id".to_string(), artists);
         }
-        // ProfileSource::Playlist => {
-        //     todo!("Playlist option not yet implemented")
-        // }
         ProfileSource::SingleArtist => {
             filters.insert(
                 "artist.id".to_string(),
