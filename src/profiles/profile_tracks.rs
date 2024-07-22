@@ -1,13 +1,14 @@
 #![allow(dead_code)]
 
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, HashMap};
+
 use anyhow::Result;
 use chrono::{Duration, TimeDelta};
 use derive_builder::Builder;
 use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use simplelog::info;
-use std::cmp::Reverse;
-use std::collections::{BTreeMap, HashMap};
 
 use crate::plex::models::tracks::Track;
 use crate::plex::PlexClient;
@@ -255,23 +256,22 @@ fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, comp: &[Track], time_lim
 ///
 /// e,g, If the track "The Beatles - Get Back" appears multiple times in a playlist, any duplicates will be removed.
 fn deduplicate_by_title_and_artist(tracks: &mut Vec<Track>) {
-    tracks.sort_by_key(|track| {
-        (
-            track.get_track_title().to_owned(),
-            track.get_track_artist().to_owned(),
-        )
-    });
-    tracks.dedup_by_key(|track| {
-        (
-            track.get_track_title().to_owned(),
-            track.get_track_artist().to_owned(),
-        )
-    });
+    *tracks = tracks
+        .iter()
+        .sorted_by_key(|track| track.get_title_and_artist_sort_key())
+        .unique_by(|track| track.get_title_and_artist_sort_key())
+        .map(|track| track.to_owned())
+        .collect_vec()
 }
 
 /// Remove duplicate tracks based on the Plex `GUID`
 fn deduplicate_by_track_guid(tracks: &mut Vec<Track>) {
-    tracks.dedup_by_key(|track| track.get_guid().to_owned());
+    *tracks = tracks
+        .iter()
+        .sorted_by_key(|track| (track.get_guid(), Reverse(track.get_bitrate())))
+        .unique_by(|track| track.get_guid())
+        .map(|track| track.to_owned())
+        .collect_vec()
 }
 
 /// Trims tracks by artist limit (in other words, the maximum number of tracks that can be included in the list by a single artist)
@@ -324,7 +324,7 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
                 let key = match section_type {
                     SectionType::Oldest => track.get_last_played_year_and_month(),
                     _ => format!(
-                        "{}-{}",
+                        "{:04}-{}",
                         track.get_plays(),
                         track.get_last_played_year_and_month(),
                     ),

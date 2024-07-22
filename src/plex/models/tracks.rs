@@ -44,8 +44,8 @@ pub struct Track {
     skip_count: Option<i32>,
     // pub music_analysis_version: Option<String>,
     original_title: Option<Title>,
-    // #[serde(alias = "Media")]
-    // pub media: Vec<Media>,
+    #[serde(alias = "Media")]
+    pub media: Vec<Media>,
 }
 
 impl Track {
@@ -139,6 +139,20 @@ impl Track {
 
         (rating / 2_f32).floor() as i32
     }
+
+    pub fn get_bitrate(&self) -> i64 {
+        match self.media.first() {
+            Some(media) => media.bitrate.unwrap_or(0),
+            None => 0,
+        }
+    }
+
+    pub fn get_title_and_artist_sort_key(&self) -> (String, String) {
+        (
+            self.get_track_title().to_string(),
+            self.get_track_artist().to_string(),
+        )
+    }
 }
 
 impl Display for Track {
@@ -155,7 +169,6 @@ impl Display for Track {
     }
 }
 
-/*
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Media {
@@ -177,4 +190,3 @@ pub struct Part {
     file: String,
     size: i64,
 }
-*/
