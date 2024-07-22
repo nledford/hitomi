@@ -1,20 +1,23 @@
 #![allow(dead_code)]
 
-use std::cmp::Reverse;
-use std::collections::BTreeMap;
-
+use anyhow::Result;
 use chrono::{Duration, TimeDelta};
 use derive_builder::Builder;
 use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use simplelog::info;
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::plex::models::tracks::Track;
+use crate::plex::PlexClient;
+use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::SectionType;
-use crate::utils;
+use crate::profiles::types::ProfileSourceId;
+use crate::profiles::{ProfileSource, SectionType};
+use crate::{db, utils};
 
-#[derive(Builder, Clone, Default)]
+#[derive(Builder, Clone)]
 pub struct ProfileTracks {
     #[builder(default)]
     unplayed: Vec<Track>,
@@ -27,8 +30,9 @@ pub struct ProfileTracks {
 }
 
 impl ProfileTracks {
-    pub fn new() -> Self {
-        Self::default()
+    pub async fn new(plex_client: &PlexClient, profile: &Profile) -> Result<Self> {
+        let profile_tracks = fetch_profile_tracks(plex_client, profile).await?;
+        Ok(profile_tracks)
     }
 
     pub fn have_unplayed_tracks(&self) -> bool {
@@ -403,4 +407,100 @@ fn remove_played_within_last_day(tracks: &mut Vec<Track>) {
             }
         })
         .collect_vec()
+}
+
+async fn fetch_profile_tracks(
+    plex_client: &PlexClient,
+    profile: &Profile,
+) -> Result<ProfileTracks> {
+    let sections =
+        db::profiles::fetch_profile_sections_for_profile(profile.get_profile_id()).await?;
+
+    let mut profile_tracks = ProfileTracksBuilder::default();
+    for section in &sections {
+        let tracks = fetch_section_tracks(
+            plex_client,
+            section,
+            profile.get_profile_source(),
+            profile.get_profile_source_id(),
+            profile.get_time_limit() as f64,
+        )
+            .await?;
+
+        match section.get_section_type() {
+            SectionType::Unplayed => {
+                profile_tracks.unplayed(tracks);
+            }
+            SectionType::LeastPlayed => {
+                profile_tracks.least_played(tracks);
+            }
+            SectionType::Oldest => {
+                profile_tracks.oldest(tracks);
+            }
+        }
+    }
+    let mut profile_tracks = profile_tracks.build().unwrap();
+    profile_tracks.run_manual_filters(&sections, profile.get_section_time_limit());
+
+    profile_tracks.merge();
+
+    Ok(profile_tracks)
+}
+
+async fn fetch_section_tracks(
+    plex_client: &PlexClient,
+    section: &ProfileSection,
+    profile_source: &ProfileSource,
+    profile_source_id: Option<&ProfileSourceId>,
+    time_limit: f64,
+) -> Result<Vec<Track>> {
+    let mut tracks = vec![];
+
+    if !section.is_enabled() {
+        return Ok(tracks);
+    }
+    let mut filters = HashMap::new();
+    if section.get_minimum_track_rating_adjusted() != 0 {
+        filters.insert(
+            "userRating>>".to_string(),
+            section.get_minimum_track_rating_adjusted().to_string(),
+        );
+    }
+
+    if section.is_unplayed_section() {
+        filters.insert("viewCount".to_string(), "0".to_string());
+    } else {
+        filters.insert("viewCount>>".to_string(), "0".to_string());
+    }
+
+    match profile_source {
+        // Nothing special needs to be done for a library source, so this branch is left blank
+        ProfileSource::Library => {}
+        ProfileSource::Collection => {
+            let collection = plex_client
+                .fetch_collection(profile_source_id.unwrap())
+                .await?;
+            let artists = plex_client
+                .fetch_artists_from_collection(&collection)
+                .await?;
+            let artists = artists.join(",");
+            filters.insert("artist.id".to_string(), artists);
+        }
+        // ProfileSource::Playlist => {
+        //     todo!("Playlist option not yet implemented")
+        // }
+        ProfileSource::SingleArtist => {
+            filters.insert(
+                "artist.id".to_string(),
+                profile_source_id.unwrap().to_string(),
+            );
+        }
+    }
+
+    let limit = (400.0 * (time_limit / 12.0)).floor() as i32;
+    tracks = plex_client
+        .fetch_music(filters, section.get_sorting_vec(), Some(limit))
+        .await?;
+
+    Ok(tracks)
 }

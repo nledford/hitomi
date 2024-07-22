@@ -16,10 +16,9 @@ use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::profile_tracks::{ProfileTracks, ProfileTracksBuilder};
+use crate::profiles::profile_tracks::ProfileTracks;
 use crate::profiles::refresh_result::RefreshResult;
-use crate::profiles::types::ProfileSourceId;
-use crate::profiles::{ProfileAction, ProfileSource, SectionType};
+use crate::profiles::ProfileAction;
 use crate::{config, db};
 
 #[derive(Clone, Debug, Default)]
@@ -178,13 +177,13 @@ impl ProfileManager {
             db::profiles::create_profile(playlist_id.as_str(), profile, sections).await?;
 
             info!("Adding tracks to newly created playlist...");
-            let merger = self.fetch_profile_tracks(profile).await?;
+            let profile_tracks = ProfileTracks::new(self.get_plex_client(), profile).await?;
             self.plex_client
-                .add_items_to_playlist(&playlist_id, &merger.get_track_ids())
+                .add_items_to_playlist(&playlist_id, &profile_tracks.get_track_ids())
                 .await?;
 
             print_refresh_results(
-                merger.get_merged_tracks(),
+                profile_tracks.get_merged_tracks(),
                 profile.get_title(),
                 ProfileAction::Create,
             );
@@ -196,14 +195,14 @@ impl ProfileManager {
     }
 
     pub async fn preview_playlist(&self, profile: &Profile) -> Result<()> {
-        let merger = self.fetch_profile_tracks(profile).await?;
-        merger.print_preview();
+        let profile_tracks = ProfileTracks::new(self.get_plex_client(), profile).await?;
+        profile_tracks.print_preview();
 
         Ok(())
     }
 
     pub async fn update_playlist(&self, profile: &Profile) -> Result<RefreshResult> {
-        let profile_tracks = self.fetch_profile_tracks(profile).await?;
+        let profile_tracks = ProfileTracks::new(self.get_plex_client(), profile).await?;
         info!("Updating `{}` playlist...", profile.get_title());
 
         info!("Wiping destination playlist...");
@@ -233,41 +232,6 @@ impl ProfileManager {
 
         Ok(refresh_result)
     }
-
-    pub async fn fetch_profile_tracks(&self, profile: &Profile) -> Result<ProfileTracks> {
-        let sections =
-            db::profiles::fetch_profile_sections_for_profile(profile.get_profile_id()).await?;
-
-        let mut profile_tracks = ProfileTracksBuilder::default();
-        for section in &sections {
-            let tracks = fetch_section_tracks(
-                self.get_plex_client(),
-                section,
-                profile.get_profile_source(),
-                profile.get_profile_source_id(),
-                profile.get_time_limit() as f64,
-            )
-            .await?;
-
-            match section.get_section_type() {
-                SectionType::Unplayed => {
-                    profile_tracks.unplayed(tracks);
-                }
-                SectionType::LeastPlayed => {
-                    profile_tracks.least_played(tracks);
-                }
-                SectionType::Oldest => {
-                    profile_tracks.oldest(tracks);
-                }
-            }
-        }
-        let mut profile_tracks = profile_tracks.build().unwrap();
-        profile_tracks.run_manual_filters(&sections, profile.get_section_time_limit());
-
-        profile_tracks.merge();
-
-        Ok(profile_tracks)
-    }
 }
 
 // UTILITY FUNCTIONS #############################################################
@@ -292,62 +256,4 @@ fn print_refresh_results(tracks: &[Track], playlist_title: &str, action: Profile
         size,
         duration
     );
-}
-
-async fn fetch_section_tracks(
-    plex_client: &PlexClient,
-    section: &ProfileSection,
-    profile_source: &ProfileSource,
-    profile_source_id: Option<&ProfileSourceId>,
-    time_limit: f64,
-) -> Result<Vec<Track>> {
-    let mut tracks = vec![];
-
-    if !section.is_enabled() {
-        return Ok(tracks);
-    }
-    let mut filters = HashMap::new();
-    if section.get_minimum_track_rating_adjusted() != 0 {
-        filters.insert(
-            "userRating>>".to_string(),
-            section.get_minimum_track_rating_adjusted().to_string(),
-        );
-    }
-
-    if section.is_unplayed_section() {
-        filters.insert("viewCount".to_string(), "0".to_string());
-    } else {
-        filters.insert("viewCount>>".to_string(), "0".to_string());
-    }
-
-    match profile_source {
-        // Nothing special needs to be done for a library source, so this branch is left blank
-        ProfileSource::Library => {}
-        ProfileSource::Collection => {
-            let collection = plex_client
-                .fetch_collection(profile_source_id.unwrap())
-                .await?;
-            let artists = plex_client
-                .fetch_artists_from_collection(&collection)
-                .await?;
-            let artists = artists.join(",");
-            filters.insert("artist.id".to_string(), artists);
-        }
-        // ProfileSource::Playlist => {
-        //     todo!("Playlist option not yet implemented")
-        // }
-        ProfileSource::SingleArtist => {
-            filters.insert(
-                "artist.id".to_string(),
-                profile_source_id.unwrap().to_string(),
-            );
-        }
-    }
-
-    let limit = (400.0 * (time_limit / 12.0)).floor() as i32;
-    tracks = plex_client
-        .fetch_music(filters, section.get_sorting_vec(), Some(limit))
-        .await?;
-
-    Ok(tracks)
 }
