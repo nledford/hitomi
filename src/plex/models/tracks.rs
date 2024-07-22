@@ -70,7 +70,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-            .trim()
+        .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
@@ -112,13 +112,13 @@ impl Track {
     pub fn get_played_today(&self) -> bool {
         self.get_last_played()
             >= Utc::now()
-            .with_hour(0)
-            .unwrap()
-            .with_minute(0)
-            .unwrap()
-            .with_second(0)
-            .unwrap()
-            .timestamp()
+                .with_hour(0)
+                .unwrap()
+                .with_minute(0)
+                .unwrap()
+                .with_second(0)
+                .unwrap()
+                .timestamp()
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
