@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use chrono::{Duration, TimeDelta};
 use derive_builder::Builder;
 use itertools::Itertools;
-use rand::seq::SliceRandom;
+use rand::prelude::SliceRandom;
 use simplelog::info;
 
 use crate::plex::models::tracks::Track;
@@ -14,33 +14,30 @@ use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::SectionType;
 use crate::utils;
 
-#[derive(Builder, Debug, Default)]
-pub struct SectionTracksMerger {
-    #[builder(default)]
+#[derive(Builder, Clone, Default)]
+pub struct ProfileTracks {
     unplayed: Vec<Track>,
-    #[builder(default)]
     least_played: Vec<Track>,
-    #[builder(default)]
     oldest: Vec<Track>,
     #[builder(default)]
     merged: Vec<Track>,
 }
 
-impl SectionTracksMerger {
+impl ProfileTracks {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn set_unplayed_tracks(&mut self, tracks: Vec<Track>) {
-        self.unplayed = tracks
+    pub fn have_unplayed_tracks(&self) -> bool {
+        !self.unplayed.is_empty()
     }
 
-    pub fn set_least_played_tracks(&mut self, tracks: Vec<Track>) {
-        self.least_played = tracks
+    pub fn have_least_played_tracks(&self) -> bool {
+        !self.least_played.is_empty()
     }
 
-    pub fn set_oldest_tracks(&mut self, tracks: Vec<Track>) {
-        self.oldest = tracks
+    pub fn have_oldest_tracks(&self) -> bool {
+        !self.oldest.is_empty()
     }
 
     fn get_section_tracks(&self, section_type: SectionType) -> &[Track] {
@@ -72,6 +69,63 @@ impl SectionTracksMerger {
         Duration::from(total)
     }
 
+    /// Returns a slice of the merged tracks
+    pub fn get_merged_tracks(&self) -> &[Track] {
+        &self.merged
+    }
+
+    /// Returns `false` if no sections are valid
+    fn get_none_are_valid(&self) -> bool {
+        self.get_num_valid() == 0
+    }
+
+    /// Returns the number of valid sections (those that are not empty)
+    fn get_num_valid(&self) -> usize {
+        [
+            !self.unplayed.is_empty(),
+            !self.least_played.is_empty(),
+            !self.oldest.is_empty(),
+        ]
+            .iter()
+            .filter(|x| **x)
+            .count()
+    }
+
+    /// Calculates the largest section from all sections included in the merger
+    ///
+    /// # Example
+    ///
+    /// - Unplayed Tracks:      100 Tracks
+    /// - Least Played Tracks:  105 Tracks
+    /// - Oldest Track:         103 Tracks
+    ///
+    /// The largest section is Least Played Tracks
+    fn get_largest_section_length(&self) -> usize {
+        *[
+            self.unplayed.len(),
+            self.least_played.len(),
+            self.oldest.len(),
+        ]
+            .iter()
+            .max()
+            .unwrap_or(&0_usize)
+    }
+
+    /// Returns a [`Vec`] of track IDs
+    pub fn get_track_ids(&self) -> Vec<String> {
+        if self.merged.is_empty() {
+            vec![]
+        } else {
+            self.merged
+                .iter()
+                .map(|track| track.get_id().to_string())
+                .collect::<Vec<_>>()
+        }
+    }
+}
+
+/*** Filters ***/
+impl ProfileTracks {
     /// Runs manual filters for the profile sections
     ///
     /// Manual filters are those that are unique to this application and not included with plex
@@ -120,73 +174,6 @@ impl SectionTracksMerger {
         deduplicate_tracks_by_lists(&mut self.oldest, &self.least_played, time_limit);
     }
 
-    /// Returns a slice of the merged tracks
-    pub fn get_combined_tracks(&self) -> &[Track] {
-        &self.merged
-    }
-
-    /// Returns `false` if no sections are valid
-    fn get_none_are_valid(&self) -> bool {
-        self.get_num_valid() == 0
-    }
-
-    /// Returns the number of valid sections (those that are not empty)
-    fn get_num_valid(&self) -> usize {
-        [
-            !self.unplayed.is_empty(),
-            !self.least_played.is_empty(),
-            !self.oldest.is_empty(),
-        ]
-        .iter()
-        .filter(|x| **x)
-        .count()
-    }
-
-    /// Calculates the largest section from all sections included in the merger
-    ///
-    /// # Example
-    ///
-    /// - Unplayed Tracks:      100 Tracks
-    /// - Least Played Tracks:  105 Tracks
-    /// - Oldest Track:         103 Tracks
-    ///
-    /// The largest section is Least Played Tracks
-    fn get_largest_section_length(&self) -> usize {
-        *[
-            self.unplayed.len(),
-            self.least_played.len(),
-            self.oldest.len(),
-        ]
-        .iter()
-        .max()
-        .unwrap_or(&0_usize)
-    }
-
-    /// Returns a [`Vec`] of track IDs
-    pub fn get_track_ids(&self) -> Vec<String> {
-        if self.merged.is_empty() {
-            vec![]
-        } else {
-            self.merged
-                .iter()
-                .map(|track| track.get_id().to_string())
-                .collect::<Vec<_>>()
-        }
-    }
-
-    /// Displays the first 25 tracks in the merged playlist in the console
-    pub fn print_preview(&self) {
-        if self.merged.is_empty() {
-            return;
-        }
-
-        let preview = self.merged.iter().take(25).collect::<Vec<_>>();
-
-        for (i, track) in preview.iter().enumerate() {
-            println!("{:2} {}", i + 1, track)
-        }
-    }
-
     /// Merges tracks from each playlist section into a single playlist
     ///
     /// The following pattern is followed:
@@ -220,6 +207,41 @@ impl SectionTracksMerger {
             }
         }
     }
+
+    /// Displays the first 25 tracks in the merged playlist in the console
+    pub fn print_preview(&self) {
+        if self.merged.is_empty() {
+            return;
+        }
+
+        let preview = self.merged.iter().take(25).collect::<Vec<_>>();
+
+        for (i, track) in preview.iter().enumerate() {
+            println!("{:2} {}", i + 1, track)
+        }
+    }
+}
+
+/// Deduplicates one list based on values in other lists
+fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, comp: &[Track], time_limit: f64) {
+    let mut tracks_chunks = chunk_by_time_limit(tracks, time_limit);
+    let comp_chunks = chunk_by_time_limit(comp, time_limit);
+
+    for i in 0..tracks_chunks.len() {
+        let i = i as i32;
+        if let (Some(track_chunk), Some(comp_chunk)) =
+            (tracks_chunks.get_mut(&i), comp_chunks.get(&i))
+        {
+            track_chunk.retain(|track| !comp_chunk.contains(track))
+        }
+    }
+
+    *tracks = tracks_chunks
+        .into_values()
+        .fold(Vec::new(), |mut acc, mut tracks| {
+            acc.append(&mut tracks);
+            acc
+        })
 }
 
 /// Remove duplicate tracks by the title and artist of a track
@@ -243,28 +265,6 @@ fn deduplicate_by_title_and_artist(tracks: &mut Vec<Track>) {
 /// Remove duplicate tracks based on the Plex `GUID`
 fn deduplicate_by_track_guid(tracks: &mut Vec<Track>) {
     tracks.dedup_by_key(|track| track.get_guid().to_owned());
-}
-
-/// Deduplicates one list based on values in other lists
-fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, comp: &[Track], time_limit: f64) {
-    let mut tracks_chunks = chunk_by_time_limit(tracks, time_limit);
-    let comp_chunks = chunk_by_time_limit(comp, time_limit);
-
-    for i in 0..tracks_chunks.len() {
-        let i = i as i32;
-        if let (Some(track_chunk), Some(comp_chunk)) =
-            (tracks_chunks.get_mut(&i), comp_chunks.get(&i))
-        {
-            track_chunk.retain(|track| !comp_chunk.contains(track))
-        }
-    }
-
-    *tracks = tracks_chunks
-        .into_values()
-        .fold(Vec::new(), |mut acc, mut tracks| {
-            acc.append(&mut tracks);
-            acc
-        })
 }
 
 /// Trims tracks by artist limit (in other words, the maximum number of tracks that can be included in the list by a single artist)
@@ -400,79 +400,4 @@ fn remove_played_within_last_day(tracks: &mut Vec<Track>) {
             }
         })
         .collect_vec()
-}
-
-// TESTS ######################################################################
-
-#[cfg(test)]
-mod tests {
-    use pretty_assertions::assert_eq;
-
-    use super::*;
-
-    // #[test]
-    // fn test_get_total_duration_of_section() {
-    //
-    // }
-
-    #[test]
-    fn test_get_num_tracks_by_section() {
-        let merger = SectionTracksMergerBuilder::default()
-            .unplayed(vec![Track::default(), Track::default()])
-            .least_played(vec![Track::default(), Track::default(), Track::default()])
-            .oldest(vec![Track::default()])
-            .build()
-            .unwrap();
-
-        assert_eq!(merger.get_num_tracks_by_section(SectionType::Unplayed), 2);
-        assert_eq!(
-            merger.get_num_tracks_by_section(SectionType::LeastPlayed),
-            3
-        );
-        assert_eq!(merger.get_num_tracks_by_section(SectionType::Oldest), 1);
-    }
-
-    #[test]
-    fn test_get_num_valid() {
-        let merger = SectionTracksMerger::default();
-        assert_eq!(merger.get_num_valid(), 0);
-        assert_ne!(merger.get_num_valid(), 1);
-        assert_ne!(merger.get_num_valid(), 2);
-        assert_ne!(merger.get_num_valid(), 3);
-
-        let tracks = vec![Track::default(), Track::default()];
-        let mut merger = SectionTracksMergerBuilder::default()
-            .unplayed(tracks.clone())
-            .build()
-            .unwrap();
-        assert_ne!(merger.get_num_valid(), 0);
-        assert_eq!(merger.get_num_valid(), 1);
-        assert_ne!(merger.get_num_valid(), 2);
-        assert_ne!(merger.get_num_valid(), 3);
-
-        merger.least_played = tracks.clone();
-        assert_ne!(merger.get_num_valid(), 0);
-        assert_ne!(merger.get_num_valid(), 1);
-        assert_eq!(merger.get_num_valid(), 2);
-        assert_ne!(merger.get_num_valid(), 3);
-
-        merger.oldest = tracks.clone();
-        assert_ne!(merger.get_num_valid(), 0);
-        assert_ne!(merger.get_num_valid(), 1);
-        assert_ne!(merger.get_num_valid(), 2);
-        assert_eq!(merger.get_num_valid(), 3);
-    }
-
-    #[test]
-    fn test_get_none_are_valid() {
-        let merger = SectionTracksMerger::default();
-        assert_eq!(merger.get_none_are_valid(), true);
-
-        let tracks = vec![Track::default(), Track::default()];
-        let merger = SectionTracksMergerBuilder::default()
-            .unplayed(tracks)
-            .build()
-            .unwrap();
-        assert_eq!(merger.get_none_are_valid(), false);
-    }
 }

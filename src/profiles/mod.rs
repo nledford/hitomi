@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, FromRepr, VariantNames};
 
 pub mod manager;
-mod merger;
 pub mod profile;
 pub mod profile_section;
+mod profile_tracks;
 mod refresh_result;
 pub mod types;
 pub mod wizards;
