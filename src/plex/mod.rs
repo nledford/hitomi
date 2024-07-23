@@ -160,8 +160,6 @@ impl PlexClient {
         sort: Vec<&str>,
         max_results: Option<i32>,
     ) -> Result<Vec<Track>> {
-        let max_results = Some(max_results.unwrap_or(1111));
-
         let sort = &sort.join(",");
 
         let mut params = HashMap::new();

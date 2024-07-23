@@ -10,13 +10,13 @@ use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use simplelog::info;
 
+use crate::db;
 use crate::plex::models::tracks::Track;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
 use crate::profiles::{ProfileSource, SectionType};
-use crate::{db};
 
 #[derive(Builder, Clone)]
 pub struct ProfileTracks {
@@ -166,7 +166,9 @@ impl ProfileTracks {
 
             sort_tracks(tracks, section.get_section_type());
 
-            reduce_to_time_limit(tracks, time_limit);
+            if time_limit > 0.0 {
+                reduce_to_time_limit(tracks, time_limit);
+            }
 
             if section.get_randomize_tracks() {
                 randomizer(tracks, section.get_section_type())
@@ -345,10 +347,18 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
 /// Reduces a list of tracks to a given time limit
 fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
     let index = determine_time_limit_index(tracks, time_limit);
-    *tracks = tracks.iter().get(0..=index).map(|x| x.to_owned()).collect_vec();
+    *tracks = tracks
+        .iter()
+        .get(0..=index)
+        .map(|x| x.to_owned())
+        .collect_vec();
 }
 
 fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
+    if time_limit == 0.0 {
+        return tracks.len();
+    }
+
     let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
 
     let total_duration: i64 = tracks.iter().map(|track| track.get_track_duration()).sum();
@@ -495,9 +505,13 @@ async fn fetch_section_tracks(
         }
     }
 
-    let limit = (400.0 * (time_limit / 12.0)).floor() as i32;
+    let limit = if time_limit <= 0.0 {
+        None
+    } else {
+        Some((400.0 * (time_limit / 12.0)).floor() as i32)
+    };
     tracks = plex_client
-        .fetch_music(filters, section.get_sorting_vec(), Some(limit))
+        .fetch_music(filters, section.get_sorting_vec(), limit)
         .await?;
 
     Ok(tracks)
