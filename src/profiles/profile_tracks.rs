@@ -16,7 +16,7 @@ use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::types::ProfileSourceId;
 use crate::profiles::{ProfileSource, SectionType};
-use crate::{db, utils};
+use crate::{db};
 
 #[derive(Builder, Clone)]
 pub struct ProfileTracks {
@@ -345,7 +345,7 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
 /// Reduces a list of tracks to a given time limit
 fn reduce_to_time_limit(tracks: &mut Vec<Track>, time_limit: f64) {
     let index = determine_time_limit_index(tracks, time_limit);
-    *tracks = utils::get_slice(tracks, 0, index).unwrap().to_vec();
+    *tracks = tracks.iter().get(0..=index).map(|x| x.to_owned()).collect_vec();
 }
 
 fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
