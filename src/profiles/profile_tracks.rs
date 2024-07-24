@@ -29,6 +29,12 @@ pub struct ProfileTracks {
     merged: Vec<Track>,
 }
 
+impl AsRef<ProfileTracks> for ProfileTracks {
+    fn as_ref(&self) -> &ProfileTracks {
+        self
+    }
+}
+
 impl ProfileTracks {
     pub async fn new(plex_client: &PlexClient, profile: &Profile) -> Result<Self> {
         let profile_tracks = fetch_profile_tracks(plex_client, profile).await?;

@@ -53,6 +53,11 @@ pub struct Profile {
     eligible_for_refresh: bool,
 }
 
+impl AsRef<Profile> for Profile {
+    fn as_ref(&self) -> &Profile {
+        self
+    }
+
 impl Profile {
     pub fn get_profile_id(&self) -> i32 {
         self.profile_id
