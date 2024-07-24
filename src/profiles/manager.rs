@@ -5,22 +5,22 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 use itertools::Itertools;
 use simplelog::{error, info};
 use tokio::task::JoinSet;
 
-use crate::{config, db};
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::PlexClient;
 use crate::plex::types::PlexId;
+use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::profile_tracks::ProfileTracks;
-use crate::profiles::ProfileAction;
 use crate::profiles::refresh_result::RefreshResult;
+use crate::profiles::ProfileAction;
+use crate::{config, db};
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {

@@ -188,7 +188,7 @@ impl ProfileTracks {
         }
 
         deduplicate_tracks_by_lists(&mut self.least_played, &self.oldest, time_limit);
-        // deduplicate_tracks_by_lists(&mut self.oldest, &self.least_played, time_limit);
+        deduplicate_tracks_by_lists(&mut self.oldest, &self.least_played, time_limit);
     }
 
     /// Merges tracks from each playlist section into a single playlist
