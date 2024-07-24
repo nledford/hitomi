@@ -15,7 +15,6 @@ use crate::plex::models::tracks::Track;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::types::ProfileSourceId;
 use crate::profiles::{ProfileSource, SectionType};
 
 #[derive(Builder, Clone)]
@@ -234,24 +233,34 @@ impl ProfileTracks {
 
 /// Deduplicates one list based on values in other lists
 fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, comp: &[Track], time_limit: f64) {
-    let mut tracks_chunks = chunk_by_time_limit(tracks, time_limit);
-    let comp_chunks = chunk_by_time_limit(comp, time_limit);
+    loop {
+        let orig_len = tracks.len();
+        
+        let mut tracks_chunks = chunk_by_time_limit(tracks, time_limit);
+        let comp_chunks = chunk_by_time_limit(comp, time_limit);
 
-    for i in 0..tracks_chunks.len() {
-        let i = i as i32;
-        if let (Some(track_chunk), Some(comp_chunk)) =
-            (tracks_chunks.get_mut(&i), comp_chunks.get(&i))
-        {
-            track_chunk.retain(|track| !comp_chunk.contains(track))
+        for i in 0..tracks_chunks.len() {
+            let i = i as i32;
+
+            if let (Some(track_chunk), Some(comp_chunk)) =
+                (tracks_chunks.get_mut(&i), comp_chunks.get(&i))
+            {
+                track_chunk.retain(|track| !comp_chunk.contains(track));
+            }
+        }
+
+        *tracks = tracks_chunks
+            .into_values()
+            .fold(Vec::new(), |mut acc, mut tracks| {
+                acc.append(&mut tracks);
+                acc
+            });
+
+        let new_len = tracks.len();
+        if new_len == orig_len {
+            break;
         }
     }
-
-    *tracks = tracks_chunks
-        .into_values()
-        .fold(Vec::new(), |mut acc, mut tracks| {
-            acc.append(&mut tracks);
-            acc
-        })
 }
 
 /// Remove duplicate tracks by the title and artist of a track
@@ -430,9 +439,8 @@ async fn fetch_profile_tracks(
     for section in &sections {
         let tracks = fetch_section_tracks(
             plex_client,
+            profile,
             section,
-            profile.get_profile_source(),
-            profile.get_profile_source_id(),
             profile.get_time_limit() as f64,
         )
         .await?;
@@ -460,9 +468,8 @@ async fn fetch_profile_tracks(
 
 async fn fetch_section_tracks(
     plex_client: &PlexClient,
+    profile: &Profile,
     section: &ProfileSection,
-    profile_source: &ProfileSource,
-    profile_source_id: Option<&ProfileSourceId>,
     time_limit: f64,
 ) -> Result<Vec<Track>> {
     let mut tracks = vec![];
@@ -484,12 +491,12 @@ async fn fetch_section_tracks(
         filters.insert("viewCount>>".to_string(), "0".to_string());
     }
 
-    match profile_source {
+    match profile.get_profile_source() {
         // Nothing special needs to be done for a library source, so this branch is left blank
         ProfileSource::Library => {}
         ProfileSource::Collection => {
             let collection = plex_client
-                .fetch_collection(profile_source_id.unwrap())
+                .fetch_collection(profile.get_profile_source_id().unwrap())
                 .await?;
             let artists = plex_client
                 .fetch_artists_from_collection(&collection)
@@ -500,7 +507,7 @@ async fn fetch_section_tracks(
         ProfileSource::SingleArtist => {
             filters.insert(
                 "artist.id".to_string(),
-                profile_source_id.unwrap().to_string(),
+                profile.get_profile_source_id().unwrap().to_string(),
             );
         }
     }
