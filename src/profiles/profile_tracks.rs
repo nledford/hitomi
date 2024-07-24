@@ -13,9 +13,9 @@ use simplelog::info;
 use crate::db;
 use crate::plex::models::tracks::Track;
 use crate::plex::PlexClient;
+use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::{ProfileSource, SectionType};
 
 #[derive(Builder, Clone)]
 pub struct ProfileTracks {
@@ -93,9 +93,9 @@ impl ProfileTracks {
             self.have_least_played_tracks(),
             self.have_oldest_tracks(),
         ]
-        .iter()
-        .filter(|x| **x)
-        .count()
+            .iter()
+            .filter(|x| **x)
+            .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -113,9 +113,9 @@ impl ProfileTracks {
             self.least_played.len(),
             self.oldest.len(),
         ]
-        .iter()
-        .max()
-        .unwrap_or(&0_usize)
+            .iter()
+            .max()
+            .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
@@ -235,16 +235,14 @@ impl ProfileTracks {
 fn deduplicate_tracks_by_lists(tracks: &mut Vec<Track>, comp: &[Track], time_limit: f64) {
     loop {
         let orig_len = tracks.len();
-        
+
         let mut tracks_chunks = chunk_by_time_limit(tracks, time_limit);
         let comp_chunks = chunk_by_time_limit(comp, time_limit);
 
-        for i in 0..tracks_chunks.len() {
-            let i = i as i32;
-
-            if let (Some(track_chunk), Some(comp_chunk)) =
-                (tracks_chunks.get_mut(&i), comp_chunks.get(&i))
-            {
+        for i in 0..(tracks_chunks.len() as i32) {
+            let track_chunk = tracks_chunks.get_mut(&i);
+            let comp_chunk = comp_chunks.get(&i);
+            if let (Some(track_chunk), Some(comp_chunk)) = (track_chunk, comp_chunk) {
                 track_chunk.retain(|track| !comp_chunk.contains(track));
             }
         }
@@ -443,7 +441,7 @@ async fn fetch_profile_tracks(
             section,
             profile.get_time_limit() as f64,
         )
-        .await?;
+            .await?;
 
         match section.get_section_type() {
             SectionType::Unplayed => {
