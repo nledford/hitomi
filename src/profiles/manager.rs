@@ -5,21 +5,22 @@ use std::time::Duration;
 
 use anyhow::Result;
 use chrono::{Local, Timelike, Utc};
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
+use dialoguer::theme::ColorfulTheme;
 use itertools::Itertools;
 use simplelog::{error, info};
+use tokio::task::JoinSet;
 
+use crate::{config, db};
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
+use crate::plex::types::PlexId;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::profile_tracks::ProfileTracks;
-use crate::profiles::refresh_result::RefreshResult;
 use crate::profiles::ProfileAction;
-use crate::{config, db};
+use crate::profiles::refresh_result::RefreshResult;
 
 #[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
@@ -129,30 +130,35 @@ impl ProfileManager {
         }
 
         let profiles = self.get_profiles_to_refresh(ran_once).await?;
-        let tasks = profiles
-            .iter()
-            .map(|profile| self.update_playlist(profile))
-            .collect::<Vec<_>>();
+        let mut set = JoinSet::new();
+        for profile in profiles {
+            set.spawn(update_playlist(self.get_plex_client().to_owned(), profile));
+        }
 
-        match futures::future::try_join_all(tasks).await {
-            Ok(results) => {
-                info!(
-                    "<b>{} Profile{} updated at {}:</b>",
-                    results.len(),
-                    if results.len() == 1 { "" } else { "s" },
-                    Local::now().format("%T")
-                );
-                for result in results.iter().sorted_by_key(|result| result.get_title()) {
-                    println!("{result}\n");
-                }
+        let mut results = vec![];
+        while let Some(res) = set.join_next().await {
+            let res = res?;
 
-                if run_loop {
-                    self.print_update().await?;
+            match res {
+                Ok(refresh_result) => results.push(refresh_result),
+                Err(err) => {
+                    error!("An error occurred while attempting to refresh playlists`: {err}")
                 }
             }
-            Err(err) => {
-                error!("An error occurred while attempting to refresh playlists: {err}")
-            }
+        }
+
+        info!(
+            "<b>{} Profile{} updated at {}:</b>",
+            results.len(),
+            if results.len() == 1 { "" } else { "s" },
+            Local::now().format("%T")
+        );
+        for result in results.iter().sorted_by_key(|result| result.get_title()) {
+            println!("{result}\n");
+        }
+
+        if run_loop {
+            self.print_update().await?;
         }
 
         Ok(())
@@ -200,38 +206,6 @@ impl ProfileManager {
 
         Ok(())
     }
-
-    pub async fn update_playlist(&self, profile: &Profile) -> Result<RefreshResult> {
-        let profile_tracks = ProfileTracks::new(self.get_plex_client(), profile).await?;
-        info!("Updating `{}` playlist...", profile.get_title());
-
-        info!("Wiping destination playlist...");
-        self.plex_client
-            .clear_playlist(profile.get_playlist_id())
-            .await?;
-
-        info!("Updating destination playlist...");
-        self.plex_client
-            .add_items_to_playlist(profile.get_playlist_id(), &profile_tracks.get_track_ids())
-            .await?;
-
-        let summary = format!(
-            "{}\n{}",
-            profile.get_next_refresh_str(),
-            profile.get_summary()
-        );
-        self.plex_client
-            .update_summary(profile.get_playlist_id(), &summary)
-            .await?;
-
-        let refresh_result = RefreshResult::new(
-            profile.get_title(),
-            profile_tracks.get_merged_tracks(),
-            ProfileAction::Update,
-        );
-
-        Ok(refresh_result)
-    }
 }
 
 // UTILITY FUNCTIONS #############################################################
@@ -256,4 +230,36 @@ fn print_refresh_results(tracks: &[Track], playlist_title: &str, action: Profile
         size,
         duration
     );
+}
+
+async fn update_playlist(plex_client: PlexClient, profile: Profile) -> Result<RefreshResult> {
+    let profile_tracks = ProfileTracks::new(&plex_client, &profile).await?;
+    info!("Updating `{}` playlist...", profile.get_title());
+
+    info!("Wiping destination playlist...");
+    plex_client
+        .clear_playlist(profile.get_playlist_id())
+        .await?;
+
+    info!("Updating destination playlist...");
+    plex_client
+        .add_items_to_playlist(profile.get_playlist_id(), &profile_tracks.get_track_ids())
+        .await?;
+
+    let summary = format!(
+        "{}\n{}",
+        profile.get_next_refresh_str(),
+        profile.get_summary()
+    );
+    plex_client
+        .update_summary(profile.get_playlist_id(), &summary)
+        .await?;
+
+    let refresh_result = RefreshResult::new(
+        profile.get_title(),
+        profile_tracks.get_merged_tracks(),
+        ProfileAction::Update,
+    );
+
+    Ok(refresh_result)
 }
