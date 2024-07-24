@@ -104,7 +104,11 @@ impl Profile {
     }
 
     pub fn get_time_limit(&self) -> u32 {
-        self.time_limit
+        if self.time_limit == 0 {
+            365 * 24
+        } else {
+            self.time_limit
+        }
     }
 
     pub fn get_track_limit(&self) -> u32 {

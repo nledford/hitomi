@@ -13,9 +13,9 @@ use simplelog::info;
 use crate::db;
 use crate::plex::models::tracks::Track;
 use crate::plex::PlexClient;
-use crate::profiles::{ProfileSource, SectionType};
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
+use crate::profiles::{ProfileSource, SectionType};
 
 #[derive(Builder, Clone)]
 pub struct ProfileTracks {
@@ -179,8 +179,16 @@ impl ProfileTracks {
     ///
     /// Least played is deduplicated first, and oldest is deduplicated second
     fn deduplicate_lists(&mut self, time_limit: f64) {
+        if !self.have_oldest_tracks() || !self.have_least_played_tracks() {
+            return;
+        }
+
+        if time_limit <= 0.0 {
+            panic!("Time limit cannot be less than or equal to zero")
+        }
+
         deduplicate_tracks_by_lists(&mut self.least_played, &self.oldest, time_limit);
-        deduplicate_tracks_by_lists(&mut self.oldest, &self.least_played, time_limit);
+        // deduplicate_tracks_by_lists(&mut self.oldest, &self.least_played, time_limit);
     }
 
     /// Merges tracks from each playlist section into a single playlist
@@ -333,7 +341,7 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
                 let key = match section_type {
                     SectionType::Oldest => track.get_last_played_year_and_month(),
                     _ => format!(
-                        "{:04}-{}",
+                        "{:04}: {}",
                         track.get_plays(),
                         track.get_last_played_year_and_month(),
                     ),
