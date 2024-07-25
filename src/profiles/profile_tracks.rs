@@ -99,9 +99,9 @@ impl ProfileTracks {
             self.have_least_played_tracks(),
             self.have_oldest_tracks(),
         ]
-            .iter()
-            .filter(|x| **x)
-            .count()
+        .iter()
+        .filter(|x| **x)
+        .count()
     }
 
     /// Calculates the largest section from all sections included in the merger
@@ -119,9 +119,9 @@ impl ProfileTracks {
             self.least_played.len(),
             self.oldest.len(),
         ]
-            .iter()
-            .max()
-            .unwrap_or(&0_usize)
+        .iter()
+        .max()
+        .unwrap_or(&0_usize)
     }
 
     /// Returns a [`Vec`] of track IDs
@@ -455,7 +455,7 @@ async fn fetch_profile_tracks(
             section,
             profile.get_time_limit() as f64,
         )
-            .await?;
+        .await?;
 
         match section.get_section_type() {
             SectionType::Unplayed => {
