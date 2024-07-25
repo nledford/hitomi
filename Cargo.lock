@@ -855,7 +855,6 @@ dependencies = [
  "itertools",
  "log",
  "nutype",
- "once_cell",
  "pretty_assertions",
  "rand 0.9.0-alpha.1",
  "regex",

@@ -57,6 +57,7 @@ impl AsRef<Profile> for Profile {
     fn as_ref(&self) -> &Profile {
         self
     }
+}
 
 impl Profile {
     pub fn get_profile_id(&self) -> i32 {

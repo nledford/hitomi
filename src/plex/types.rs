@@ -1,12 +1,12 @@
 use nutype::nutype;
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 
-static PLEX_ID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[0-9]{4,6}$").unwrap());
-static PLEX_TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\w{9}-\w{10}$").unwrap());
+static PLEX_ID_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[0-9]{4,6}$").unwrap());
+static PLEX_TOKEN_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w{9}-\w{10}$").unwrap());
 
 // SOURCE: https://stackoverflow.com/a/3809435
-static PLEX_URL_REGEX: Lazy<Regex> = Lazy::new(|| {
+static PLEX_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"https?://(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)").unwrap()
 });
 

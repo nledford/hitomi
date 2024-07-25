@@ -1,12 +1,12 @@
 use nutype::nutype;
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 
 use crate::profiles::SectionType;
 
-static PROFILE_SOURCE_ID_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\d+$").unwrap());
-static PROFILE_SECTION_SORT_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^(([A-Za-z]+:?[A-Za-z]*),?)+$").unwrap());
+static PROFILE_SOURCE_ID_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d+$").unwrap());
+static PROFILE_SECTION_SORT_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(([A-Za-z]+:?[A-Za-z]*),?)+$").unwrap());
 
 #[nutype(
     derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, AsRef, Deref),
