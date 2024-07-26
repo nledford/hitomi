@@ -18,31 +18,19 @@ pub struct Track {
     grandparent_guid: Guid,
     // pub parent_studio: Option<String>,
     #[serde(alias = "type")]
-    pub track_type: String,
+    track_type: String,
     title: Title,
-    pub parent_key: PlexKey,
-    pub grandparent_key: PlexKey,
+    parent_key: PlexKey,
+    grandparent_key: PlexKey,
     grandparent_title: Title,
     parent_title: Title,
-    // pub summary: String,
-    pub index: Option<u32>,
-    pub parent_index: u32,
-    // rating_count: Option<i32>,
+    index: Option<u32>,
+    parent_index: u32,
     user_rating: Option<f32>,
     view_count: Option<i32>,
     last_viewed_at: Option<i64>,
-    // pub last_rated_at: Option<i64>,
     parent_year: Option<i32>,
-    // pub thumb: Option<String>,
-    // pub art: Option<String>,
-    // pub parent_thumb: Option<String>,
-    // pub grandparent_thumb: Option<String>,
-    // pub grandparent_art: Option<String>,
     duration: Option<i64>,
-    // added_at: Option<i64>,
-    // updated_at: Option<i64>,
-    skip_count: Option<i32>,
-    // pub music_analysis_version: Option<String>,
     original_title: Option<Title>,
     #[serde(alias = "Media")]
     pub media: Vec<Media>,
@@ -70,7 +58,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-        .trim()
+            .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
@@ -112,13 +100,13 @@ impl Track {
     pub fn get_played_today(&self) -> bool {
         self.get_last_played()
             >= Utc::now()
-                .with_hour(0)
-                .unwrap()
-                .with_minute(0)
-                .unwrap()
-                .with_second(0)
-                .unwrap()
-                .timestamp()
+            .with_hour(0)
+            .unwrap()
+            .with_minute(0)
+            .unwrap()
+            .with_second(0)
+            .unwrap()
+            .timestamp()
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
