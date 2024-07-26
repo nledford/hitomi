@@ -1,10 +1,11 @@
-use anyhow::Result;
-use clap::{Parser, Subcommand};
-
 use crate::cli::config::CliConfig;
 use crate::cli::profile::CliProfile;
 use crate::cli::run::RunCmds;
+use crate::db;
 use crate::profiles::manager::ProfileManager;
+use anyhow::Result;
+use clap::{Parser, Subcommand};
+use log::Level;
 
 mod config;
 mod profile;
@@ -14,6 +15,13 @@ mod run;
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Cli {
+    /// Use the database file at this location, if `DATABASE_URL` is not set
+    #[arg(long = "db")]
+    pub database_url: Option<String>,
+    /// Set logging level, e.g. Debug, Info, Error.
+    #[arg(long)]
+    pub log_level: Option<Level>,
+    /// hitomi commands
     #[command(subcommand)]
     pub commands: Commands,
 }
@@ -26,6 +34,7 @@ pub enum Commands {
 }
 
 pub async fn run_cli_command(cli: Cli) -> Result<()> {
+    db::initialize_pool(cli.database_url.as_deref()).await?;
     match cli.commands {
         Commands::Run(run) => {
             run::execute_run_cmd(run).await?;

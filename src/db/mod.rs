@@ -14,11 +14,13 @@ pub mod profiles;
 
 pub static POOL: OnceCell<SqlitePool> = OnceCell::const_new();
 
-pub async fn initialize_pool() -> Result<()> {
-    let database_url = if let Ok(database_url) = env::var("DATABASE_URL") {
+pub async fn initialize_pool(database_url: Option<&str>) -> Result<()> {
+    let database_url = if let Ok(database_url) = env::var("DATABAE_URL") {
         database_url
+    } else if let Some(database_url) = database_url {
+        database_url.to_string()
     } else {
-        warn!("Environment variable `DATABASE_URL` not set. Using default URL.");
+        warn!("Environment variable `DATABASE_URL` not set and --db flag not provided. Using default URL.");
         String::from("sqlite:./data/hitomi.db")
     };
 

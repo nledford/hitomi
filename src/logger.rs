@@ -5,6 +5,8 @@ use anyhow::Result;
 use log::LevelFilter;
 use simplelog::*;
 
+const DEFAULT_LOG_LEVEL: LevelFilter = LevelFilter::Info;
+
 pub fn initialize_logger() -> Result<()> {
     let logger_config = ConfigBuilder::new()
         .set_time_level(LevelFilter::Off)
@@ -27,9 +29,9 @@ fn get_log_level() -> LevelFilter {
         if let Ok(log_level) = LevelFilter::from_str(&log_level) {
             log_level
         } else {
-            LevelFilter::Debug
+            DEFAULT_LOG_LEVEL
         }
     } else {
-        LevelFilter::Debug
+        DEFAULT_LOG_LEVEL
     }
 }
