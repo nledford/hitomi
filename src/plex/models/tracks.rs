@@ -16,7 +16,6 @@ pub struct Track {
     guid: Guid,
     parent_guid: Guid,
     grandparent_guid: Guid,
-    // pub parent_studio: Option<String>,
     #[serde(alias = "type")]
     track_type: String,
     title: Title,
@@ -58,7 +57,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-            .trim()
+        .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
@@ -100,13 +99,13 @@ impl Track {
     pub fn get_played_today(&self) -> bool {
         self.get_last_played()
             >= Utc::now()
-            .with_hour(0)
-            .unwrap()
-            .with_minute(0)
-            .unwrap()
-            .with_second(0)
-            .unwrap()
-            .timestamp()
+                .with_hour(0)
+                .unwrap()
+                .with_minute(0)
+                .unwrap()
+                .with_second(0)
+                .unwrap()
+                .timestamp()
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
@@ -165,16 +164,4 @@ pub struct Media {
     duration: Option<i64>,
     audio_channels: i64,
     audio_codec: String,
-    #[serde(alias = "Part")]
-    part: Vec<Part>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct Part {
-    id: i64,
-    key: String,
-    duration: Option<i64>,
-    file: String,
-    size: i64,
 }
