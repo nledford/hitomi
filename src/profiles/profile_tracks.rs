@@ -1,14 +1,13 @@
 #![allow(dead_code)]
 
-use std::cmp::Reverse;
-use std::collections::{BTreeMap, HashMap};
-
 use anyhow::Result;
-use chrono::{Duration, TimeDelta};
 use derive_builder::Builder;
 use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use simplelog::info;
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, HashMap};
+use std::time;
 
 use crate::db;
 use crate::plex::models::tracks::Track;
@@ -73,13 +72,14 @@ impl ProfileTracks {
         self.get_section_tracks(section_type).len()
     }
 
-    fn get_total_duration_of_section(&self, section_type: SectionType) -> Duration {
+    fn get_total_duration_of_section(&self, section_type: SectionType) -> time::Duration {
         let tracks = self.get_section_tracks(section_type);
-        let total = tracks.iter().fold(TimeDelta::seconds(0), |mut acc, track| {
-            acc += track.get_track_duration_timedelta();
+        let total = tracks.iter().fold(0, |mut acc, track| {
+            acc += track.get_track_duration();
             acc
         });
-        Duration::from(total)
+        // Duration::from(total)
+        time::Duration::from_millis(total as u64)
     }
 
     /// Returns a slice of the merged tracks
@@ -380,20 +380,21 @@ fn determine_time_limit_index(tracks: &[Track], time_limit: f64) -> usize {
         return tracks.len();
     }
 
-    let limit = TimeDelta::seconds((time_limit * 60_f64 * 60_f64) as i64);
+    // Milliseconds
+    let limit = (time_limit * 60.0 * 60.0 * 1000.0).ceil() as i64;
 
+    // Milliseconds
     let total_duration: i64 = tracks.iter().map(|track| track.get_track_duration()).sum();
-    let total_duration = TimeDelta::milliseconds(total_duration);
 
     if total_duration <= limit {
         return tracks.len();
     }
 
-    let mut accum_total = TimeDelta::seconds(0);
+    let mut accum_total = 0;
     let index = tracks
         .iter()
         .position(|track| {
-            accum_total += track.get_track_duration_timedelta();
+            accum_total += track.get_track_duration();
             accum_total > limit
         })
         .unwrap_or(0);

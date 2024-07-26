@@ -80,16 +80,15 @@ select profile_id,
        time_limit,
        track_limit,
        num_sections,
-       num_sections >= 3 has_max_sections,
-       (cast(time_limit as real) / cast(num_sections as real))                   section_time_limit,
-       cast((60.0 / refresh_interval) as integer)                                refreshes_per_hour,
-       datetime(strftime('%s', current_timestamp) - (strftime('%s', current_timestamp) % (refresh_interval * 60.0)),
-                'unixepoch',
-                'localtime')                                                     current_refresh,
-       datetime(strftime('%s', current_timestamp) +
-                ((refresh_interval * 60.0) - (strftime('%s', current_timestamp)) % (refresh_interval * 60.0)),
-                'unixepoch', 'localtime')                                        next_refresh_at,
-       (cast(strftime('%M', current_timestamp) as real) % refresh_interval == 0) eligible_for_refresh
+       num_sections >= 3                                                                  has_max_sections,
+       (cast(time_limit as real) / cast(num_sections as real))                            section_time_limit,
+       cast((60.0 / refresh_interval) as integer)                                         refreshes_per_hour,
+       cast(strftime('%s', current_timestamp) -
+            (strftime('%s', current_timestamp) % (refresh_interval * 60.0)) as integer)   current_refresh,
+       cast(strftime('%s', current_timestamp) +
+            ((refresh_interval * 60.0) -
+             (strftime('%s', current_timestamp)) % (refresh_interval * 60.0)) as integer) next_refresh_at,
+       (cast(strftime('%M', current_timestamp) as real) % refresh_interval == 0)          eligible_for_refresh
 from (select profile_id,
              playlist_id,
              profile_title,

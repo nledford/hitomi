@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Result;
-use chrono::{Local, Timelike, Utc};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
+use jiff::Zoned;
 use simplelog::{error, info};
 use tokio::task::JoinSet;
 
@@ -85,7 +85,7 @@ impl ProfileManager {
     }
 
     pub async fn fetch_any_profile_refresh(&self) -> Result<bool> {
-        if Utc::now().second() != 0 {
+        if Zoned::now().second() != 0 {
             return Ok(false);
         }
 
@@ -151,7 +151,7 @@ impl ProfileManager {
             "<b>{} Profile{} updated at {}:</b>",
             results.len(),
             if results.len() == 1 { "" } else { "s" },
-            Local::now().format("%T")
+            Zoned::now().strftime("%T")
         );
         for result in results.iter().sorted_by_key(|result| result.get_title()) {
             println!("{result}\n");

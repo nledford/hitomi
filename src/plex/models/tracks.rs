@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
-use chrono::{DateTime, Duration, TimeDelta, Timelike, Utc};
+use jiff::tz::TimeZone;
+use jiff::{Timestamp, Zoned};
 use serde::{Deserialize, Serialize};
 
 use crate::plex::types::{Guid, PlexId, PlexKey};
@@ -29,6 +30,7 @@ pub struct Track {
     view_count: Option<i32>,
     last_viewed_at: Option<i64>,
     parent_year: Option<i32>,
+    /// Duration is in milliseconds
     duration: Option<i64>,
     original_title: Option<Title>,
     #[serde(alias = "Media")]
@@ -68,49 +70,52 @@ impl Track {
         self.grandparent_guid.as_str()
     }
 
+    /// Duration is in milliseconds
     pub fn get_track_duration(&self) -> i64 {
         self.duration.unwrap_or(0)
     }
 
-    pub fn get_track_duration_timedelta(&self) -> TimeDelta {
-        TimeDelta::milliseconds(self.get_track_duration())
-    }
-
+    /// In milliseconds
     pub fn get_last_played(&self) -> i64 {
         self.last_viewed_at.unwrap_or(0)
     }
 
     pub fn get_last_played_str(&self) -> String {
-        DateTime::from_timestamp(self.get_last_played(), 0)
+        Timestamp::from_millisecond(self.get_last_played())
             .unwrap()
-            .naive_local()
-            .format("%F")
+            .strftime("%F")
             .to_string()
     }
 
     pub fn get_last_played_year_and_month(&self) -> String {
-        DateTime::from_timestamp(self.get_last_played(), 0)
+        Timestamp::from_millisecond(self.get_last_played())
             .unwrap()
-            .naive_local()
-            .format("%Y-%m")
+            .strftime("%Y-%m")
             .to_string()
     }
 
     pub fn get_played_today(&self) -> bool {
-        self.get_last_played()
-            >= Utc::now()
-                .with_hour(0)
-                .unwrap()
-                .with_minute(0)
-                .unwrap()
-                .with_second(0)
-                .unwrap()
-                .timestamp()
+        let last_played = Timestamp::from_millisecond(self.get_last_played())
+            .unwrap()
+            .to_zoned(TimeZone::system());
+        let today_at_midnight = Timestamp::now().to_zoned(TimeZone::system()).start_of_day();
+
+        if let (last_played, Ok(today_at_midnight)) = (last_played, today_at_midnight) {
+            last_played >= today_at_midnight
+        } else {
+            false
+        }
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
-        let one_day_ago = (Utc::now() - Duration::days(1)).timestamp();
-        self.get_last_played() >= one_day_ago
+        let last_played = Timestamp::from_millisecond(self.get_last_played())
+            .unwrap()
+            .to_zoned(TimeZone::UTC);
+        let one_day_ago = Zoned::now()
+            .with_time_zone(TimeZone::UTC)
+            .yesterday()
+            .unwrap();
+        last_played >= one_day_ago
     }
 
     pub fn get_plays(&self) -> i32 {

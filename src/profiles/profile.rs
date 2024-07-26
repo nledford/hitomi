@@ -2,8 +2,9 @@ use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter};
 
 use anyhow::Result;
-use chrono::{Local, NaiveDateTime};
 use derive_builder::Builder;
+use jiff::tz::TimeZone;
+use jiff::{Timestamp, Zoned};
 use serde::{Deserialize, Serialize};
 
 use crate::db;
@@ -46,9 +47,9 @@ pub struct Profile {
     #[builder(default)]
     refreshes_per_hour: u32,
     #[builder(default)]
-    current_refresh: NaiveDateTime,
+    current_refresh: i64,
     #[builder(default)]
-    next_refresh_at: NaiveDateTime,
+    next_refresh_at: i64,
     #[builder(default)]
     eligible_for_refresh: bool,
 }
@@ -137,14 +138,18 @@ impl Profile {
     }
 
     pub fn get_next_refresh_hour_minute(&self) -> String {
-        self.next_refresh_at.format("%R").to_string()
+        Timestamp::from_second(self.next_refresh_at)
+            .unwrap()
+            .to_zoned(TimeZone::system())
+            .strftime("%H:%M")
+            .to_string()
     }
 
     pub fn get_next_refresh_str(&self) -> String {
+        let now = Zoned::now().strftime("%F %T").to_string();
         format!(
-            "LAST UPDATE: {}\nNEXT UPDATE: {}",
-            Local::now().format("%F %T"),
-            self.next_refresh_at.format("%R")
+            "LAST UPDATE: {now}\nNEXT UPDATE: {}",
+            self.get_next_refresh_hour_minute()
         )
     }
 

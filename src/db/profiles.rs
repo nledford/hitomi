@@ -172,7 +172,23 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
 async fn fetch_profile(profile_id: i32) -> Result<Profile> {
     let row = sqlx::query(
         r#"
-        select *
+        select profile_id,
+               playlist_id,
+               profile_title,
+               profile_summary,
+               enabled,
+               profile_source,
+               profile_source_id,
+               refresh_interval,
+               time_limit,
+               track_limit,
+               num_sections,
+               has_max_sections,
+               section_time_limit,
+               refreshes_per_hour,
+               current_refresh,
+               next_refresh_at,
+               eligible_for_refresh
         from v_profile
         where profile_id = ?
     "#,

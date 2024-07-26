@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::time;
 use std::time::Duration;
 
 use crate::plex::models::tracks::Track;
@@ -27,6 +28,7 @@ impl RefreshResult {
         self.tracks.len()
     }
 
+    /// In Milliseconds
     fn get_total_duration(&self) -> i64 {
         self.tracks.iter().map(|t| t.get_track_duration()).sum()
     }
@@ -38,7 +40,7 @@ impl RefreshResult {
     fn get_avg_track_duration(&self) -> String {
         let avg_track_duration =
             (self.get_total_duration() as f64 / self.get_size() as f64).floor() as u64;
-        let avg_track_duration = Duration::from_millis(avg_track_duration);
+        let avg_track_duration = time::Duration::from_millis(avg_track_duration);
         humantime::format_duration(avg_track_duration).to_string()
     }
 
