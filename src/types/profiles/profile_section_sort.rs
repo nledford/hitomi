@@ -29,7 +29,7 @@ impl ProfileSectionSort {
             }
             SectionType::Oldest => vec!["lastViewedAt", "viewCount", "guid", "mediaBitrate:desc"],
         }
-            .join(",");
+        .join(",");
 
         Self::try_new(sort).unwrap()
     }

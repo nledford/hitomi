@@ -1,17 +1,17 @@
 //! Profile wizards
 
 use anyhow::{anyhow, Context, Result};
-use dialoguer::{Confirm, Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
 
 use crate::db;
 use crate::plex::PlexClient;
-use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::{ProfileSection, ProfileSectionBuilder};
+use crate::profiles::{ProfileSource, SectionType, VALID_INTERVALS};
 use crate::types::profiles::profile_section_sort::ProfileSectionSort;
 use crate::types::profiles::profile_source_id::ProfileSourceId;
 use crate::types::profiles::refresh_interval::RefreshInterval;
