@@ -7,7 +7,6 @@ pub mod profile;
 pub mod profile_section;
 mod profile_tracks;
 mod refresh_result;
-pub mod types;
 pub mod wizards;
 
 /// Divisors of 60

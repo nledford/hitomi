@@ -1,3 +1,5 @@
+pub mod profiles;
+
 use nutype::nutype;
 
 #[nutype(

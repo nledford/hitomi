@@ -3,15 +3,16 @@ use std::fmt::{Display, Formatter};
 
 use anyhow::Result;
 use derive_builder::Builder;
-use jiff::tz::TimeZone;
 use jiff::{Timestamp, Zoned};
+use jiff::tz::TimeZone;
 use serde::{Deserialize, Serialize};
 
 use crate::db;
 use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
-use crate::profiles::types::{ProfileSourceId, RefreshInterval};
 use crate::profiles::ProfileSource;
+use crate::types::profiles::profile_source_id::ProfileSourceId;
+use crate::types::profiles::refresh_interval::RefreshInterval;
 use crate::types::Title;
 
 // PROFILE ####################################################################
