@@ -5,6 +5,7 @@ use derive_builder::Builder;
 use itertools;
 use itertools::Itertools;
 use log::{error, info};
+use reqwest::Url;
 use serde::Deserialize;
 use simplelog::debug;
 
@@ -17,22 +18,22 @@ use crate::plex::models::playlists::Playlist;
 use crate::plex::models::sections::Section;
 use crate::plex::models::tracks::Track;
 use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
-use crate::plex::types::{PlexId, PlexToken, PlexUrl};
 use crate::profiles::profile::Profile;
+use crate::types::plex::plex_id::PlexId;
+use crate::types::plex::plex_token::PlexToken;
 
 pub mod models;
-pub mod types;
 
 /// Plex API wrapper
 ///
 /// Dead code is allowed for this specific struct due to [`Builder`]
 /// using both the `plex_token` and `plex_url` fields.
 #[allow(dead_code)]
-#[derive(Builder, Clone, Debug, Default)]
+#[derive(Builder, Clone, Debug)]
 pub struct PlexClient {
     client: HttpClient,
     plex_token: PlexToken,
-    plex_url: PlexUrl,
+    plex_url: Url,
     #[builder(default)]
     machine_identifier: String,
     #[builder(default)]
@@ -49,7 +50,7 @@ impl PlexClient {
     pub async fn initialize(config: &Config) -> Result<Self> {
         debug!("Initializing plex...");
 
-        let plex_url = PlexUrl::try_new(config.get_plex_url())?;
+        let plex_url = config.get_plex_url()?;
         let plex_token = PlexToken::try_new(config.get_plex_token())?;
 
         let client = HttpClient::new(plex_url.as_str(), plex_token.as_str())?;
@@ -69,7 +70,7 @@ impl PlexClient {
         Ok(plex)
     }
 
-    pub async fn new_for_config(plex_url: &PlexUrl, plex_token: &PlexToken) -> Result<Self> {
+    pub async fn new_for_config(plex_url: &Url, plex_token: &PlexToken) -> Result<Self> {
         let client = HttpClient::new(plex_url.as_str(), plex_token.as_str())?;
 
         let mut plex = PlexClientBuilder::default()

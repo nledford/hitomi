@@ -1,7 +1,7 @@
-use serde::Deserialize;
-
-use crate::plex::types::{PlexId, PlexKey};
+use crate::types::plex::plex_id::PlexId;
+use crate::types::plex::plex_key::PlexKey;
 use crate::types::Title;
+use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -13,16 +13,16 @@ use tokio::task::JoinSet;
 
 use crate::plex::models::playlists::Playlist;
 use crate::plex::models::tracks::Track;
-use crate::plex::types::PlexId;
 use crate::plex::PlexClient;
 use crate::profiles::profile::Profile;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::profile_tracks::ProfileTracks;
 use crate::profiles::refresh_result::RefreshResult;
 use crate::profiles::ProfileAction;
+use crate::types::plex::plex_id::PlexId;
 use crate::{config, db};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ProfileManager {
     plex_client: PlexClient,
     playlists: Vec<Playlist>,

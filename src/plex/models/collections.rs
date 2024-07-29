@@ -1,5 +1,6 @@
-use crate::plex::types::PlexId;
 use serde::{Deserialize, Serialize};
+
+use crate::types::plex::plex_id::PlexId;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]

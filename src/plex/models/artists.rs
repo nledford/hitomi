@@ -1,7 +1,8 @@
 use nutype::nutype;
 use serde::{Deserialize, Serialize};
 
-use crate::plex::types::{PlexId, PlexKey};
+use crate::types::plex::plex_id::PlexId;
+use crate::types::plex::plex_key::PlexKey;
 use crate::types::Title;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

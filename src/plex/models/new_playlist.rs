@@ -1,5 +1,6 @@
-use crate::plex::types::PlexId;
 use serde::Deserialize;
+
+use crate::types::plex::plex_id::PlexId;
 
 #[derive(Debug, Default, Deserialize)]
 pub struct NewPlaylist {

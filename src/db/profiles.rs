@@ -5,10 +5,10 @@ use simplelog::debug;
 use sqlx::Row;
 
 use crate::db::POOL;
-use crate::plex::types::PlexId;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::{ProfileSource, SectionType};
+use crate::types::plex::plex_id::PlexId;
 use crate::types::profiles::profile_source_id::ProfileSourceId;
 use crate::types::profiles::refresh_interval::RefreshInterval;
 use crate::types::Title;

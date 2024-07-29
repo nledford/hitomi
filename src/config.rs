@@ -3,16 +3,18 @@
 use std::env;
 use std::fmt::{Display, Formatter};
 
-use crate::db;
-use crate::plex::types::{PlexToken, PlexUrl};
-use crate::plex::PlexClient;
 use anyhow::Result;
 use clap::Args;
 use derive_builder::Builder;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use simplelog::{debug, info};
+
+use crate::db;
+use crate::plex::PlexClient;
+use crate::types::plex::plex_token::PlexToken;
 
 /// Represents the configuration file
 #[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq, sqlx::Type)]
@@ -40,8 +42,12 @@ impl Config {
         Self::default()
     }
 
-    pub fn get_plex_url(&self) -> &str {
-        &self.plex_url
+    pub fn get_plex_url(&self) -> Result<Url> {
+        Ok(Url::parse(&self.plex_url)?)
+    }
+
+    pub fn get_plex_url_str(&self) -> String {
+        self.get_plex_url().unwrap().to_string()
     }
 
     pub fn get_plex_token(&self) -> &str {
@@ -65,7 +71,7 @@ pub async fn build_config_wizard() -> Result<Config> {
             .interact_text()?
             .to_string()
     };
-    let plex_url = PlexUrl::try_new(plex_url)?;
+    let plex_url = Url::parse(&plex_url)?;
 
     let plex_token = if let Ok(plex_token) = env::var("PLEX_TOKEN") {
         plex_token
@@ -132,7 +138,7 @@ pub async fn load_config() -> Result<Config> {
 impl Display for Config {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut output = String::default();
-        output += &format!("Plex URL:       {}\n", self.get_plex_url());
+        output += &format!("Plex URL:       {}\n", self.get_plex_url_str());
 
         write!(f, "{}", output)
     }

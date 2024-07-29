@@ -8,9 +8,9 @@ use jiff::{Timestamp, Zoned};
 use serde::{Deserialize, Serialize};
 
 use crate::db;
-use crate::plex::types::PlexId;
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::ProfileSource;
+use crate::types::plex::plex_id::PlexId;
 use crate::types::profiles::profile_source_id::ProfileSourceId;
 use crate::types::profiles::refresh_interval::RefreshInterval;
 use crate::types::Title;

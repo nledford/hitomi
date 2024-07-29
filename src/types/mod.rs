@@ -1,3 +1,4 @@
+pub mod plex;
 pub mod profiles;
 
 use nutype::nutype;
