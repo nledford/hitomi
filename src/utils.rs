@@ -1,3 +1,5 @@
+use jiff::tz::TimeZone;
+use jiff::{Timestamp, Zoned};
 use crate::types::profiles::refresh_interval::RefreshInterval;
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
@@ -5,6 +7,20 @@ pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {
     let interval: u32 = refresh_interval.clone().into_inner();
 
     (1..=60).filter(|i| i % interval == 0).collect()
+}
+
+/// Determines if local timezone or `UTC` timezone should be used
+fn get_timezone(local: bool) -> TimeZone {
+    match local {
+        true => TimeZone::system(),
+        false => TimeZone::UTC,
+    }
+}
+
+/// Get the current datetime
+pub fn get_current_datetime(local: bool) -> Zoned {
+    let tz = get_timezone(local);
+    Timestamp::now().to_zoned(tz)
 }
 
 pub fn truncate_string(s: &str, max_chars: usize) -> &str {
