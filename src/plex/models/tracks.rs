@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
-use jiff::tz::TimeZone;
 use jiff::{Timestamp, Zoned};
+use jiff::tz::TimeZone;
 use serde::{Deserialize, Serialize};
 
 use crate::types::plex::guid::Guid;
@@ -61,7 +61,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-        .trim()
+            .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
@@ -95,9 +95,9 @@ impl Track {
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
-        let last_played = self.get_last_played().to_zoned(TimeZone::UTC);
+        let last_played = self.get_last_played().to_zoned(TimeZone::system());
         let one_day_ago = Zoned::now()
-            .with_time_zone(TimeZone::UTC)
+            .with_time_zone(TimeZone::system())
             .yesterday()
             .unwrap();
         last_played >= one_day_ago
