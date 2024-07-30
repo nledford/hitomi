@@ -94,17 +94,6 @@ impl Track {
         self.get_last_played().strftime("%Y-%m").to_string()
     }
 
-    pub fn get_played_today(&self) -> bool {
-        let last_played = self.get_last_played().to_zoned(TimeZone::system());
-        let today_at_midnight = Timestamp::now().to_zoned(TimeZone::system()).start_of_day();
-
-        if let (last_played, Ok(today_at_midnight)) = (last_played, today_at_midnight) {
-            last_played >= today_at_midnight
-        } else {
-            false
-        }
-    }
-
     pub fn get_played_within_last_day(&self) -> bool {
         let last_played = self.get_last_played().to_zoned(TimeZone::UTC);
         let one_day_ago = Zoned::now()
