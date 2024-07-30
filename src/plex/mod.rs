@@ -37,7 +37,7 @@ pub struct PlexClient {
     #[builder(default)]
     machine_identifier: String,
     #[builder(default)]
-    primary_section_id: i32,
+    primary_section_id: u32,
     #[builder(default)]
     playlists: Vec<Playlist>,
     #[builder(default)]
@@ -51,7 +51,7 @@ impl PlexClient {
         debug!("Initializing plex...");
 
         let plex_url = config.get_plex_url()?;
-        let plex_token = PlexToken::try_new(config.get_plex_token())?;
+        let plex_token = config.get_plex_token()?;
 
         let client = HttpClient::new(plex_url.as_str(), plex_token.as_str())?;
 

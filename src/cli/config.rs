@@ -28,7 +28,7 @@ struct CreateArgs {
     #[arg(long)]
     profiles_directory: String,
     #[arg(long)]
-    primary_section_id: i32,
+    primary_section_id: u32,
 }
 
 #[derive(Args, PartialEq)]

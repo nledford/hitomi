@@ -43,7 +43,7 @@ async fn add_config_setting<'q, T: 'q + Send + Encode<'q, Sqlite> + sqlx::Type<S
 }
 
 pub async fn save_config(config: &AppConfig) -> Result<()> {
-    add_config_setting("plex_token", config.get_plex_token()).await?;
+    add_config_setting("plex_token", config.get_plex_token()?.as_str()).await?;
     add_config_setting("plex_url", config.get_plex_url_str()).await?;
     add_config_setting("primary_section_id", config.get_primary_section_id()).await?;
 

@@ -24,7 +24,7 @@ pub struct Config {
     #[arg(long)]
     plex_url: String,
     #[arg(long)]
-    primary_section_id: i32,
+    primary_section_id: u32,
 }
 
 impl Default for Config {
@@ -50,11 +50,11 @@ impl Config {
         self.get_plex_url().unwrap().to_string()
     }
 
-    pub fn get_plex_token(&self) -> &str {
-        &self.plex_token
+    pub fn get_plex_token(&self) -> Result<PlexToken> {
+        Ok(PlexToken::try_new(&self.plex_token)?)
     }
 
-    pub fn get_primary_section_id(&self) -> i32 {
+    pub fn get_primary_section_id(&self) -> u32 {
         self.primary_section_id
     }
 }
@@ -94,7 +94,7 @@ pub async fn build_config_wizard() -> Result<Config> {
     };
 
     let primary_section_id = if let Ok(id) = env::var("PRIMARY_SECTION_ID") {
-        id.parse::<i32>()
+        id.parse::<u32>()
     } else {
         let plex = PlexClient::new_for_config(&plex_url, &plex_token).await?;
         let sections = plex.get_music_sections();
@@ -107,7 +107,7 @@ pub async fn build_config_wizard() -> Result<Config> {
             .default(0)
             .items(&titles)
             .interact()?;
-        sections[selection].id().parse::<i32>()
+        sections[selection].id().parse::<u32>()
     }
     .expect("Could not parse section id");
 
@@ -141,5 +141,56 @@ impl Display for Config {
         output += &format!("Plex URL:       {}\n", self.get_plex_url_str());
 
         write!(f, "{}", output)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    const VALID_TOKEN: &str = "RWtuIcHBY-hq6HbSq3GY";
+    const VALID_URL: &str = "http://127.0.0.1:32400";
+
+    #[test]
+    fn test_valid_config() {
+        let config = ConfigBuilder::default()
+            .plex_token(VALID_TOKEN.to_string())
+            .plex_url(VALID_URL.to_string())
+            .primary_section_id(1)
+            .build()
+            .unwrap();
+
+        let valid_token = PlexToken::try_new(VALID_TOKEN).unwrap();
+        assert_eq!(config.get_plex_token().unwrap(), valid_token);
+
+        let valid_url = Url::parse(VALID_URL).unwrap();
+        assert_eq!(config.get_plex_url().unwrap(), valid_url);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_config_token() {
+        let config = ConfigBuilder::default()
+            .plex_token("rucpkuXGIn/1ZlqJPBVaYZQduMJWX5yWGQan20nOpFokXbGviXonA==".to_string())
+            .plex_url(VALID_URL.to_string())
+            .primary_section_id(1)
+            .build()
+            .unwrap();
+
+        config.get_plex_token().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_config_url() {
+        let config = ConfigBuilder::default()
+            .plex_token(VALID_TOKEN.to_string())
+            .plex_url("It dawned on her that others could make her happier, but only she could make herself happy.".to_string())
+            .primary_section_id(1)
+            .build()
+            .unwrap();
+
+        config.get_plex_url().unwrap();
     }
 }
