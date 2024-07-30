@@ -80,11 +80,7 @@ impl Track {
     /// In milliseconds
     pub fn get_last_played(&self) -> Timestamp {
         if let Some(last_viewed_at) = self.last_viewed_at {
-            if let Ok(last_played) = Timestamp::from_millisecond(last_viewed_at) {
-                last_played
-            } else {
-                Timestamp::default()
-            }
+            Timestamp::from_millisecond(last_viewed_at).unwrap_or_default()
         } else {
             Timestamp::default()
         }
