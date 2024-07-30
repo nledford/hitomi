@@ -1,13 +1,14 @@
 use std::fmt::{Display, Formatter};
 
-use jiff::{Timestamp, Zoned};
 use jiff::tz::TimeZone;
+use jiff::{Timestamp, Zoned};
 use serde::{Deserialize, Serialize};
 
 use crate::types::plex::guid::Guid;
 use crate::types::plex::plex_id::PlexId;
 use crate::types::plex::plex_key::PlexKey;
 use crate::types::Title;
+use crate::utils;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -61,7 +62,7 @@ impl Track {
             Some(artist) => artist.as_ref(),
             None => &self.grandparent_title,
         }
-            .trim()
+        .trim()
     }
 
     pub fn get_artist_id(&self) -> &str {
@@ -86,6 +87,10 @@ impl Track {
         }
     }
 
+    fn get_last_played_datetime(&self) -> Zoned {
+        self.get_last_played().to_zoned(TimeZone::system())
+    }
+
     pub fn get_last_played_str(&self) -> String {
         self.get_last_played().strftime("%F").to_string()
     }
@@ -95,12 +100,14 @@ impl Track {
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
-        let last_played = self.get_last_played().to_zoned(TimeZone::system());
-        let one_day_ago = Zoned::now()
-            .with_time_zone(TimeZone::system())
-            .yesterday()
-            .unwrap();
-        last_played >= one_day_ago
+        let last_played = self.get_last_played_datetime();
+        let one_day_ago = utils::get_yesterday();
+
+        if let Ok(one_day_ago) = one_day_ago {
+            last_played >= one_day_ago
+        } else {
+            false
+        }
     }
 
     pub fn get_plays(&self) -> i32 {
