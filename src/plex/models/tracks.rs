@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
-use jiff::tz::TimeZone;
+use anyhow::anyhow;
+use anyhow::Result;
 use jiff::{Timestamp, Zoned};
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +9,7 @@ use crate::types::plex::guid::Guid;
 use crate::types::plex::plex_id::PlexId;
 use crate::types::plex::plex_key::PlexKey;
 use crate::types::Title;
+use crate::utils;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -82,42 +84,55 @@ impl Track {
         self.last_viewed_at.unwrap_or(0)
     }
 
-    pub fn get_last_played_str(&self) -> String {
-        Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
+    fn get_last_played_ts(&self) -> Result<Timestamp> {
+        let ts = Timestamp::from_millisecond(self.get_last_played())?;
+        Ok(ts)
+    }
+
+    fn get_last_played_datetime(&self, local: bool) -> Result<Zoned> {
+        Ok(self
+            .get_last_played_ts()?
+            .to_zoned(utils::get_timezone(local)))
+    }
+
+    pub fn get_last_played_str(&self, local: bool) -> Result<String> {
+        Ok(self
+            .get_last_played_datetime(local)?
             .strftime("%F")
-            .to_string()
+            .to_string())
     }
 
-    pub fn get_last_played_year_and_month(&self) -> String {
-        Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
+    pub fn get_last_played_year_and_month(&self, local: bool) -> Result<String> {
+        Ok(self
+            .get_last_played_ts()?
+            .to_zoned(utils::get_timezone(local))
             .strftime("%Y-%m")
-            .to_string()
+            .to_string())
     }
 
-    pub fn get_played_today(&self) -> bool {
-        let last_played = Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
-            .to_zoned(TimeZone::system());
-        let today_at_midnight = Timestamp::now().to_zoned(TimeZone::system()).start_of_day();
+    pub fn get_played_today(&self, local: bool) -> bool {
+        let last_played = self.get_last_played_datetime(local);
+        let today_at_midnight = utils::get_today_at_midnight(local);
 
-        if let (last_played, Ok(today_at_midnight)) = (last_played, today_at_midnight) {
+        if let (Ok(last_played), Ok(today_at_midnight)) = (last_played, today_at_midnight) {
             last_played >= today_at_midnight
         } else {
             false
         }
     }
 
-    pub fn get_played_within_last_day(&self) -> bool {
-        let last_played = Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
-            .to_zoned(TimeZone::UTC);
+    pub fn get_played_within_last_day(&self, local: bool) -> Result<bool> {
+        let last_played = Timestamp::from_millisecond(self.get_last_played());
         let one_day_ago = Zoned::now()
-            .with_time_zone(TimeZone::UTC)
-            .yesterday()
-            .unwrap();
-        last_played >= one_day_ago
+            .with_time_zone(utils::get_timezone(local))
+            .yesterday();
+
+        if let (Ok(last_played), Ok(one_day_ago)) = (last_played, one_day_ago) {
+            let last_played = last_played.to_zoned(utils::get_timezone(local));
+            Ok(last_played >= one_day_ago)
+        } else {
+            Err(anyhow!("Error occurred while constructing dates"))
+        }
     }
 
     pub fn get_plays(&self) -> i32 {
@@ -157,7 +172,10 @@ impl Display for Track {
         str += &format!("{} ", self.get_track_artist());
         str += &format!("{} ", self.get_track_album());
         str += &format!("{} ", self.get_plays());
-        str += &format!("{} ", self.get_last_played_str());
+        str += &format!(
+            "{} ",
+            self.get_last_played_str(true).unwrap_or("N/A".to_string())
+        );
 
         write!(f, "{str}")
     }

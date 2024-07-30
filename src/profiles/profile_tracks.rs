@@ -1,13 +1,14 @@
 #![allow(dead_code)]
 
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, HashMap};
+use std::time;
+
 use anyhow::Result;
 use derive_builder::Builder;
 use itertools::Itertools;
 use rand::prelude::SliceRandom;
 use simplelog::info;
-use std::cmp::Reverse;
-use std::collections::{BTreeMap, HashMap};
-use std::time;
 
 use crate::db;
 use crate::plex::models::tracks::Track;
@@ -345,11 +346,15 @@ fn randomizer(tracks: &mut Vec<Track>, section_type: SectionType) {
             BTreeMap::new(),
             |mut acc: BTreeMap<String, Vec<Track>>, track| {
                 let key = match section_type {
-                    SectionType::Oldest => track.get_last_played_year_and_month(),
+                    SectionType::Oldest => track
+                        .get_last_played_year_and_month(false)
+                        .unwrap_or_default(),
                     _ => format!(
                         "{:04}: {}",
                         track.get_plays(),
-                        track.get_last_played_year_and_month(),
+                        track
+                            .get_last_played_year_and_month(false)
+                            .unwrap_or("1900-01".to_string()),
                     ),
                 };
                 let value = acc.entry(key).or_default();
@@ -432,8 +437,12 @@ fn remove_played_within_last_day(tracks: &mut Vec<Track>) {
     *tracks = tracks
         .iter()
         .filter_map(|track| {
-            if !track.get_played_within_last_day() {
-                Some(track.to_owned())
+            if let Ok(value) = track.get_played_within_last_day(true) {
+                if value {
+                    Some(track.to_owned())
+                } else {
+                    None
+                }
             } else {
                 None
             }
