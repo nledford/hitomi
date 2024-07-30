@@ -1,6 +1,6 @@
+use crate::types::profiles::refresh_interval::RefreshInterval;
 use jiff::tz::TimeZone;
 use jiff::{Timestamp, Zoned};
-use crate::types::profiles::refresh_interval::RefreshInterval;
 
 /// Constructs a `vec` of valid refresh minutes from a given refresh intervals
 pub fn build_refresh_minutes(refresh_interval: &RefreshInterval) -> Vec<u32> {

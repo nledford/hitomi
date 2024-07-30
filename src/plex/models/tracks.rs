@@ -78,28 +78,28 @@ impl Track {
     }
 
     /// In milliseconds
-    pub fn get_last_played(&self) -> i64 {
-        self.last_viewed_at.unwrap_or(0)
+    pub fn get_last_played(&self) -> Timestamp {
+        if let Some(last_viewed_at) = self.last_viewed_at {
+            if let Ok(last_played) = Timestamp::from_millisecond(last_viewed_at) {
+                last_played
+            } else {
+                Timestamp::default()
+            }
+        } else {
+            Timestamp::default()
+        }
     }
 
     pub fn get_last_played_str(&self) -> String {
-        Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
-            .strftime("%F")
-            .to_string()
+        self.get_last_played().strftime("%F").to_string()
     }
 
     pub fn get_last_played_year_and_month(&self) -> String {
-        Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
-            .strftime("%Y-%m")
-            .to_string()
+        self.get_last_played().strftime("%Y-%m").to_string()
     }
 
     pub fn get_played_today(&self) -> bool {
-        let last_played = Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
-            .to_zoned(TimeZone::system());
+        let last_played = self.get_last_played().to_zoned(TimeZone::system());
         let today_at_midnight = Timestamp::now().to_zoned(TimeZone::system()).start_of_day();
 
         if let (last_played, Ok(today_at_midnight)) = (last_played, today_at_midnight) {
@@ -110,9 +110,7 @@ impl Track {
     }
 
     pub fn get_played_within_last_day(&self) -> bool {
-        let last_played = Timestamp::from_millisecond(self.get_last_played())
-            .unwrap()
-            .to_zoned(TimeZone::UTC);
+        let last_played = self.get_last_played().to_zoned(TimeZone::UTC);
         let one_day_ago = Zoned::now()
             .with_time_zone(TimeZone::UTC)
             .yesterday()
@@ -125,13 +123,13 @@ impl Track {
     }
 
     pub fn get_has_never_been_played(&self) -> bool {
-        self.get_plays() == 0 || self.get_last_played() == 0
+        self.get_plays() == 0 || self.get_last_played() == Timestamp::default()
     }
 
     pub fn get_rating(&self) -> i32 {
         let rating = self.user_rating.unwrap_or_default();
 
-        (rating / 2_f32).floor() as i32
+        (rating / 2.0).floor() as i32
     }
 
     pub fn get_bitrate(&self) -> i64 {
