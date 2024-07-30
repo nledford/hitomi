@@ -2,7 +2,7 @@ use anyhow::Result;
 use sqlx::{Encode, Sqlite};
 
 use crate::config::{Config as AppConfig, ConfigBuilder};
-use crate::db::POOL;
+use crate::db;
 
 #[derive(sqlx::FromRow)]
 struct DbConfig {
@@ -12,7 +12,7 @@ struct DbConfig {
 
 pub async fn have_config() -> Result<bool> {
     let result: Option<(i32,)> = sqlx::query_as("select count(*) from config")
-        .fetch_optional(POOL.get().unwrap())
+        .fetch_optional(db::get_pool()?)
         .await?;
 
     let result = if let Some(result) = result {
@@ -36,7 +36,7 @@ async fn add_config_setting<'q, T: 'q + Send + Encode<'q, Sqlite> + sqlx::Type<S
     )
     .bind(name)
     .bind(value)
-    .execute(POOL.get().unwrap())
+    .execute(db::get_pool()?)
     .await?;
 
     Ok(())
@@ -56,7 +56,7 @@ pub async fn fetch_config() -> Result<AppConfig> {
         select * from config
     "#,
     )
-    .fetch_all(POOL.get().unwrap())
+    .fetch_all(db::get_pool()?)
     .await?;
 
     let mut config = ConfigBuilder::default();
@@ -72,10 +72,10 @@ pub async fn fetch_config() -> Result<AppConfig> {
         }
 
         if row.name == "primary_section_id" {
-            config.primary_section_id(row.value.parse().unwrap());
+            config.primary_section_id(row.value.parse()?);
             continue;
         }
     }
 
-    Ok(config.build().unwrap())
+    Ok(config.build()?)
 }

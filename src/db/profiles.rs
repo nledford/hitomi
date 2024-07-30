@@ -4,7 +4,7 @@ use anyhow::Result;
 use simplelog::debug;
 use sqlx::Row;
 
-use crate::db::POOL;
+use crate::db;
 use crate::profiles::profile::{Profile, ProfileBuilder};
 use crate::profiles::profile_section::ProfileSection;
 use crate::profiles::{ProfileSource, SectionType};
@@ -44,7 +44,7 @@ pub async fn create_profile(
     .bind(new_profile.get_refresh_interval())
     .bind(new_profile.get_time_limit())
     .bind(new_profile.get_track_limit())
-    .fetch_one(POOL.get().unwrap())
+    .fetch_one(db::get_pool()?)
     .await?;
 
     let profile_id = result.get(0);
@@ -80,7 +80,7 @@ async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Re
     .bind(section.get_minimum_track_rating())
     .bind(section.get_randomize_tracks())
     .bind(section.get_sorting())
-    .execute(POOL.get().unwrap())
+    .execute(db::get_pool()?)
     .await?;
 
     Ok(())
@@ -91,7 +91,7 @@ async fn create_profile_section(profile_id: i32, section: &ProfileSection) -> Re
 pub async fn delete_profile(profile_id: i32) -> Result<()> {
     sqlx::query("delete from profile where profile_id = ?")
         .bind(profile_id)
-        .execute(POOL.get().unwrap())
+        .execute(db::get_pool()?)
         .await?;
 
     Ok(())
@@ -125,7 +125,7 @@ pub async fn update_profile(profile: &Profile, sections: &[ProfileSection]) -> R
     .bind(profile.get_time_limit())
     .bind(profile.get_track_limit())
     .bind(profile_id)
-    .execute(POOL.get().unwrap())
+    .execute(db::get_pool()?)
     .await?;
 
     for section in sections {
@@ -162,7 +162,7 @@ async fn update_profile_section(profile_id: i32, section: &ProfileSection) -> Re
     .bind(section.get_sorting())
     .bind(profile_id)
     .bind(profile_section_id)
-    .execute(POOL.get().unwrap())
+    .execute(db::get_pool()?)
     .await?;
 
     Ok(())
@@ -195,7 +195,7 @@ async fn fetch_profile(profile_id: i32) -> Result<Profile> {
     "#,
     )
     .bind(profile_id)
-    .fetch_one(POOL.get().unwrap())
+    .fetch_one(db::get_pool()?)
     .await?;
 
     let playlist_id = PlexId::try_new(row.try_get::<&str, &str>("playlist_id")?).unwrap();
@@ -225,7 +225,6 @@ async fn fetch_profile(profile_id: i32) -> Result<Profile> {
         .refresh_interval(refresh_interval)
         .time_limit(row.try_get("time_limit")?)
         .track_limit(row.try_get("track_limit")?)
-        // .sections(sections)
         .num_sections(row.try_get("num_sections")?)
         .section_time_limit(row.try_get("section_time_limit")?)
         .refreshes_per_hour(row.try_get("refreshes_per_hour")?)
@@ -242,7 +241,7 @@ async fn fetch_profile_id(profile_title: &str) -> Result<Option<i32>> {
     let row: Option<(i32,)> =
         sqlx::query_as("select profile_id from profile where profile_title = ?")
             .bind(profile_title)
-            .fetch_optional(POOL.get().unwrap())
+            .fetch_optional(db::get_pool()?)
             .await?;
 
     let id = row.map(|row| row.0);
@@ -263,7 +262,7 @@ async fn fetch_profile_section_id(
     )
     .bind(profile_id)
     .bind(section_type)
-    .fetch_optional(POOL.get().unwrap())
+    .fetch_optional(db::get_pool()?)
     .await?;
 
     let id = row.map(|row| row.0);
@@ -282,7 +281,7 @@ pub async fn fetch_profiles(enabled: bool) -> Result<Vec<Profile>> {
     }
     sql += "\norder by profile_title";
 
-    let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;
+    let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(db::get_pool()?).await?;
 
     let mut profiles = vec![];
     for id in ids {
@@ -295,7 +294,7 @@ pub async fn fetch_profiles(enabled: bool) -> Result<Vec<Profile>> {
 
 pub async fn fetch_profile_sections() -> Result<Vec<ProfileSection>> {
     let sections = sqlx::query_as::<_, ProfileSection>("select * from profile_section")
-        .fetch_all(POOL.get().unwrap())
+        .fetch_all(db::get_pool()?)
         .await?;
 
     Ok(sections)
@@ -305,7 +304,7 @@ pub async fn fetch_profile_sections_for_profile(profile_id: i32) -> Result<Vec<P
     let sections =
         sqlx::query_as::<_, ProfileSection>("select * from profile_section where profile_id = ?")
             .bind(profile_id)
-            .fetch_all(POOL.get().unwrap())
+            .fetch_all(db::get_pool()?)
             .await?;
 
     debug!("{:?}", sections);
@@ -321,7 +320,7 @@ pub async fn fetch_any_eligible_for_refresh() -> Result<bool> {
         where eligible_for_refresh = 1 and enabled = 1;
     "#,
     )
-    .fetch_one(POOL.get().unwrap())
+    .fetch_one(db::get_pool()?)
     .await?;
 
     let result = result.0 > 0;
@@ -336,7 +335,7 @@ pub async fn fetch_profiles_to_refresh(force_refresh: bool) -> Result<Vec<Profil
     }
     sql += " enabled = 1";
 
-    let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(POOL.get().unwrap()).await?;
+    let ids: Vec<(i32,)> = sqlx::query_as(&sql).fetch_all(db::get_pool()?).await?;
 
     let mut profiles = vec![];
 
@@ -364,7 +363,7 @@ pub async fn fetch_profile_by_title(title: &str) -> Result<Option<Profile>> {
     "#,
     )
     .bind(title)
-    .fetch_optional(POOL.get().unwrap())
+    .fetch_optional(db::get_pool()?)
     .await?;
 
     let profile = if let Some(result) = result {
@@ -383,7 +382,7 @@ pub async fn fetch_profile_titles() -> Result<Vec<String>> {
         select profile_title from v_profile order by profile_title
     "#,
     )
-    .fetch_all(POOL.get().unwrap())
+    .fetch_all(db::get_pool()?)
     .await?;
 
     let titles = titles.into_iter().map(|x| x.0).collect::<Vec<_>>();

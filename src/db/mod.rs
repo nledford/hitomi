@@ -3,7 +3,7 @@
 use std::env;
 use std::str::FromStr;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use simplelog::warn;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use sqlx::SqlitePool;
@@ -12,7 +12,14 @@ use tokio::sync::OnceCell;
 pub mod config;
 pub mod profiles;
 
-pub static POOL: OnceCell<SqlitePool> = OnceCell::const_new();
+static POOL: OnceCell<SqlitePool> = OnceCell::const_new();
+
+fn get_pool() -> Result<&'static SqlitePool> {
+    match POOL.get() {
+        None => Err(anyhow!("Could not acquire Sqlite Pool")),
+        Some(pool) => Ok(pool),
+    }
+}
 
 pub async fn initialize_pool(database_url: Option<&str>) -> Result<()> {
     let database_url = if let Ok(database_url) = env::var("DATABAE_URL") {
