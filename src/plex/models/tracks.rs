@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use jiff::tz::TimeZone;
-use jiff::{Timestamp, Zoned};
+use jiff::{Timestamp, ToSpan, Zoned};
 use serde::{Deserialize, Serialize};
 
 use crate::types::plex::guid::Guid;
@@ -101,10 +101,12 @@ impl Track {
 
     pub fn get_played_within_last_day(&self) -> bool {
         let last_played = self.get_last_played_datetime();
-        let one_day_ago = utils::get_yesterday();
+        let now = utils::get_current_datetime();
+        let thirty_six_hours_ago = now.checked_sub(36.hours());
 
-        if let Ok(one_day_ago) = one_day_ago {
-            last_played >= one_day_ago
+
+        if let Ok(thirty_six_hours_ago) = thirty_six_hours_ago {
+            last_played >= thirty_six_hours_ago
         } else {
             false
         }
