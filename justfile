@@ -11,8 +11,13 @@ docker-build:
 
 # Build and run a docker image
 [group('docker')]
-docker-run: docker-build
-    docker run -e TZ="America/New_York" -e -it -v "./data:/data" -v --rm --name hitomi nledford/hitomi:latest run
+docker-run:
+    #!/usr/bin/env bash
+    docker run\
+      -e TZ='America/New_York'\
+      -e DATABASE_URL='sqlite:/data/hitomi.db'\
+      -v "./data:/data"\
+      --rm -it --name hitomi nledford/hitomi:latest run
 
 # Run clippy. Fails if clippy finds issues.
 [group('rust')]

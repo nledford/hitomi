@@ -1,6 +1,6 @@
 [package]
 name = "hitomi"
-version = "0.8.0"
+version = "0.8.1"
 description = "A CLI application that builds and updates playlists on a Plex server using json-based profiles."
 authors = ["Nathaniel Ledford <nate@nateledford.com>"]
 homepage = "https://github.com/nledford/hitomi"
