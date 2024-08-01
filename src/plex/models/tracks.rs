@@ -104,7 +104,6 @@ impl Track {
         let now = utils::get_current_datetime();
         let thirty_six_hours_ago = now.checked_sub(36.hours());
 
-
         if let Ok(thirty_six_hours_ago) = thirty_six_hours_ago {
             last_played >= thirty_six_hours_ago
         } else {

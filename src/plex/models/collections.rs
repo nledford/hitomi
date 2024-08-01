@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::types::plex::plex_id::PlexId;
+use crate::types::Title;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -14,7 +15,7 @@ pub enum SubType {
 pub struct Collection {
     #[serde(alias = "ratingKey")]
     rating_key: PlexId,
-    title: String,
+    title: Title,
     subtype: SubType,
 }
 
