@@ -33,8 +33,8 @@ impl Playlist {
         &self.summary
     }
 
-    pub fn get_item_count(&self) -> i32 {
-        self.leaf_count as i32
+    pub fn get_item_count(&self) -> u32 {
+        self.leaf_count
     }
 
     pub fn is_empty(&self) -> bool {
