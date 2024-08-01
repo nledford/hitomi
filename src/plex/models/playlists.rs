@@ -1,9 +1,10 @@
+use serde::Deserialize;
+
 use crate::types::plex::plex_id::PlexId;
 use crate::types::plex::plex_key::PlexKey;
 use crate::types::Title;
-use serde::Deserialize;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
     rating_key: PlexId,
@@ -32,11 +33,34 @@ impl Playlist {
         &self.summary
     }
 
-    pub fn get_length(&self) -> i32 {
+    pub fn get_item_count(&self) -> i32 {
         self.leaf_count as i32
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.get_item_count() == 0
     }
 
     pub fn get_duration(&self) -> u128 {
         self.duration.unwrap_or(0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+
+    use super::*;
+
+    #[test]
+    fn test_is_empty() {
+        let playlist = Playlist::default();
+        assert_eq!(playlist.is_empty(), true);
+
+        let playlist = Playlist {
+            leaf_count: 10,
+            ..Default::default()
+        };
+        assert_eq!(playlist.is_empty(), false);
     }
 }
