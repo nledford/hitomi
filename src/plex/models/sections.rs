@@ -1,6 +1,7 @@
+use serde::Deserialize;
+
 use crate::types::plex::plex_key::PlexKey;
 use crate::types::Title;
-use serde::Deserialize;
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename = "MediaContainer")]
