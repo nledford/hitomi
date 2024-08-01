@@ -1,3 +1,5 @@
+use crate::types::plex::plex_key::PlexKey;
+use crate::types::Title;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -9,10 +11,10 @@ pub struct SectionContainer {
 
 #[derive(Debug, Default, Clone, Deserialize)]
 pub struct Section {
-    title: String,
+    title: Title,
     #[serde(alias = "type")]
     plex_section_type: String,
-    key: String,
+    key: PlexKey,
 }
 
 impl Section {
