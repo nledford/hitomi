@@ -33,9 +33,7 @@ impl ProfileManager {
         let plex_client = plex::get_plex_client().await?;
         let playlists = plex_client.get_playlists().to_vec();
 
-        let manager = ProfileManager {
-            playlists,
-        };
+        let manager = ProfileManager { playlists };
         Ok(manager)
     }
 }
