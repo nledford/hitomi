@@ -20,33 +20,23 @@ use crate::profiles::profile_tracks::ProfileTracks;
 use crate::profiles::refresh_result::RefreshResult;
 use crate::profiles::ProfileAction;
 use crate::types::plex::plex_id::PlexId;
-use crate::{config, db};
+use crate::{db, plex};
 
 #[derive(Clone, Debug)]
 pub struct ProfileManager {
-    plex_client: PlexClient,
     playlists: Vec<Playlist>,
 }
 
 // INITIALIZATION
 impl ProfileManager {
     pub async fn new() -> Result<Self> {
-        let config = config::load_config().await?;
-        let plex_client = PlexClient::initialize(&config).await?;
+        let plex_client = plex::get_plex_client().await?;
         let playlists = plex_client.get_playlists().to_vec();
 
         let manager = ProfileManager {
-            plex_client,
             playlists,
         };
         Ok(manager)
-    }
-}
-
-// PlEX
-impl ProfileManager {
-    pub fn get_plex_client(&self) -> &PlexClient {
-        &self.plex_client
     }
 }
 
@@ -132,7 +122,7 @@ impl ProfileManager {
         let profiles = self.get_profiles_to_refresh(ran_once).await?;
         let mut set = JoinSet::new();
         for profile in profiles {
-            set.spawn(update_playlist(self.get_plex_client().to_owned(), profile));
+            set.spawn(update_playlist(plex::get_plex_client().await?, profile));
         }
 
         let mut results = vec![];
@@ -175,16 +165,18 @@ impl ProfileManager {
             .interact()?;
 
         if save {
+            let plex_client = plex::get_plex_client().await?;
+
             info!("Creating playlist in plex...");
-            let playlist_id = self.plex_client.create_playlist(profile).await?;
+            let playlist_id = plex_client.create_playlist(profile).await?;
             let playlist_id = PlexId::try_new(playlist_id)?;
 
             info!("Saving profile to database...");
             db::profiles::create_profile(playlist_id.as_str(), profile, sections).await?;
 
             info!("Adding tracks to newly created playlist...");
-            let profile_tracks = ProfileTracks::new(self.get_plex_client(), profile).await?;
-            self.plex_client
+            let profile_tracks = ProfileTracks::new(&plex_client, profile).await?;
+            plex_client
                 .add_items_to_playlist(&playlist_id, &profile_tracks.get_track_ids())
                 .await?;
 
@@ -201,7 +193,8 @@ impl ProfileManager {
     }
 
     pub async fn preview_playlist(&self, profile: &Profile) -> Result<()> {
-        let profile_tracks = ProfileTracks::new(self.get_plex_client(), profile).await?;
+        let plex_client = plex::get_plex_client().await?;
+        let profile_tracks = ProfileTracks::new(&plex_client, profile).await?;
         profile_tracks.print_preview();
 
         Ok(())

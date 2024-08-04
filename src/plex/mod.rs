@@ -1,14 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
-use derive_builder::Builder;
-use itertools;
-use itertools::Itertools;
-use log::{error, info};
-use reqwest::Url;
-use serde::Deserialize;
-use simplelog::debug;
-
+use crate::config;
 use crate::config::Config;
 use crate::http_client::HttpClient;
 use crate::plex::models::artists::Artist;
@@ -21,6 +13,14 @@ use crate::plex::models::{MediaContainerWrapper, PlexResponse, SectionResponse};
 use crate::profiles::profile::Profile;
 use crate::types::plex::plex_id::PlexId;
 use crate::types::plex::plex_token::PlexToken;
+use anyhow::{anyhow, Result};
+use derive_builder::Builder;
+use itertools;
+use itertools::Itertools;
+use log::{error, info};
+use reqwest::Url;
+use serde::Deserialize;
+use simplelog::debug;
 
 pub mod models;
 
@@ -46,10 +46,14 @@ pub struct PlexClient {
     sections: Vec<Section>,
 }
 
-impl PlexClient {
-    pub async fn initialize(config: &Config) -> Result<Self> {
-        debug!("Initializing plex...");
+pub async fn get_plex_client() -> Result<PlexClient> {
+    let config = config::load_config().await?;
+    let plex_client = PlexClient::initialize(&config).await?;
+    Ok(plex_client)
+}
 
+impl PlexClient {
+    async fn initialize(config: &Config) -> Result<Self> {
         let plex_url = config.get_plex_url()?;
         let plex_token = config.get_plex_token()?;
 

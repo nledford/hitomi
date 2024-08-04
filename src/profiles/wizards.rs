@@ -6,7 +6,6 @@ use dialoguer::{Confirm, Input, MultiSelect, Select};
 use simplelog::info;
 use strum::VariantNames;
 
-use crate::db;
 use crate::plex::PlexClient;
 use crate::profiles::manager::ProfileManager;
 use crate::profiles::profile::{Profile, ProfileBuilder};
@@ -16,6 +15,7 @@ use crate::types::profiles::profile_section_sort::ProfileSectionSort;
 use crate::types::profiles::profile_source_id::ProfileSourceId;
 use crate::types::profiles::refresh_interval::RefreshInterval;
 use crate::types::Title;
+use crate::{db, plex};
 
 /// The main entrypoint of the wizard
 pub async fn create_profile_wizard(
@@ -29,7 +29,7 @@ pub async fn create_profile_wizard(
 
     let profile_source = select_profile_source()?;
     let profile_source_id =
-        select_profile_source_id(manager.get_plex_client(), profile_source).await?;
+        select_profile_source_id(&plex::get_plex_client().await?, profile_source).await?;
 
     let sections = select_profile_sections()?;
 
