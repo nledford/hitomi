@@ -1,5 +1,6 @@
 use anyhow::Result;
-use hitomi::app::{App, CurrentScreen};
+use hitomi::app::{App, CurrentScreen, MenuOptions};
+use hitomi::db;
 use hitomi::ui::ui;
 use ratatui::backend::{Backend, CrosstermBackend};
 use ratatui::crossterm::event::{Event, KeyCode};
@@ -9,12 +10,12 @@ use ratatui::crossterm::terminal::{
 use ratatui::crossterm::{event, execute};
 use ratatui::Terminal;
 use std::io::stdout;
-use hitomi::db;
+use strum::EnumCount;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // color_eyre::install()?;
-    
+
     db::initialize_pool(None).await?;
 
     // Setup terminal
@@ -47,8 +48,25 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> 
                     KeyCode::Char('q') => {
                         break;
                     }
+                    KeyCode::Up => {
+                        if app.selected_option == 0 {
+                            app.selected_option = MenuOptions::COUNT - 1;
+                        } else {
+                            app.selected_option -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if app.selected_option == MenuOptions::COUNT - 1 {
+                            app.selected_option = 0;
+                        } else {
+                            app.selected_option += 1;
+                        }
+                    }
                     _ => {}
                 },
+                CurrentScreen::Run(run_loop) => {
+                    todo!()
+                }
             }
         }
     }

@@ -1,10 +1,11 @@
-use ratatui::Frame;
+use itertools::Itertools;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
-
-use crate::app::{App, CurrentScreen};
+use ratatui::Frame;
+use strum::VariantArray;
+use crate::app::{App, CurrentScreen, MenuOptions};
 
 /// Constructs the user interface of the TUI application
 pub fn ui(f: &mut Frame, app: &App) {
@@ -18,9 +19,10 @@ pub fn ui(f: &mut Frame, app: &App) {
         .split(f.area());
 
     build_header(f, app, chunks[0]);
-    
+
     match app.current_screen {
-        CurrentScreen::Main => build_home_screen(f, app, chunks[1])
+        CurrentScreen::Main => build_home_screen(f, app, chunks[1]),
+        CurrentScreen::Run(run_loop) => todo!()
     }
 
     build_footer(f, app, chunks[2]);
@@ -37,7 +39,7 @@ fn build_header(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::Green),
     ))
         .block(title_block);
-    f.render_widget(title, area); 
+    f.render_widget(title, area);
 }
 
 /// Constructs the footer always displayed at the bottom of the TUI application
@@ -46,6 +48,9 @@ fn build_footer(f: &mut Frame, app: &App, area: Rect) {
         CurrentScreen::Main => {
             Span::styled("Home", Style::default().fg(Color::Green))
         }
+        CurrentScreen::Run(run_loop) => {
+            todo!()
+        }
     };
     let mode_footer = Paragraph::new(Line::from(current_navigation_text))
         .block(Block::default().borders(Borders::ALL));
@@ -53,6 +58,9 @@ fn build_footer(f: &mut Frame, app: &App, area: Rect) {
     let current_keys_hint = match app.current_screen {
         CurrentScreen::Main => {
             Span::styled("(q) to quit", Style::default().fg(Color::Red))
+        }
+        CurrentScreen::Run(run_loop) => {
+            todo!()
         }
     };
     let key_notes_footer = Paragraph::new(Line::from(current_keys_hint))
@@ -68,14 +76,20 @@ fn build_footer(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn build_home_screen(f: &mut Frame, app: &App, area: Rect) {
-    let mut list_items = Vec::new();
-    for profile in app.get_profiles() {
-        // list_items.push(profile.get_title())
-        let list_item = ListItem::new(Line::from(Span::styled(profile.get_title(), Style::default().fg(Color::Yellow))));
-        list_items.push(list_item)
-    }
+    let list_items = MenuOptions::VARIANTS
+        .iter()
+        .map(|menu_item| {
+            let style = if MenuOptions::from_repr(app.selected_option).unwrap() == *menu_item {
+               Style::default().bg(Color::White).fg(Color::Black)
+            } else {
+                Style::default().fg(Color::White)
+            };
+
+            ListItem::new(Line::from(Span::styled(menu_item.to_string(), style)))
+        })
+        .collect_vec();
     let list = List::new(list_items);
-    
+
     let centered = centered_rect(50, 100, area);
     f.render_widget(list, centered)
 }
