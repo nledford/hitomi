@@ -1,10 +1,10 @@
 use anyhow::Result;
 
-use hitomi::logger;
+// use hitomi::logger;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    logger::initialize_logger()?;
+    // logger::initialize_logger()?;
 
     Ok(())
 }
