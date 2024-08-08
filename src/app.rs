@@ -3,7 +3,7 @@ pub enum CurrentScreen {
 }
 
 pub struct App {
-    current_screen: CurrentScreen,
+    pub current_screen: CurrentScreen,
 }
 
 impl Default for App {
