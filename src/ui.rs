@@ -2,7 +2,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 use crate::app::{App, CurrentScreen};
 
@@ -19,7 +19,9 @@ pub fn ui(f: &mut Frame, app: &App) {
 
     build_header(f, app, chunks[0]);
     
-    // TODO build bodies
+    match app.current_screen {
+        CurrentScreen::Main => build_home_screen(f, app, chunks[1])
+    }
 
     build_footer(f, app, chunks[2]);
 }
@@ -63,4 +65,40 @@ fn build_footer(f: &mut Frame, app: &App, area: Rect) {
 
     f.render_widget(mode_footer, footer_chunks[0]);
     f.render_widget(key_notes_footer, footer_chunks[1]);
+}
+
+fn build_home_screen(f: &mut Frame, app: &App, area: Rect) {
+    let mut list_items = Vec::new();
+    for profile in app.get_profiles() {
+        // list_items.push(profile.get_title())
+        let list_item = ListItem::new(Line::from(Span::styled(profile.get_title(), Style::default().fg(Color::Yellow))));
+        list_items.push(list_item)
+    }
+    let list = List::new(list_items);
+    
+    let centered = centered_rect(50, 100, area);
+    f.render_widget(list, centered)
+}
+
+/// helper function to create a centered rect using up certain percentage of the available rect `r`
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    // Cut the given rectangle into three vertical pieces
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    // Then cut the middle vertical piece into three width-wise pieces
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1] // Return the middle chunk
 }

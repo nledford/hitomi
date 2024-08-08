@@ -9,18 +9,20 @@ use ratatui::crossterm::terminal::{
 use ratatui::crossterm::{event, execute};
 use ratatui::Terminal;
 use std::io::stdout;
-// use hitomi::logger;
+use hitomi::db;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // logger::initialize_logger()?;
+    // color_eyre::install()?;
+    
+    db::initialize_pool(None).await?;
 
     // Setup terminal
     enable_raw_mode()?;
     execute!(stdout(), EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = Terminal::new(backend)?;
-    let mut app = App::new();
+    let mut app = App::new().await?;
     run_app(&mut terminal, &mut app)?;
 
     // Dismantle terminal
