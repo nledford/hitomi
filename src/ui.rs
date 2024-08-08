@@ -1,5 +1,3 @@
-use std::env;
-
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Style};
@@ -7,11 +5,6 @@ use ratatui::text::Text;
 use ratatui::widgets::{Block, Borders, Paragraph};
 
 use crate::app::App;
-
-fn get_app_version() -> String {
-    env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.0.0".to_string())
-}
-
 
 pub fn ui(f: &mut Frame, app: &App) {
     let chunks = Layout::default().direction(Direction::Vertical)
@@ -27,7 +20,7 @@ pub fn ui(f: &mut Frame, app: &App) {
         .style(Style::default());
 
     let title = Paragraph::new(Text::styled(
-        format!("Hitomi v{}", get_app_version()),
+        app.get_title(),
         Style::default().fg(Color::Green),
     ))
         .block(title_block);
