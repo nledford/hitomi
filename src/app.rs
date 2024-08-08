@@ -24,10 +24,10 @@ pub enum MenuOptions {
 pub struct App {
     title: String,
     pub current_screen: CurrentScreen,
-    
+
     // Main Menu
     pub selected_option: usize,
-    
+
     profiles: Vec<Profile>,
     current_profile: Option<Profile>,
 }
@@ -37,9 +37,9 @@ impl Default for App {
         Self {
             title: format!("Hitomi v{}", get_app_version()),
             current_screen: CurrentScreen::Main,
-            
+
             selected_option: 0,
-            
+
             profiles: Vec::default(),
             current_profile: None,
         }
@@ -50,21 +50,25 @@ impl App {
     pub async fn new() -> Result<Self> {
         // Self::default()
         let profiles = db::profiles::fetch_profiles(false).await?;
-        
+
         let app = Self {
             profiles,
             ..Default::default()
         };
-        
+
         Ok(app)
     }
 
     pub fn get_title(&self) -> &str {
         &self.title
     }
-    
+
     pub fn get_profiles(&self) -> &[Profile] {
         &self.profiles
+    }
+
+    pub fn get_main_menu_selected_option(&self) -> MenuOptions {
+        MenuOptions::from_repr(self.selected_option).unwrap()
     }
 }
 

@@ -62,6 +62,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> 
                             app.selected_option += 1;
                         }
                     }
+                    KeyCode::Enter => {
+                        let selected = app.get_main_menu_selected_option();
+
+                        app.current_screen = match selected {
+                            MenuOptions::Run => CurrentScreen::Run(false),
+                            MenuOptions::RunLoop => CurrentScreen::Run(true),
+                            MenuOptions::CreateProfile => todo!(),
+                            MenuOptions::EditProfile => todo!()
+                        }
+                    }
                     _ => {}
                 },
                 CurrentScreen::Run(run_loop) => {
