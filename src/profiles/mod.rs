@@ -1,4 +1,3 @@
-use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, FromRepr, VariantNames};
 
@@ -62,7 +61,7 @@ pub enum ProfileSource {
     SingleArtist,
 }
 
-#[derive(Debug, PartialEq, Subcommand)]
+#[derive(Debug, PartialEq)]
 pub enum ProfileAction {
     /// Create a new profile
     Create,

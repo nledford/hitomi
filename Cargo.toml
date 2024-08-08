@@ -6,7 +6,7 @@ authors = ["Nathaniel Ledford <nate@nateledford.com>"]
 homepage = "https://github.com/nledford/hitomi"
 repository = "https://github.com/nledford/hitomi"
 documentation = "https://docs.rs/hitomi"
-rust-version = "1.80.0"
+rust-version = "1.80.1"
 license = "GPL-3.0"
 readme = "README.md"
 keywords = ["plex", "plexamp", "playlists"]
@@ -15,7 +15,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-clap = { version = "4.5.13", features = ["env", "derive"] }
 derive_builder = "0.20.0"
 dialoguer = "0.11.0"
 humantime = "2.1.0"

@@ -1,8 +1,7 @@
 /*!
-`hitomi` is a CLI application that generates custom playlists on [Plex](https://plex.tv) servers using `.json` profiles.
+`hitomi` is an application that generates custom playlists on [Plex](https://plex.tv) servers using `.json` profiles.
  */
 
-pub mod cli;
 pub mod config;
 pub mod db;
 pub mod http_client;

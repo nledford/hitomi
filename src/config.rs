@@ -4,7 +4,6 @@ use std::env;
 use std::fmt::{Display, Formatter};
 
 use anyhow::Result;
-use clap::Args;
 use derive_builder::Builder;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
@@ -17,13 +16,10 @@ use crate::plex::PlexClient;
 use crate::types::plex::plex_token::PlexToken;
 
 /// Represents the configuration file
-#[derive(Args, Builder, Clone, Debug, Deserialize, Serialize, PartialEq, sqlx::Type)]
+#[derive(Builder, Clone, Debug, Deserialize, Serialize, PartialEq, sqlx::Type)]
 pub struct Config {
-    #[arg(long)]
     plex_token: String,
-    #[arg(long)]
     plex_url: String,
-    #[arg(long)]
     primary_section_id: u32,
 }
 
