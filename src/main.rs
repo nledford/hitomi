@@ -1,12 +1,14 @@
-use std::io::stdout;
 use anyhow::Result;
-use ratatui::backend::{Backend, CrosstermBackend};
-use ratatui::crossterm::event::{Event, KeyCode};
-use ratatui::crossterm::{event, execute};
-use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::Terminal;
 use hitomi::app::{App, CurrentScreen};
 use hitomi::ui::ui;
+use ratatui::backend::{Backend, CrosstermBackend};
+use ratatui::crossterm::event::{Event, KeyCode};
+use ratatui::crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use ratatui::crossterm::{event, execute};
+use ratatui::Terminal;
+use std::io::stdout;
 // use hitomi::logger;
 
 #[tokio::main]
@@ -21,7 +23,6 @@ async fn main() -> Result<()> {
     let mut app = App::new();
     run_app(&mut terminal, &mut app)?;
 
-
     // Dismantle terminal
     execute!(stdout(), LeaveAlternateScreen)?;
     disable_raw_mode()?;
@@ -30,7 +31,6 @@ async fn main() -> Result<()> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> {
-
     loop {
         terminal.draw(|f| ui(f, app))?;
 
@@ -39,14 +39,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> 
             if key.kind == event::KeyEventKind::Release {
                 continue;
             }
-            
+
             match app.current_screen {
                 CurrentScreen::Main => match key.code {
                     KeyCode::Char('q') => {
                         break;
                     }
                     _ => {}
-                }
+                },
             }
         }
     }

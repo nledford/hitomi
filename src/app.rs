@@ -1,7 +1,7 @@
 use std::env;
 
 pub enum CurrentScreen {
-    Main
+    Main,
 }
 
 pub struct App {
@@ -13,7 +13,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             title: format!("Hitomi v{}", get_app_version()),
-            current_screen: CurrentScreen::Main
+            current_screen: CurrentScreen::Main,
         }
     }
 }
@@ -22,7 +22,7 @@ impl App {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     pub fn get_title(&self) -> &str {
         &self.title
     }
