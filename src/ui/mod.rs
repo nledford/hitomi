@@ -1,33 +1,43 @@
 mod components;
 mod home;
 
-use crate::app::{App, CurrentScreen};
-use itertools::Itertools;
+use crate::app::App;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::Frame;
-use strum::VariantArray;
 
-/// Constructs the user interface of the TUI application
-pub fn ui(f: &mut Frame, app: &App) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(1),
-            Constraint::Length(3),
-        ])
-        .split(f.area());
 
-    components::build_header(f, app, chunks[0]);
+use ratatui::{
+    layout::Alignment,
+    style::{Color, Style},
+    widgets::{Block, BorderType, Paragraph},
+    Frame,
+};
 
-    match app.current_screen {
-        CurrentScreen::Main => home::build_home_screen(f, app, chunks[1]),
-        CurrentScreen::Run(run_loop) => todo!()
-    }
 
-    components::build_footer(f, app, chunks[2]);
+/// Renders the user interface widgets.
+pub fn render(app: &mut App, frame: &mut Frame) {
+    // This is where you add new widgets.
+    // See the following resources:
+    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
+    // - https://github.com/ratatui-org/ratatui/tree/master/examples
+    frame.render_widget(
+        Paragraph::new(format!(
+            "This is a tui template.\n\
+                Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
+                Press left and right to increment and decrement the counter respectively.\n\
+                Counter: {}",
+            app.counter
+        ))
+            .block(
+                Block::bordered()
+                    .title("Template")
+                    .title_alignment(Alignment::Center)
+                    .border_type(BorderType::Rounded),
+            )
+            .style(Style::default().fg(Color::Cyan).bg(Color::Black))
+            .centered(),
+        frame.area(),
+    )
 }
-
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {

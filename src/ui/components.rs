@@ -1,8 +1,8 @@
-use ratatui::Frame;
+use crate::app::{App, CurrentScreen};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::prelude::{Color, Line, Span, Style, Text};
 use ratatui::widgets::{Block, Borders, Paragraph};
-use crate::app::{App, CurrentScreen};
+use ratatui::Frame;
 
 /// Constructs the header always displayed at the top of the TUI application
 pub fn build_header(f: &mut Frame, app: &App, area: Rect) {
@@ -25,7 +25,11 @@ pub fn build_footer(f: &mut Frame, app: &App, area: Rect) {
             Span::styled("Home", Style::default().fg(Color::Green))
         }
         CurrentScreen::Run(run_loop) => {
-            todo!()
+            if run_loop {
+                Span::styled("Refreshing Profiles In Loop", Style::default().fg(Color::Green))
+            } else {
+                Span::styled("Refreshing Profiles. Please wait...", Style::default().fg(Color::Green))
+            }
         }
     };
     let mode_footer = Paragraph::new(Line::from(current_navigation_text))
@@ -33,10 +37,14 @@ pub fn build_footer(f: &mut Frame, app: &App, area: Rect) {
 
     let current_keys_hint = match app.current_screen {
         CurrentScreen::Main => {
-            Span::styled("(q) to quit", Style::default().fg(Color::Red))
+            Span::styled("(q) to quit, Up/Down to change option, Enter to select option", Style::default().fg(Color::Red))
         }
         CurrentScreen::Run(run_loop) => {
-            todo!()
+            if run_loop {
+                Span::styled("Esc to return to home screen", Style::default().fg(Color::Red))
+            } else {
+                Span::styled("", Style::default())
+            }
         }
     };
     let key_notes_footer = Paragraph::new(Line::from(current_keys_hint))

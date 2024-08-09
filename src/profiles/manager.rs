@@ -1,5 +1,6 @@
 //! Manages profiles
 
+use std::alloc::System;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -7,7 +8,8 @@ use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
-use jiff::Zoned;
+use jiff::{Timestamp, Zoned};
+use jiff::tz::TimeZone;
 use simplelog::{error, info};
 use tokio::task::JoinSet;
 
@@ -22,7 +24,7 @@ use crate::profiles::ProfileAction;
 use crate::types::plex::plex_id::PlexId;
 use crate::{db, plex};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ProfileManager {
     playlists: Vec<Playlist>,
 }
@@ -196,6 +198,28 @@ impl ProfileManager {
         profile_tracks.print_preview();
 
         Ok(())
+    }
+
+    pub async fn get_earliest_next_refresh(&self) -> Result<String> {
+        let next_refresh = db::profiles::get_earliest_next_refresh().await?;
+        let output = Timestamp::from_second(next_refresh)?
+            .to_zoned(TimeZone::system())
+            .strftime("%T")
+            .to_string();
+
+        Ok(output)
+    }
+
+    pub async fn calculate_time_until_next_refresh(&self) -> Result<String> {
+        let next_refresh = db::profiles::get_earliest_next_refresh().await?;
+        let next_refresh = Timestamp::from_second(next_refresh)?;
+
+        let now = Timestamp::now();
+
+        let diff = next_refresh - now;
+        let output = format!("{} minutes, {} seconds", diff.get_minutes(), diff.get_seconds());
+
+        Ok(output)
     }
 }
 
