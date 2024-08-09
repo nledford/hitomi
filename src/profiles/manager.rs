@@ -8,8 +8,8 @@ use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Confirm;
 use itertools::Itertools;
-use jiff::{Timestamp, Zoned};
 use jiff::tz::TimeZone;
+use jiff::{Timestamp, Zoned};
 use simplelog::{error, info};
 use tokio::task::JoinSet;
 
@@ -217,7 +217,11 @@ impl ProfileManager {
         let now = Timestamp::now();
 
         let diff = next_refresh - now;
-        let output = format!("{} minutes, {} seconds", diff.get_minutes(), diff.get_seconds());
+        let output = format!(
+            "{} minutes, {} seconds",
+            diff.get_minutes(),
+            diff.get_seconds()
+        );
 
         Ok(output)
     }

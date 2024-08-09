@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use anyhow::Result;
-use jiff::{Timestamp, Zoned};
 use jiff::tz::TimeZone;
+use jiff::{Timestamp, Zoned};
 use simplelog::debug;
 use sqlx::Row;
 
@@ -393,13 +393,15 @@ pub async fn fetch_profile_titles() -> Result<Vec<String>> {
 }
 
 pub async fn get_earliest_next_refresh() -> Result<i64> {
-    let next_refresh: (i64,) = sqlx::query_as(r#"
+    let next_refresh: (i64,) = sqlx::query_as(
+        r#"
         select min(next_refresh_at) earliest_next_refresh
         from v_profile
         where enabled = true
-    "#)
-        .fetch_one(db::get_pool()?)
-        .await?;
+    "#,
+    )
+    .fetch_one(db::get_pool()?)
+    .await?;
 
     Ok(next_refresh.0)
 }

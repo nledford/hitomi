@@ -1,10 +1,9 @@
 use crate::app::{App, MenuOptions};
-use crate::ui;
 use itertools::Itertools;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{List, ListItem};
+use ratatui::widgets::{Block, List, ListItem};
 use ratatui::Frame;
 use strum::VariantArray;
 
@@ -21,8 +20,7 @@ pub fn build_home_screen(f: &mut Frame, app: &App, area: Rect) {
             ListItem::new(Line::from(Span::styled(menu_item.to_string(), style)))
         })
         .collect_vec();
-    let list = List::new(list_items);
+    let list = List::new(list_items).block(Block::default());
 
-    let centered = ui::centered_rect(50, 100, area);
-    f.render_widget(list, centered)
+    f.render_widget(list, area)
 }

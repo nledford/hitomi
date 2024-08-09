@@ -1,16 +1,16 @@
+use crate::db;
 use crate::profiles::manager::ProfileManager;
-use crate::profiles::profile::Profile;
 use anyhow::Result;
 use std::{env, error};
 use strum::{Display, EnumCount, FromRepr, VariantArray};
-use crate::db;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+#[derive(PartialEq)]
 pub enum CurrentScreen {
     Main,
-    Run(bool)
+    Run(bool),
 }
 
 #[derive(Default, Display, EnumCount, FromRepr, PartialEq, VariantArray)]
@@ -27,42 +27,33 @@ pub enum MenuOptions {
 }
 
 pub struct App {
-    pub counter: u8,
     pub running: bool,
     title: String,
     profile_manager: ProfileManager,
-    
+
     pub current_screen: CurrentScreen,
 
     // Main Menu
     pub selected_option: usize,
-
     // current_profile: Option<Profile>,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
-            counter: 0,
             running: true,
             title: format!("Hitomi v{}", get_app_version()),
             profile_manager: ProfileManager::default(),
-            
+
             current_screen: CurrentScreen::Main,
 
             selected_option: 0,
-
             // current_profile: None,
         }
     }
 }
 
 impl App {
-    // /// Constructs a new instance of [`App`].
-    // pub fn new() -> Self {
-    //     Self::default()
-    // }
-
     /// Handles the tick event of the terminal.
     pub fn tick(&self) {}
 
@@ -71,24 +62,24 @@ impl App {
         self.running = false;
     }
 
-    pub fn increment_counter(&mut self) {
-        if let Some(res) = self.counter.checked_add(1) {
-            self.counter = res;
-        }
-    }
-
-    pub fn decrement_counter(&mut self) {
-        if let Some(res) = self.counter.checked_sub(1) {
-            self.counter = res;
-        }
-    }
+    // pub fn increment_counter(&mut self) {
+    //     if let Some(res) = self.counter.checked_add(1) {
+    //         self.counter = res;
+    //     }
+    // }
+    //
+    // pub fn decrement_counter(&mut self) {
+    //     if let Some(res) = self.counter.checked_sub(1) {
+    //         self.counter = res;
+    //     }
+    // }
 }
 
 impl App {
     pub async fn new() -> Result<Self> {
         db::initialize_pool(None).await?;
         let profile_manager = ProfileManager::new().await?;
-        
+
         let app = Self {
             profile_manager,
             ..Default::default()
